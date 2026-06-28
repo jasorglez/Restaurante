@@ -33,7 +33,7 @@
           <span class="icon-wrap" aria-hidden="true">
             <svg viewBox="0 0 64 64"><path d="M13 20h38v29H13zM13 29h38M22 38h9M39 38h4M22 12h20v8"/></svg>
           </span>
-          <span class="card-copy"><strong>CAJAS</strong><small>Cobros y movimientos</small></span>
+          <span class="card-copy"><strong>CAJAS</strong><small>Turnos y corte</small></span>
           <span class="arrow" aria-hidden="true">→</span>
         </button>
         <button class="menu-card reportes" type="button" (click)="selectModule('REPORTES')">
@@ -262,6 +262,105 @@
       </div>
     }
 
+  <!-- ── CAJAS / TURNO ────────────────────────────────────────────────────── -->
+  } @else if (view() === 'cajas') {
+    <section class="tables-view" aria-labelledby="cajas-title">
+      <div class="tables-toolbar">
+        <button class="back-button" type="button" (click)="backToMenu()">
+          <span aria-hidden="true">←</span> Menú
+        </button>
+        <div class="tables-heading">
+          <p class="eyebrow">PUNTO DE VENTA</p>
+          <h2 id="cajas-title">Cajas</h2>
+        </div>
+        <span></span>
+      </div>
+
+      @if (turnoActivo()) {
+        <!-- ── Turno iniciado ─────────────────────────────────────────────── -->
+        <div class="turno-activo">
+          <div class="turno-check">✓</div>
+          <h3 class="turno-titulo">Turno iniciado</h3>
+          <div class="turno-info">
+            <div><span>Caja</span><strong>{{ cajaSeleccionada()?.description }}</strong></div>
+            @if (turnoActivo()!.cajero) {
+              <div><span>Cajero</span><strong>{{ turnoActivo()!.cajero }}</strong></div>
+            }
+            <div><span>Fondo inicial</span><strong>{{ turnoActivo()!.fondoInicial | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong></div>
+            <div><span>Turno #</span><strong>{{ turnoActivo()!.id }}</strong></div>
+          </div>
+          <button class="family-button turno-nuevo-btn" type="button" (click)="backToCajas()">
+            Nuevo turno
+          </button>
+        </div>
+
+      } @else if (cajasLoading()) {
+        <div class="state-panel" role="status">
+          <span class="loader" aria-hidden="true"></span>
+          <strong>Cargando cajas…</strong>
+        </div>
+
+      } @else if (cajasResource.error()) {
+        <div class="state-panel error-panel" role="alert">
+          <strong>No se pudieron cargar las cajas</strong>
+          <button type="button" (click)="cajasResource.reload()">Reintentar</button>
+        </div>
+
+      } @else if (cajaSeleccionada()) {
+        <!-- ── Formulario iniciar turno ────────────────────────────────────── -->
+        <div class="turno-form">
+          <div class="turno-caja-tag">
+            <span class="turno-caja-icon">🏧</span>
+            <span>{{ cajaSeleccionada()!.description }}</span>
+          </div>
+
+          <div class="turno-fields">
+            <label class="turno-label" for="cajero-nombre">Nombre del cajero</label>
+            <input
+              id="cajero-nombre"
+              class="turno-input"
+              type="text"
+              placeholder="Ej. María García"
+              [value]="cajaNombre()"
+              (input)="setCajaNombre($event)"
+              [disabled]="iniciandoTurno()">
+
+            <label class="turno-label" for="fondo-inicial">Fondo inicial (efectivo en caja)</label>
+            <div class="monto-row turno-monto">
+              <span class="monto-currency">$</span>
+              <input
+                id="fondo-inicial"
+                class="monto-input"
+                type="number"
+                min="0"
+                step="1"
+                placeholder="0.00"
+                [value]="fondoInicial() ?? ''"
+                (input)="setFondoInicial($event)"
+                [disabled]="iniciandoTurno()">
+            </div>
+          </div>
+
+          @if (turnoError()) {
+            <p class="action-error" role="alert">{{ turnoError() }}</p>
+          }
+
+          <button
+            class="cobrar-btn turno-iniciar-btn"
+            type="button"
+            (click)="iniciarTurno()"
+            [disabled]="iniciandoTurno()">
+            @if (iniciandoTurno()) { Iniciando… } @else { Iniciar Turno }
+          </button>
+        </div>
+
+      } @else {
+        <div class="state-panel">
+          <strong>No hay cajas activas para esta empresa</strong>
+        </div>
+      }
+    </section>
+
   <!-- ── CUENTA / COBRO ─────────────────────────────────────────────────── -->
   } @else {
     <section class="tables-view" aria-labelledby="cuenta-title">
@@ -334,49 +433,59 @@
       <div class="qty-overlay" role="dialog" aria-modal="true" aria-label="Confirmar cobro">
         <div class="qty-panel pago-panel">
           <strong class="qty-name">Cobrar cuenta</strong>
-          <p class="qty-price">{{ totalCuenta() | currency:'MXN':'symbol-narrow':'1.2-2' }}</p>
+          <p class="qty-price total-precio">{{ totalCuenta() | currency:'MXN':'symbol-narrow':'1.2-2' }}</p>
 
           <p class="pago-label">Forma de pago</p>
           <div class="pago-grid">
-            <button
-              class="pago-btn"
-              [class.active]="tipoPago() === 'EFECTIVO'"
-              type="button"
-              (click)="tipoPago.set('EFECTIVO')"
-              [disabled]="cobrando()"
-            >
-              💵 Efectivo
-            </button>
-            <button
-              class="pago-btn"
-              [class.active]="tipoPago() === 'TARJETA'"
-              type="button"
-              (click)="tipoPago.set('TARJETA')"
-              [disabled]="cobrando()"
-            >
-              💳 Tarjeta
-            </button>
-            <button
-              class="pago-btn"
-              [class.active]="tipoPago() === 'MIXTO'"
-              type="button"
-              (click)="tipoPago.set('MIXTO')"
-              [disabled]="cobrando()"
-            >
-              🔀 Mixto
-            </button>
+            <button class="pago-btn" [class.active]="tipoPago() === 'EFECTIVO'" type="button"
+              (click)="setTipoPago('EFECTIVO')" [disabled]="cobrando()">💵 Efectivo</button>
+            <button class="pago-btn" [class.active]="tipoPago() === 'TARJETA'" type="button"
+              (click)="setTipoPago('TARJETA')" [disabled]="cobrando()">💳 Tarjeta</button>
+            <button class="pago-btn" [class.active]="tipoPago() === 'MIXTO'"   type="button"
+              (click)="setTipoPago('MIXTO')"   [disabled]="cobrando()">🔀 Mixto</button>
           </div>
+
+          @if (tipoPago() !== 'TARJETA') {
+            <div class="monto-section">
+              @if (tipoPago() === 'MIXTO') {
+                <label class="monto-label">Efectivo recibido</label>
+              } @else {
+                <label class="monto-label">¿Con cuánto paga?</label>
+              }
+              <div class="monto-row">
+                <span class="monto-currency">$</span>
+                <input class="monto-input" type="number" min="0" step="1" placeholder="0.00"
+                  [value]="montoPagado() ?? ''" (input)="setMontoPagado($event)" [disabled]="cobrando()">
+              </div>
+
+              @if (tipoPago() === 'MIXTO') {
+                <label class="monto-label mt">Tarjeta</label>
+                <div class="monto-row">
+                  <span class="monto-currency">$</span>
+                  <input class="monto-input" type="number" min="0" step="1" placeholder="0.00"
+                    [value]="montoTarjeta() ?? ''" (input)="setMontoTarjeta($event)" [disabled]="cobrando()">
+                </div>
+              }
+
+              @if (montoPagado() !== null) {
+                <div class="cambio-row" [class.insuficiente]="cambio() < 0">
+                  @if (cambio() >= 0) {
+                    <span>CAMBIO</span>
+                    <strong>{{ cambio() | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+                  } @else {
+                    <span>Falta</span>
+                    <strong>{{ (cambio() * -1) | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+                  }
+                </div>
+              }
+            </div>
+          }
 
           @if (cobroError()) {
             <p class="qty-error" role="alert">{{ cobroError() }}</p>
           }
 
-          <button
-            class="qty-btn confirmar-btn"
-            type="button"
-            (click)="confirmarCobro()"
-            [disabled]="cobrando()"
-          >
+          <button class="qty-btn confirmar-btn" type="button" (click)="confirmarCobro()" [disabled]="cobrando()">
             @if (cobrando()) { Procesando… } @else { Confirmar cobro }
           </button>
           <button class="qty-cancel" type="button" (click)="cancelarPago()" [disabled]="cobrando()">
@@ -389,3 +498,92 @@
 
   <footer><span>Panel del restaurante</span><span>Acceso para tablet</span></footer>
 </main>
+
+<!-- ── TICKET ───────────────────────────────────────────────────────────────── -->
+@if (ticketVisible() && ticketData()) {
+  <div class="ticket-overlay">
+    <div class="ticket-card">
+
+      <div class="ticket-actions no-print">
+        <button class="ticket-btn-imprimir" type="button" (click)="imprimirTicket()">
+          🖨️&nbsp;Imprimir
+        </button>
+        <button class="ticket-btn-cerrar" type="button" (click)="cerrarTicket()">
+          Cerrar →
+        </button>
+      </div>
+
+      <div class="ticket-receipt">
+        <div class="ticket-logo">R</div>
+        <h2 class="ticket-empresa">{{ ticketData()!.companyName }}</h2>
+        <p class="ticket-sub">RESTAURANTE · PUNTO DE VENTA</p>
+        <div class="ticket-divider">══════════════════════</div>
+
+        <div class="ticket-info">
+          <div><span>Mesa</span><span>{{ ticketData()!.mesaNombre }}</span></div>
+          <div><span>Cuenta</span><span>#{{ ticketData()!.idCuenta }}</span></div>
+          <div><span>Fecha</span><span>{{ ticketData()!.fecha | date:'dd/MM/yyyy HH:mm' }}</span></div>
+        </div>
+
+        <div class="ticket-divider">──────────────────────</div>
+
+        <table class="ticket-items">
+          <thead>
+            <tr>
+              <th class="t-qty">Cant</th>
+              <th class="t-desc">Producto</th>
+              <th class="t-amt">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of ticketData()!.items; track item.id) {
+              <tr>
+                <td class="t-qty">{{ item.cantidad }}</td>
+                <td class="t-desc">{{ item.descripcion }}</td>
+                <td class="t-amt">{{ item.subtotal | currency:'MXN':'symbol-narrow':'1.2-2' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+
+        <div class="ticket-divider">──────────────────────</div>
+
+        <div class="ticket-totals">
+          <div class="ticket-row main-total">
+            <span>TOTAL</span>
+            <strong>{{ ticketData()!.total | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+          </div>
+
+          @if (ticketData()!.tipoPago === 'MIXTO') {
+            <div class="ticket-row sub">
+              <span>Efectivo</span>
+              <span>{{ ticketData()!.montoPagado | currency:'MXN':'symbol-narrow':'1.2-2' }}</span>
+            </div>
+            <div class="ticket-row sub">
+              <span>Tarjeta</span>
+              <span>{{ ticketData()!.montoTarjeta | currency:'MXN':'symbol-narrow':'1.2-2' }}</span>
+            </div>
+          } @else {
+            <div class="ticket-row sub">
+              <span>{{ ticketData()!.tipoPago === 'EFECTIVO' ? 'Efectivo' : 'Tarjeta' }}</span>
+              <span>{{ ticketData()!.montoPagado | currency:'MXN':'symbol-narrow':'1.2-2' }}</span>
+            </div>
+          }
+
+          @if (ticketData()!.cambio > 0) {
+            <div class="ticket-row cambio">
+              <span>CAMBIO</span>
+              <strong>{{ ticketData()!.cambio | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+            </div>
+          }
+        </div>
+
+        <div class="ticket-divider">══════════════════════</div>
+        <p class="ticket-thanks">¡Gracias por su preferencia!</p>
+        <p class="ticket-thanks">Vuelva pronto</p>
+        <div class="ticket-divider">══════════════════════</div>
+      </div>
+
+    </div>
+  </div>
+}

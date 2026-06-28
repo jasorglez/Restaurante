@@ -798,3 +798,401 @@ footer {
 @media (prefers-reduced-motion: reduce) {
   .menu-card { transition: none; }
 }
+
+/* ── Cajas / Turno ─────────────────────────────────────────────────────────── */
+
+.turno-form {
+  max-width: 480px;
+  margin: 32px auto;
+  padding: 32px clamp(20px, 4vw, 40px);
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: 0 4px 24px rgb(0 0 0 / 7%);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.turno-caja-tag {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: #e6f5ed;
+  color: #147a4b;
+  font-weight: 700;
+  font-size: 0.95rem;
+  border: 1px solid #c3e8d3;
+}
+
+.turno-caja-icon { font-size: 1.2rem; }
+
+.turno-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.turno-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #556259;
+}
+
+.turno-input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid #dfe5df;
+  border-radius: 14px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #17211b;
+  background: #f5f7f4;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 120ms ease;
+
+  &:focus { border-color: #147a4b; background: #fff; }
+  &:disabled { opacity: 0.6; }
+  &::placeholder { color: #a8b9ae; font-weight: 400; }
+}
+
+.turno-monto { margin-top: 2px; }
+
+.turno-iniciar-btn {
+  width: 100%;
+  font-size: 1rem;
+  margin-top: 4px;
+}
+
+.turno-activo {
+  max-width: 480px;
+  margin: 40px auto;
+  padding: 36px clamp(20px, 4vw, 40px);
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: 0 4px 24px rgb(0 0 0 / 7%);
+  text-align: center;
+}
+
+.turno-check {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #147a4b;
+  color: #fff;
+  font-size: 2rem;
+}
+
+.turno-titulo {
+  margin: 0 0 20px;
+  font-size: 1.35rem;
+  color: #147a4b;
+}
+
+.turno-info {
+  text-align: left;
+  border-top: 1px solid #dfe5df;
+  border-bottom: 1px solid #dfe5df;
+  padding: 12px 0;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  > div {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+
+    span { color: #556259; }
+    strong { color: #17211b; }
+  }
+}
+
+.turno-nuevo-btn {
+  width: 100%;
+  justify-content: center;
+}
+
+/* ── Monto de pago ─────────────────────────────────────────────────────────── */
+
+.total-precio {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #147a4b;
+  margin: 0 0 16px;
+  text-align: center;
+}
+
+.monto-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 12px 0;
+}
+
+.monto-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #556259;
+  margin: 0;
+
+  &.mt { margin-top: 10px; }
+}
+
+.monto-row {
+  display: flex;
+  align-items: center;
+  border: 2px solid #cce4d4;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #f0faf4;
+}
+
+.monto-currency {
+  padding: 0 12px;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #147a4b;
+  border-right: 2px solid #cce4d4;
+  line-height: 48px;
+  background: #e6f5ed;
+}
+
+.monto-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 12px 14px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #17211b;
+  outline: none;
+  width: 100%;
+
+  &:disabled { opacity: 0.6; }
+  &::placeholder { color: #a8b9ae; }
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button { -webkit-appearance: none; }
+}
+
+.cambio-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #e6f5ed;
+  color: #147a4b;
+  font-weight: 700;
+  margin-top: 4px;
+
+  strong { font-size: 1.15rem; }
+
+  &.insuficiente {
+    background: #fef0ef;
+    color: #c0392b;
+  }
+}
+
+/* ── Ticket ─────────────────────────────────────────────────────────────────── */
+
+.ticket-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / 55%);
+  display: grid;
+  place-items: center;
+  z-index: 300;
+  padding: 20px;
+}
+
+.ticket-card {
+  width: min(400px, 100%);
+  background: #fff;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgb(0 0 0 / 35%);
+  max-height: 90dvh;
+  overflow-y: auto;
+}
+
+.ticket-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 14px 16px;
+  background: #f5f7f4;
+  border-bottom: 1px solid #dfe5df;
+}
+
+.ticket-btn-imprimir,
+.ticket-btn-cerrar {
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 120ms ease;
+}
+.ticket-btn-imprimir {
+  background: #147a4b;
+  color: #fff;
+  &:hover { background: #0f5e39; }
+}
+.ticket-btn-cerrar {
+  background: #fff;
+  color: #667269;
+  border: 1px solid #dfe5df;
+  &:hover { background: #f0faf4; }
+}
+
+.ticket-receipt {
+  padding: 24px 22px;
+  font-family: 'Courier New', 'Courier', monospace;
+  font-size: 0.88rem;
+  color: #1a1a1a;
+  text-align: center;
+}
+
+.ticket-logo {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 10px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: #147a4b;
+  color: #fff;
+  font-family: Georgia, serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.ticket-empresa {
+  margin: 0 0 4px;
+  font-size: 1.05rem;
+  font-weight: 900;
+  font-family: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.ticket-sub {
+  margin: 0 0 6px;
+  color: #555;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+}
+
+.ticket-divider {
+  margin: 8px 0;
+  color: #888;
+  font-size: 0.8rem;
+  overflow: hidden;
+}
+
+.ticket-info {
+  text-align: left;
+  margin: 8px 0;
+
+  > div {
+    display: flex;
+    justify-content: space-between;
+    padding: 2px 0;
+    font-size: 0.82rem;
+
+    span:first-child { color: #555; }
+  }
+}
+
+.ticket-items {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.82rem;
+
+  th {
+    font-weight: 700;
+    padding: 4px 2px;
+    border-bottom: 1px dashed #bbb;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+  }
+
+  td { padding: 3px 2px; vertical-align: top; }
+  .t-qty { width: 36px; text-align: center; }
+  .t-amt { text-align: right; white-space: nowrap; }
+  .t-desc { padding: 3px 8px; }
+}
+
+.ticket-totals {
+  text-align: left;
+  margin: 4px 0;
+}
+
+.ticket-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 4px 0;
+  font-size: 0.88rem;
+
+  strong { font-size: 1.05rem; }
+
+  &.main-total {
+    font-size: 1rem;
+    font-weight: 800;
+    padding-block: 6px;
+    strong { font-size: 1.15rem; }
+  }
+
+  &.sub { color: #555; font-size: 0.82rem; }
+
+  &.cambio {
+    color: #147a4b;
+    font-weight: 800;
+    strong { font-size: 1.1rem; }
+  }
+}
+
+.ticket-thanks {
+  margin: 4px 0;
+  font-style: italic;
+  color: #555;
+  font-size: 0.82rem;
+}
+
+/* ── Print ──────────────────────────────────────────────────────────────────── */
+
+@media print {
+  body * { visibility: hidden; }
+
+  .ticket-receipt,
+  .ticket-receipt * { visibility: visible; }
+
+  .ticket-receipt {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 80mm;
+    padding: 8mm;
+    background: #fff;
+    font-family: 'Courier New', monospace;
+  }
+
+  .ticket-overlay,
+  .ticket-card { all: unset; }
+  .ticket-actions { display: none !important; }
+}

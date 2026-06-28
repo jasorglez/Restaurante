@@ -5,8 +5,52 @@
       "path": "."
     },
     {
-      "name": "Backend - MicroServicios",
-      "path": "C:\\Developer\\Visual Studio 22\\c#\\MicroServicios"
+      "name": "MS - Administration",
+      "path": "C:\\Developer\\Visual Studio 22\\c#\\MicroServicios\\MicroservicioAdministration"
+    },
+    {
+      "name": "MS - Security",
+      "path": "C:\\Developer\\Visual Studio 22\\c#\\MicroServicios\\MicroservicioSecurity"
+    },
+    {
+      "name": "MS - Production",
+      "path": "C:\\Developer\\Visual Studio 22\\c#\\MicroServicios\\MicroservicioProduction"
+    },
+    {
+      "name": "MS - Warehouse",
+      "path": "C:\\Developer\\Visual Studio 22\\c#\\MicroServicios\\MicroserviciosWarehouse"
+    },
+    {
+      "name": "MS - SMP",
+      "path": "C:\\Developer\\Visual Studio 22\\c#\\MicroServicios\\MicroserviciosSmp"
+    },
+    {
+      "name": "MS - BPI",
+      "path": "C:\\Developer\\Visual Studio 22\\c#\\MicroServicios\\MicroserviciosBPI"
+    },
+    {
+      "name": "MS - Mantenimiento",
+      "path": "C:\\Developer\\Visual Studio 22\\c#\\MicroServicios\\MicroservicioMantenimiento"
+    },
+    {
+      "name": "MS - Tracking Error",
+      "path": "C:\\Developer\\Visual Studio 22\\c#\\MicroServicios\\MicroservicioTrackingError"
+    },
+    {
+      "name": "MS - Mantenimiento (Legacy)",
+      "path": "C:\\Developer\\Visual Studio 22\\c#\\MicroServicios\\Mantenimiento"
+    },
+    {
+      "name": "Bot - Telegram",
+      "path": "C:\\Developer\\Visual Studio 22\\c#\\MicroServicios\\chatBotTelegram"
+    },
+    {
+      "name": "Bot - Twilio",
+      "path": "C:\\Developer\\Visual Studio 22\\c#\\MicroServicios\\chatBotTwilio"
+    },
+    {
+      "name": "Clases Deportivas",
+      "path": "C:\\Developer\\Visual Studio 22\\c#\\MicroServicios\\clases deportivas"
     }
   ],
   "settings": {
