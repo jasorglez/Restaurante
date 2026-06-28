@@ -57,12 +57,9 @@
           <p class="eyebrow">SALÓN · {{ companyName() }}</p>
           <h2 id="tables-title">Mesas</h2>
         </div>
-        <div class="mesa-toolbar-actions">
-          <button class="nueva-mesa-btn" type="button" (click)="abrirNuevaMesa()" title="Agregar mesa">+ Mesa</button>
-          <button class="refresh-button" type="button" (click)="loadMesas()" [disabled]="loading()">
-            <span aria-hidden="true">↻</span> Actualizar
-          </button>
-        </div>
+        <button class="refresh-button" type="button" (click)="loadMesas()" [disabled]="loading()">
+          <span aria-hidden="true">↻</span> Actualizar
+        </button>
       </div>
 
       @if (!loading() && !error()) {
@@ -103,9 +100,23 @@
               [disabled]="openingMesa()"
             >
               <span class="table-graphic" aria-hidden="true">
-                <i class="chair top"></i><i class="chair right"></i>
-                <i class="table-top"></i>
-                <i class="chair bottom"></i><i class="chair left"></i>
+                @let cap = mesa.capacidad ?? 4;
+                @if (cap >= 8) {
+                  <i class="chair top-l"></i><i class="chair top-r"></i>
+                  <i class="table-top"></i>
+                  <i class="chair bot-l"></i><i class="chair bot-r"></i>
+                  <i class="chair left-t"></i><i class="chair left-b"></i>
+                  <i class="chair right-t"></i><i class="chair right-b"></i>
+                } @else if (cap >= 6) {
+                  <i class="chair top-l"></i><i class="chair top-r"></i>
+                  <i class="table-top"></i>
+                  <i class="chair bot-l"></i><i class="chair bot-r"></i>
+                  <i class="chair left"></i><i class="chair right"></i>
+                } @else {
+                  <i class="chair top"></i><i class="chair right"></i>
+                  <i class="table-top"></i>
+                  <i class="chair bottom"></i><i class="chair left"></i>
+                }
               </span>
               <strong>{{ mesa.nombre }}</strong>
               <span class="table-state">{{ mesa.tieneCuentaAbierta ? 'OCUPADA' : 'LIBRE' }}</span>
@@ -118,6 +129,12 @@
               }
             </button>
           }
+          <!-- Tarjeta agregar nueva mesa -->
+          <button class="table-button add-mesa-btn" type="button" (click)="abrirNuevaMesa()">
+            <span class="add-mesa-icon">＋</span>
+            <strong>Nueva Mesa</strong>
+            <span class="table-state">Agregar</span>
+          </button>
         </div>
       }
 

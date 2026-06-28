@@ -327,10 +327,21 @@ footer {
   border-radius: 7px;
   opacity: 0.65;
 }
-.chair.top { top: 2px; left: 38px; }
+/* 4 sillas */
+.chair.top    { top: 2px;    left: 38px; }
 .chair.bottom { bottom: 2px; left: 38px; }
-.chair.left { left: 0; top: 43px; transform: rotate(90deg); }
-.chair.right { right: 0; top: 43px; transform: rotate(90deg); }
+.chair.left   { left: 0;  top: 43px; transform: rotate(90deg); }
+.chair.right  { right: 0; top: 43px; transform: rotate(90deg); }
+/* 6 sillas – 2 arriba, 2 abajo, 1 iz, 1 der */
+.chair.top-l  { top: 2px;    left: 20px;  }
+.chair.top-r  { top: 2px;    right: 20px; }
+.chair.bot-l  { bottom: 2px; left: 20px;  }
+.chair.bot-r  { bottom: 2px; right: 20px; }
+/* 8 sillas – añade 2 iz y 2 der */
+.chair.left-t  { left: 0;  top: 22px; transform: rotate(90deg); }
+.chair.left-b  { left: 0;  top: 65px; transform: rotate(90deg); }
+.chair.right-t { right: 0; top: 22px; transform: rotate(90deg); }
+.chair.right-b { right: 0; top: 65px; transform: rotate(90deg); }
 
 .table-button > strong { color: #17211b; font-size: 1.28rem; }
 .table-state {
@@ -799,27 +810,24 @@ footer {
   .menu-card { transition: none; }
 }
 
-/* ── Mesa toolbar ──────────────────────────────────────────────────────────── */
+/* ── Tarjeta Nueva Mesa ─────────────────────────────────────────────────────── */
 
-.mesa-toolbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.add-mesa-btn {
+  border: 2.5px dashed #a8c8b8 !important;
+  background: #f0faf4 !important;
+  color: #147a4b !important;
+
+  &:hover { background: #e6f5ed !important; border-color: #147a4b !important; }
+
+  strong { color: #147a4b; }
+  .table-state { color: #147a4b; font-weight: 700; }
 }
 
-.nueva-mesa-btn {
-  padding: 8px 14px;
-  border-radius: 10px;
-  border: 2px solid #147a4b;
-  background: #e6f5ed;
+.add-mesa-icon {
+  font-size: 2rem;
+  line-height: 1;
+  margin-bottom: 4px;
   color: #147a4b;
-  font-size: 0.85rem;
-  font-weight: 800;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: 120ms ease;
-
-  &:hover { background: #147a4b; color: #fff; }
 }
 
 /* ── Cajas / Turno ─────────────────────────────────────────────────────────── */
