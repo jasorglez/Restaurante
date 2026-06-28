@@ -4,7 +4,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import { environment } from '../environments/environment';
-import { CajaInfo, Turno } from './models/caja';
+import { CajaInfo, EgresoCaja, ResumenCorte, Turno } from './models/caja';
 import { CuentaAbierta, Familia, ItemCuenta, Producto } from './models/familia';
 import { Mesa } from './models/mesa';
 
@@ -68,6 +68,38 @@ export class App {
   protected readonly cajaSeleccionada = computed(() => {
     const list = this.cajas();
     return list.length === 1 ? list[0] : null;
+  });
+
+  protected readonly cajasSubView = signal<'inicio' | 'egresos' | 'corte'>('inicio');
+  protected readonly totalEgresosLista = computed(() =>
+    this.egresosLista().reduce((s, e) => s + e.monto, 0),
+  );
+
+  // ── Egresos ──────────────────────────────────────────────────────────────
+  protected readonly egresoDesc = signal('');
+  protected readonly egresoMonto = signal<number | null>(null);
+  protected readonly registrandoEgreso = signal(false);
+  protected readonly egresoError = signal('');
+  protected readonly egresosLista = signal<EgresoCaja[]>([]);
+
+  // ── Corte ─────────────────────────────────────────────────────────────────
+  protected readonly resumenCorteResource = httpResource<ResumenCorte>(
+    () => {
+      const t = this.turnoActivo();
+      if (!t || this.cajasSubView() !== 'corte') return undefined;
+      return `${environment.urlAdministration}/Restaurant/turnos/${t.id}/resumen`;
+    },
+  );
+  protected readonly efectivoContado = signal<number | null>(null);
+  protected readonly cerrandoTurno = signal(false);
+  protected readonly cerrarError = signal('');
+  protected readonly corteResultado = signal<Turno | null>(null);
+  protected readonly corteResumenSnapshot = signal<ResumenCorte | null>(null);
+
+  protected readonly diferencia = computed(() => {
+    const esperado = this.resumenCorteResource.value()?.totales.efectivoEsperado ?? 0;
+    const contado  = this.efectivoContado() ?? 0;
+    return contado - esperado;
   });
 
   // ── Pago ──────────────────────────────────────────────────────────────────
@@ -239,6 +271,102 @@ export class App {
     this.cajaNombre.set('');
     this.fondoInicial.set(null);
     this.turnoError.set('');
+    this.cajasSubView.set('inicio');
+    this.egresosLista.set([]);
+    this.corteResultado.set(null);
+    this.corteResumenSnapshot.set(null);
+  }
+
+  // ── Egresos ──────────────────────────────────────────────────────────────
+  protected abrirEgresos(): void {
+    this.egresoDesc.set('');
+    this.egresoMonto.set(null);
+    this.egresoError.set('');
+    this.cajasSubView.set('egresos');
+  }
+
+  protected setEgresoDesc(e: Event): void {
+    this.egresoDesc.set((e.target as HTMLInputElement).value);
+  }
+
+  protected setEgresoMonto(e: Event): void {
+    const val = +(e.target as HTMLInputElement).value;
+    this.egresoMonto.set(val > 0 ? val : null);
+  }
+
+  protected async registrarEgreso(): Promise<void> {
+    const turno = this.turnoActivo();
+    const monto = this.egresoMonto();
+    if (!turno || !monto) return;
+
+    this.registrandoEgreso.set(true);
+    this.egresoError.set('');
+    try {
+      const egreso = await firstValueFrom(
+        this.http.post<EgresoCaja>(
+          `${environment.urlAdministration}/Restaurant/turnos/${turno.id}/egresos`,
+          { descripcion: this.egresoDesc().trim() || null, monto },
+        ),
+      );
+      this.egresosLista.update(list => [egreso, ...list]);
+      this.egresoDesc.set('');
+      this.egresoMonto.set(null);
+    } catch {
+      this.egresoError.set('No se pudo registrar el egreso.');
+    } finally {
+      this.registrandoEgreso.set(false);
+    }
+  }
+
+  // ── Corte ─────────────────────────────────────────────────────────────────
+  protected abrirCorte(): void {
+    this.efectivoContado.set(null);
+    this.cerrarError.set('');
+    this.corteResultado.set(null);
+    this.cajasSubView.set('corte');
+  }
+
+  protected setEfectivoContado(e: Event): void {
+    const val = +(e.target as HTMLInputElement).value;
+    this.efectivoContado.set(val >= 0 ? val : null);
+  }
+
+  protected async cerrarTurno(): Promise<void> {
+    const turno = this.turnoActivo();
+    if (!turno) return;
+
+    // Snapshot del resumen antes de cerrar (para la nota impresa)
+    const snapshotResumen = this.resumenCorteResource.value();
+
+    this.cerrandoTurno.set(true);
+    this.cerrarError.set('');
+    try {
+      const result = await firstValueFrom(
+        this.http.put<Turno>(
+          `${environment.urlAdministration}/Restaurant/turnos/${turno.id}/cerrar`,
+          { efectivoContado: this.efectivoContado() ?? 0, notas: null },
+        ),
+      );
+      this.corteResultado.set(result);
+      if (snapshotResumen) {
+        this.corteResumenSnapshot.set({
+          ...snapshotResumen,
+          totales: {
+            ...snapshotResumen.totales,
+            efectivoEsperado: snapshotResumen.totales.efectivoEsperado,
+          },
+        });
+      }
+      this.turnoActivo.set(null);
+    } catch {
+      this.cerrarError.set('No se pudo cerrar el turno. Intenta de nuevo.');
+    } finally {
+      this.cerrandoTurno.set(false);
+    }
+  }
+
+  protected imprimirCorte(): void {
+    window.print();
   }
 
   protected loadMesas(): void { this.mesasResource.reload(); }

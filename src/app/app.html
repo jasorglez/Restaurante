@@ -276,23 +276,262 @@
         <span></span>
       </div>
 
-      @if (turnoActivo()) {
-        <!-- ── Turno iniciado ─────────────────────────────────────────────── -->
+      @if (corteResultado()) {
+        <!-- ── Nota de corte ──────────────────────────────────────────────── -->
+        <div class="tables-toolbar corte-toolbar no-print">
+          <span></span>
+          <div class="tables-heading"><h2>Nota de Corte</h2></div>
+          <button class="refresh-button" type="button" (click)="imprimirCorte()" title="Imprimir">🖨️</button>
+        </div>
+
+        <div class="nota-corte-wrap">
+          <div class="nota-corte">
+            <div class="ticket-logo">R</div>
+            <h2 class="ticket-empresa">{{ companyName() }}</h2>
+            <p class="ticket-sub">CORTE DE CAJA</p>
+            <div class="ticket-divider">══════════════════════</div>
+
+            <div class="ticket-info">
+              <div><span>Caja</span><span>{{ cajaSeleccionada()?.description ?? 'Caja ' + corteResultado()!.idCashRegister }}</span></div>
+              @if (corteResultado()!.cajero) {
+                <div><span>Cajero</span><span>{{ corteResultado()!.cajero }}</span></div>
+              }
+              <div><span>Turno #</span><span>{{ corteResultado()!.id }}</span></div>
+              <div><span>Apertura</span><span>{{ corteResultado()!.fechaInicio | date:'dd/MM/yyyy HH:mm' }}</span></div>
+              <div><span>Cierre</span><span>{{ corteResultado()!.fechaCierre | date:'dd/MM/yyyy HH:mm' }}</span></div>
+            </div>
+
+            <div class="ticket-divider">──────────────────────</div>
+            <p class="nota-sub">VENTAS</p>
+
+            @if (corteResumenSnapshot()) {
+              @if ((corteResumenSnapshot()!.totales.efectivo) > 0) {
+                <div class="nota-row"><span>💵 Efectivo</span><span>{{ corteResumenSnapshot()!.totales.efectivo | currency:'MXN':'symbol-narrow':'1.2-2' }}</span></div>
+              }
+              @if ((corteResumenSnapshot()!.totales.tarjeta) > 0) {
+                <div class="nota-row"><span>💳 Tarjeta</span><span>{{ corteResumenSnapshot()!.totales.tarjeta | currency:'MXN':'symbol-narrow':'1.2-2' }}</span></div>
+              }
+              @if ((corteResumenSnapshot()!.totales.cheque) > 0) {
+                <div class="nota-row"><span>📄 Cheques</span><span>{{ corteResumenSnapshot()!.totales.cheque | currency:'MXN':'symbol-narrow':'1.2-2' }}</span></div>
+              }
+              @if ((corteResumenSnapshot()!.totales.vales) > 0) {
+                <div class="nota-row"><span>🎟️ Vales</span><span>{{ corteResumenSnapshot()!.totales.vales | currency:'MXN':'symbol-narrow':'1.2-2' }}</span></div>
+              }
+              @if ((corteResumenSnapshot()!.totales.mixto) > 0) {
+                <div class="nota-row"><span>🔀 Mixto</span><span>{{ corteResumenSnapshot()!.totales.mixto | currency:'MXN':'symbol-narrow':'1.2-2' }}</span></div>
+              }
+              <div class="nota-row nota-total"><span>TOTAL VENTAS</span><strong>{{ corteResumenSnapshot()!.totales.totalVentas | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong></div>
+
+              <div class="ticket-divider">──────────────────────</div>
+              <p class="nota-sub">CAJA</p>
+              <div class="nota-row"><span>Fondo inicial</span><span>+ {{ corteResultado()!.fondoInicial | currency:'MXN':'symbol-narrow':'1.2-2' }}</span></div>
+              <div class="nota-row"><span>Ventas efectivo</span><span>+ {{ corteResumenSnapshot()!.totales.efectivo | currency:'MXN':'symbol-narrow':'1.2-2' }}</span></div>
+              @if (corteResumenSnapshot()!.totales.totalEgresos > 0) {
+                <div class="nota-row egreso-nota"><span>Egresos</span><span>− {{ corteResumenSnapshot()!.totales.totalEgresos | currency:'MXN':'symbol-narrow':'1.2-2' }}</span></div>
+              }
+              <div class="nota-row nota-total"><span>EFECTIVO ESPERADO</span><strong>{{ corteResumenSnapshot()!.totales.efectivoEsperado | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong></div>
+              @if (corteResultado()!.efectivoContado !== null) {
+                <div class="nota-row"><span>Efectivo contado</span><span>{{ corteResultado()!.efectivoContado | currency:'MXN':'symbol-narrow':'1.2-2' }}</span></div>
+                <div class="nota-row" [class.nota-faltante]="(corteResultado()!.diferencia ?? 0) < 0"
+                                      [class.nota-sobrante]="(corteResultado()!.diferencia ?? 0) >= 0">
+                  <span>{{ (corteResultado()!.diferencia ?? 0) >= 0 ? 'SOBRANTE' : 'FALTANTE' }}</span>
+                  <strong>{{ ((corteResultado()!.diferencia ?? 0) < 0 ? (corteResultado()!.diferencia ?? 0) * -1 : (corteResultado()!.diferencia ?? 0)) | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+                </div>
+              }
+            }
+
+            <div class="ticket-divider">══════════════════════</div>
+            <p class="ticket-thanks">Corte registrado correctamente</p>
+            <div class="ticket-divider">══════════════════════</div>
+
+            <div class="nota-btns no-print">
+              <button class="cobrar-btn" type="button" (click)="imprimirCorte()">🖨️ Imprimir</button>
+              <button class="agregar-btn" type="button" (click)="backToCajas()">Nuevo turno →</button>
+            </div>
+          </div>
+        </div>
+
+      } @else if (turnoActivo() && cajasSubView() === 'inicio') {
+        <!-- ── Turno activo – opciones ─────────────────────────────────────── -->
         <div class="turno-activo">
-          <div class="turno-check">✓</div>
-          <h3 class="turno-titulo">Turno iniciado</h3>
+          <div class="turno-check">▶</div>
+          <h3 class="turno-titulo">Turno activo</h3>
           <div class="turno-info">
-            <div><span>Caja</span><strong>{{ cajaSeleccionada()?.description }}</strong></div>
+            <div><span>Caja</span><strong>{{ cajaSeleccionada()?.description ?? 'Caja ' + turnoActivo()!.idCashRegister }}</strong></div>
             @if (turnoActivo()!.cajero) {
               <div><span>Cajero</span><strong>{{ turnoActivo()!.cajero }}</strong></div>
             }
             <div><span>Fondo inicial</span><strong>{{ turnoActivo()!.fondoInicial | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong></div>
             <div><span>Turno #</span><strong>{{ turnoActivo()!.id }}</strong></div>
           </div>
-          <button class="family-button turno-nuevo-btn" type="button" (click)="backToCajas()">
-            Nuevo turno
+          <div class="turno-acciones">
+            <button class="turno-accion-btn egresos" type="button" (click)="abrirEgresos()">
+              💸 Egresos
+            </button>
+            <button class="turno-accion-btn corte" type="button" (click)="abrirCorte()">
+              📊 Corte de Caja
+            </button>
+          </div>
+        </div>
+
+      } @else if (turnoActivo() && cajasSubView() === 'egresos') {
+        <!-- ── Egresos ─────────────────────────────────────────────────────── -->
+        <div class="tables-toolbar corte-toolbar">
+          <button class="back-button" type="button" (click)="cajasSubView.set('inicio')">
+            <span aria-hidden="true">←</span> Turno
+          </button>
+          <div class="tables-heading"><h2>Egresos</h2></div>
+          <span></span>
+        </div>
+
+        <div class="turno-form">
+          <div class="turno-fields">
+            <label class="turno-label" for="egreso-desc">Descripción</label>
+            <input id="egreso-desc" class="turno-input" type="text"
+              placeholder="Ej. Tortillas, gas, limpieza..."
+              [value]="egresoDesc()" (input)="setEgresoDesc($event)"
+              [disabled]="registrandoEgreso()">
+
+            <label class="turno-label" for="egreso-monto">Monto</label>
+            <div class="monto-row turno-monto">
+              <span class="monto-currency">$</span>
+              <input id="egreso-monto" class="monto-input" type="number" min="0" step="1" placeholder="0.00"
+                [value]="egresoMonto() ?? ''" (input)="setEgresoMonto($event)"
+                [disabled]="registrandoEgreso()">
+            </div>
+          </div>
+
+          @if (egresoError()) { <p class="action-error" role="alert">{{ egresoError() }}</p> }
+
+          <button class="cobrar-btn turno-iniciar-btn" type="button"
+            (click)="registrarEgreso()"
+            [disabled]="registrandoEgreso() || !egresoMonto()">
+            @if (registrandoEgreso()) { Registrando… } @else { Registrar egreso }
           </button>
         </div>
+
+        @if (egresosLista().length > 0) {
+          <div class="egresos-lista">
+            <p class="corte-section-title">Egresos del turno</p>
+            @for (eg of egresosLista(); track eg.id) {
+              <div class="egreso-row">
+                <span class="egreso-desc">{{ eg.descripcion || 'Sin descripción' }}</span>
+                <strong class="egreso-monto">{{ eg.monto | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+              </div>
+            }
+            <div class="egreso-row total-row">
+              <span>Total egresos</span>
+              <strong>{{ totalEgresosLista() | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+            </div>
+          </div>
+        }
+
+      } @else if (cajasSubView() === 'corte') {
+        <!-- ── Corte de Caja ───────────────────────────────────────────────── -->
+        <div class="tables-toolbar corte-toolbar">
+          <button class="back-button" type="button" (click)="cajasSubView.set('inicio')">
+            <span aria-hidden="true">←</span> Turno
+          </button>
+          <div class="tables-heading"><h2>Corte de Caja</h2></div>
+          <span></span>
+        </div>
+
+        @if (resumenCorteResource.isLoading()) {
+          <div class="state-panel" role="status">
+            <span class="loader" aria-hidden="true"></span>
+            <strong>Calculando ventas…</strong>
+          </div>
+        } @else if (resumenCorteResource.error()) {
+          <div class="state-panel error-panel" role="alert">
+            <strong>No se pudo cargar el resumen</strong>
+            <button type="button" (click)="resumenCorteResource.reload()">Reintentar</button>
+          </div>
+        } @else if (resumenCorteResource.value()) {
+          <div class="corte-card">
+            <p class="corte-section-title">Ventas del turno</p>
+            <div class="corte-ventas">
+              @if ((resumenCorteResource.value()!.totales.efectivo) > 0) {
+                <div class="corte-row">
+                  <span>💵 Efectivo</span>
+                  <strong>{{ resumenCorteResource.value()!.totales.efectivo | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+                </div>
+              }
+              @if ((resumenCorteResource.value()!.totales.tarjeta) > 0) {
+                <div class="corte-row">
+                  <span>💳 Tarjeta</span>
+                  <strong>{{ resumenCorteResource.value()!.totales.tarjeta | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+                </div>
+              }
+              @if ((resumenCorteResource.value()!.totales.cheque) > 0) {
+                <div class="corte-row">
+                  <span>📄 Cheques</span>
+                  <strong>{{ resumenCorteResource.value()!.totales.cheque | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+                </div>
+              }
+              @if ((resumenCorteResource.value()!.totales.vales) > 0) {
+                <div class="corte-row">
+                  <span>🎟️ Vales</span>
+                  <strong>{{ resumenCorteResource.value()!.totales.vales | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+                </div>
+              }
+              @if ((resumenCorteResource.value()!.totales.mixto) > 0) {
+                <div class="corte-row">
+                  <span>🔀 Mixto</span>
+                  <strong>{{ resumenCorteResource.value()!.totales.mixto | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+                </div>
+              }
+              <div class="corte-row total-ventas-row">
+                <span>Total ventas</span>
+                <strong>{{ resumenCorteResource.value()!.totales.totalVentas | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+              </div>
+            </div>
+
+            <div class="corte-calculo">
+              <div class="corte-row">
+                <span>Fondo inicial</span>
+                <span>+ {{ resumenCorteResource.value()!.turno.fondoInicial | currency:'MXN':'symbol-narrow':'1.2-2' }}</span>
+              </div>
+              <div class="corte-row">
+                <span>Ventas efectivo</span>
+                <span>+ {{ resumenCorteResource.value()!.totales.efectivo | currency:'MXN':'symbol-narrow':'1.2-2' }}</span>
+              </div>
+              @if (resumenCorteResource.value()!.totales.totalEgresos > 0) {
+                <div class="corte-row egreso-line">
+                  <span>Egresos</span>
+                  <span>− {{ resumenCorteResource.value()!.totales.totalEgresos | currency:'MXN':'symbol-narrow':'1.2-2' }}</span>
+                </div>
+              }
+              <div class="corte-row esperado-row">
+                <span>Efectivo esperado</span>
+                <strong>{{ resumenCorteResource.value()!.totales.efectivoEsperado | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+              </div>
+            </div>
+
+            <p class="corte-section-title">Conteo físico</p>
+            <div class="monto-row turno-monto">
+              <span class="monto-currency">$</span>
+              <input class="monto-input" type="number" min="0" step="1" placeholder="0.00"
+                [value]="efectivoContado() ?? ''"
+                (input)="setEfectivoContado($event)"
+                [disabled]="cerrandoTurno()">
+            </div>
+
+            @if (efectivoContado() !== null) {
+              <div class="corte-row diferencia-row" [class.negativa]="diferencia() < 0">
+                <span>{{ diferencia() >= 0 ? 'Sobrante' : 'Faltante' }}</span>
+                <strong>{{ (diferencia() < 0 ? diferencia() * -1 : diferencia()) | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+              </div>
+            }
+
+            @if (cerrarError()) { <p class="action-error" role="alert">{{ cerrarError() }}</p> }
+
+            <button class="cobrar-btn turno-iniciar-btn" type="button"
+              (click)="cerrarTurno()" [disabled]="cerrandoTurno()">
+              @if (cerrandoTurno()) { Cerrando turno… } @else { Cerrar Turno }
+            </button>
+          </div>
+        }
+      }
 
       } @else if (cajasLoading()) {
         <div class="state-panel" role="status">

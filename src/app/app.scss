@@ -921,6 +921,141 @@ footer {
   justify-content: center;
 }
 
+.turno-acciones {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+}
+
+.turno-accion-btn {
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 2px solid;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 120ms ease;
+
+  &.egresos {
+    background: #fff8e6;
+    border-color: #f0c94d;
+    color: #7a5a00;
+    &:hover { background: #f0c94d; color: #17211b; }
+  }
+
+  &.corte {
+    background: #e6f5ed;
+    border-color: #147a4b;
+    color: #147a4b;
+    &:hover { background: #147a4b; color: #fff; }
+  }
+}
+
+/* ── Egresos lista ─────────────────────────────────────────────────────────── */
+
+.egresos-lista {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0 clamp(20px, 4vw, 40px) 32px;
+}
+
+.egreso-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f2f0;
+  font-size: 0.9rem;
+
+  &.total-row {
+    border-top: 2px solid #dfe5df;
+    border-bottom: none;
+    margin-top: 4px;
+    padding-top: 12px;
+    font-weight: 700;
+  }
+}
+
+.egreso-desc { color: #17211b; }
+.egreso-monto { color: #c0392b; }
+
+/* ── Corte de caja ─────────────────────────────────────────────────────────── */
+
+.corte-toolbar {
+  margin-bottom: 0;
+}
+
+.corte-card {
+  max-width: 480px;
+  margin: 20px auto;
+  padding: 24px clamp(20px, 4vw, 36px);
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: 0 4px 24px rgb(0 0 0 / 7%);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.corte-section-title {
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #556259;
+  margin: 8px 0 2px;
+}
+
+.corte-ventas,
+.corte-calculo { display: flex; flex-direction: column; gap: 4px; }
+
+.corte-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 6px 0;
+  font-size: 0.9rem;
+  border-bottom: 1px solid #f0f2f0;
+
+  span { color: #556259; }
+  strong { color: #17211b; }
+
+  &.total-ventas-row {
+    border-top: 2px solid #dfe5df;
+    border-bottom: none;
+    font-weight: 800;
+    font-size: 1rem;
+    margin-top: 4px;
+    padding-top: 10px;
+    strong { color: #147a4b; font-size: 1.1rem; }
+  }
+
+  &.egreso-line span:last-child { color: #c0392b; }
+  &.egreso-line span:first-child { color: #556259; }
+
+  &.esperado-row {
+    background: #e6f5ed;
+    border-radius: 10px;
+    padding: 10px 12px;
+    border: none;
+    strong { color: #147a4b; font-size: 1.05rem; }
+  }
+
+  &.diferencia-row {
+    background: #e6f5ed;
+    border-radius: 10px;
+    padding: 10px 12px;
+    border: none;
+    span, strong { color: #147a4b; }
+
+    &.negativa {
+      background: #fef0ef;
+      span, strong { color: #c0392b; }
+    }
+  }
+}
+
 /* ── Monto de pago ─────────────────────────────────────────────────────────── */
 
 .total-precio {
@@ -1174,14 +1309,79 @@ footer {
   font-size: 0.82rem;
 }
 
+/* ── Nota de corte ──────────────────────────────────────────────────────────── */
+
+.nota-corte-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 20px clamp(16px, 4vw, 40px) 40px;
+}
+
+.nota-corte {
+  width: min(400px, 100%);
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 4px 24px rgb(0 0 0 / 8%);
+  padding: 24px 22px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.88rem;
+  color: #1a1a1a;
+  text-align: center;
+}
+
+.nota-sub {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #556259;
+  margin: 8px 0 4px;
+  text-align: left;
+}
+
+.nota-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 4px 0;
+  font-size: 0.85rem;
+  text-align: left;
+  border-bottom: 1px dashed #e8eae7;
+
+  span { color: #556259; }
+  span:last-child { color: #17211b; }
+
+  &.nota-total {
+    border-top: 1.5px solid #ccc;
+    border-bottom: none;
+    font-weight: 800;
+    padding-top: 8px;
+    margin-top: 4px;
+    strong { color: #147a4b; font-size: 0.95rem; }
+    span { color: #17211b; }
+  }
+
+  &.egreso-nota span:last-child { color: #c0392b; }
+
+  &.nota-sobrante strong { color: #147a4b; }
+  &.nota-faltante strong { color: #c0392b; }
+}
+
+.nota-btns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 16px;
+}
+
 /* ── Print ──────────────────────────────────────────────────────────────────── */
 
 @media print {
   body * { visibility: hidden; }
 
+  /* Ticket de cobro */
   .ticket-receipt,
   .ticket-receipt * { visibility: visible; }
-
   .ticket-receipt {
     position: fixed;
     left: 0;
@@ -1191,8 +1391,21 @@ footer {
     background: #fff;
     font-family: 'Courier New', monospace;
   }
-
-  .ticket-overlay,
-  .ticket-card { all: unset; }
+  .ticket-overlay, .ticket-card { all: unset; }
   .ticket-actions { display: none !important; }
+
+  /* Nota de corte */
+  .nota-corte,
+  .nota-corte * { visibility: visible; }
+  .nota-corte {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 80mm;
+    padding: 8mm;
+    background: #fff;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .nota-btns, .no-print { display: none !important; }
 }
