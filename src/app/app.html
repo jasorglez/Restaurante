@@ -54,6 +54,7 @@
         </button>
       </nav>
     </section>
+
   } @else if (view() === 'mesas') {
     <section class="tables-view" aria-labelledby="tables-title">
       <div class="tables-toolbar">
@@ -129,7 +130,8 @@
         </div>
       }
     </section>
-  } @else {
+
+  } @else if (view() === 'familias') {
     <section class="tables-view" aria-labelledby="families-title">
       <div class="tables-toolbar">
         <button class="back-button" type="button" (click)="backToMesas()">
@@ -158,7 +160,7 @@
       } @else {
         <div class="families-grid">
           @for (familia of familias(); track familia.id) {
-            <button class="family-button" type="button">
+            <button class="family-button" type="button" (click)="selectFamilia(familia)">
               <span class="family-icon" aria-hidden="true">{{ familia.description.charAt(0) }}</span>
               <strong>{{ familia.description }}</strong>
               <span aria-hidden="true">→</span>
@@ -167,8 +169,112 @@
             <div class="state-panel"><strong>No hay familias con productos activos.</strong></div>
           }
         </div>
+
+        @if (items().length) {
+          <div class="cuenta-bar">
+            <span class="cuenta-items">
+              {{ items().length }} producto{{ items().length === 1 ? '' : 's' }} en cuenta
+            </span>
+            <strong class="cuenta-total">
+              {{ totalCuenta() | currency:'MXN':'symbol-narrow':'1.2-2' }}
+            </strong>
+          </div>
+        }
       }
     </section>
+
+  } @else {
+    <section class="tables-view" aria-labelledby="products-title">
+      <div class="tables-toolbar">
+        <button class="back-button" type="button" (click)="backToFamilias()">
+          <span aria-hidden="true">←</span> Familias
+        </button>
+
+        <div class="tables-heading">
+          <p class="eyebrow">
+            {{ selectedMesa()?.nombre }}
+            @if (selectedFamilia()) { · {{ selectedFamilia()!.description }} }
+            @if (selectedSubfamilia()) { · {{ selectedSubfamilia()!.description }} }
+          </p>
+          <h2 id="products-title">
+            @if (mostrarSubfamilias()) { Categorías } @else { Productos }
+          </h2>
+        </div>
+
+        <span></span>
+      </div>
+
+      @if (productosLoading()) {
+        <div class="state-panel" role="status">
+          <span class="loader" aria-hidden="true"></span>
+          <strong>Cargando…</strong>
+        </div>
+      } @else if (productosError()) {
+        <div class="state-panel error-panel" role="alert">
+          <strong>No se pudieron cargar los productos</strong>
+          <p>{{ productosError() }}</p>
+        </div>
+      } @else if (mostrarSubfamilias()) {
+        <div class="families-grid">
+          @for (sub of subfamiliasResource.value(); track sub.id) {
+            <button class="family-button" type="button" (click)="selectSubfamilia(sub)">
+              <span class="family-icon" aria-hidden="true">{{ sub.description.charAt(0) }}</span>
+              <strong>{{ sub.description }}</strong>
+              <span aria-hidden="true">→</span>
+            </button>
+          } @empty {
+            <div class="state-panel"><strong>No hay subcategorías.</strong></div>
+          }
+        </div>
+      } @else {
+        <div class="products-grid">
+          @for (prod of productosResource.value(); track prod.id) {
+            <button class="product-button" type="button" (click)="selectProducto(prod)">
+              <strong>{{ prod.description }}</strong>
+              <span class="product-price">{{ prod.price | currency:'MXN':'symbol-narrow':'1.2-2' }}</span>
+            </button>
+          } @empty {
+            <div class="state-panel"><strong>No hay productos en esta categoría.</strong></div>
+          }
+        </div>
+      }
+
+      @if (items().length) {
+        <div class="cuenta-bar">
+          <span class="cuenta-items">
+            {{ items().length }} producto{{ items().length === 1 ? '' : 's' }} en cuenta
+          </span>
+          <strong class="cuenta-total">
+            {{ totalCuenta() | currency:'MXN':'symbol-narrow':'1.2-2' }}
+          </strong>
+        </div>
+      }
+    </section>
+
+    @if (selectedProducto()) {
+      <div class="qty-overlay" role="dialog" aria-modal="true" aria-label="Seleccionar cantidad">
+        <div class="qty-panel">
+          <strong class="qty-name">{{ selectedProducto()!.description }}</strong>
+          <p class="qty-price">{{ selectedProducto()!.price | currency:'MXN':'symbol-narrow':'1.2-2' }} / u</p>
+
+          @if (addError()) {
+            <p class="qty-error" role="alert">{{ addError() }}</p>
+          }
+
+          <div class="qty-grid">
+            @for (n of [1, 2, 3, 4, 5]; track n) {
+              <button class="qty-btn" type="button" (click)="agregarProducto(n)" [disabled]="agregandoItem()">
+                {{ n }}
+              </button>
+            }
+          </div>
+
+          <button class="qty-cancel" type="button" (click)="cancelarProducto()" [disabled]="agregandoItem()">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    }
   }
 
   <footer><span>Panel del restaurante</span><span>Acceso para tablet</span></footer>

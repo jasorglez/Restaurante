@@ -9,3 +9,19 @@ export interface CuentaAbierta {
   total: number;
   nueva: boolean;
 }
+
+export interface Producto {
+  id: number;
+  description: string;
+  price: number;
+}
+
+export interface ItemCuenta {
+  id: number;
+  idMaterial: number;
+  descripcion: string;
+  cantidad: number;
+  precioUnitario: number;
+  subtotal: number;
+  enviadoCocina: boolean;
+}
