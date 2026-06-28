@@ -1,6 +1,6 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { HttpClient, httpResource } from '@angular/common/http';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import { environment } from '../environments/environment';
@@ -71,6 +71,7 @@ export class App {
   protected readonly iniciandoTurno = signal(false);
   protected readonly turnoActivo = signal<Turno | null>(null);
   protected readonly turnoError = signal('');
+  protected readonly turnoActivoCargando = computed(() => this.turnoActivoResource.isLoading());
 
   protected readonly cajaSeleccionada = computed(() => {
     const list = this.cajas();
@@ -81,6 +82,25 @@ export class App {
   protected readonly totalEgresosLista = computed(() =>
     this.egresosLista().reduce((s, e) => s + e.monto, 0),
   );
+
+  // Consulta turno activo en cuanto se conoce la caja y se está en la vista
+  protected readonly turnoActivoResource = httpResource<Turno | null>(
+    () => {
+      const caja = this.cajaSeleccionada();
+      if (!caja || this.view() !== 'cajas') return undefined;
+      return `${environment.urlAdministration}/Restaurant/cajas/${caja.id}/turno-activo`;
+    },
+  );
+
+  constructor() {
+    // Cuando el recurso resuelve un turno abierto, lo activa automáticamente
+    effect(() => {
+      const t = this.turnoActivoResource.value();
+      if (t && !this.turnoActivo()) {
+        this.turnoActivo.set(t);
+      }
+    });
+  }
 
   // ── Egresos ──────────────────────────────────────────────────────────────
   protected readonly egresoDesc = signal('');

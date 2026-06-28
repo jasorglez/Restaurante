@@ -570,10 +570,10 @@
         }
       }
 
-      } @else if (cajasLoading()) {
+      } @else if (cajasLoading() || turnoActivoCargando()) {
         <div class="state-panel" role="status">
           <span class="loader" aria-hidden="true"></span>
-          <strong>Cargando cajas…</strong>
+          <strong>{{ cajasLoading() ? 'Cargando cajas…' : 'Verificando turno activo…' }}</strong>
         </div>
 
       } @else if (cajasResource.error()) {
