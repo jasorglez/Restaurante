@@ -1,0 +1,20 @@
+{
+  "/api-administration": {
+    "target": "https://endpoints.biapp.com.mx",
+    "secure": false,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/api-administration": "/administration/api"
+    },
+    "logLevel": "debug"
+  },
+  "/api-smp": {
+    "target": "https://endpoints.biapp.com.mx",
+    "secure": false,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/api-smp": "/smp/api"
+    },
+    "logLevel": "debug"
+  }
+}

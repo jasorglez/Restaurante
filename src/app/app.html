@@ -1,0 +1,175 @@
+<main class="dashboard-shell">
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">R</span>
+      <div>
+        <p class="eyebrow">PUNTO DE VENTA</p>
+        <h1>{{ companyName() }}</h1>
+      </div>
+    </div>
+
+    <div class="status" aria-label="Estado del sistema">
+      <span class="status-dot" aria-hidden="true"></span>
+      Sistema disponible
+    </div>
+  </header>
+
+  @if (view() === 'menu') {
+    <section class="content" aria-labelledby="main-title">
+      <div class="intro">
+        <p class="eyebrow">MENÚ PRINCIPAL</p>
+        <h2 id="main-title">¿Qué deseas administrar?</h2>
+        <p>Selecciona una opción para continuar</p>
+      </div>
+
+      <nav class="menu-grid" aria-label="Módulos del restaurante">
+        <button class="menu-card mesas" type="button" (click)="selectModule('MESAS')">
+          <span class="icon-wrap" aria-hidden="true">
+            <svg viewBox="0 0 64 64">
+              <path d="M14 26h36M20 26v22M44 26v22M10 48h12M42 48h12M18 16h28v10H18z" />
+            </svg>
+          </span>
+          <span class="card-copy"><strong>MESAS</strong><small>Órdenes y consumo</small></span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </button>
+
+        <button class="menu-card cajas" type="button" (click)="selectModule('CAJAS')">
+          <span class="icon-wrap" aria-hidden="true">
+            <svg viewBox="0 0 64 64">
+              <path d="M13 20h38v29H13zM13 29h38M22 38h9M39 38h4M22 12h20v8" />
+            </svg>
+          </span>
+          <span class="card-copy"><strong>CAJAS</strong><small>Cobros y movimientos</small></span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </button>
+
+        <button class="menu-card reportes" type="button" (click)="selectModule('REPORTES')">
+          <span class="icon-wrap" aria-hidden="true">
+            <svg viewBox="0 0 64 64">
+              <path d="M14 50V14h36M22 44V32M32 44V22M42 44V27M18 19l11 7 10-9 9 5" />
+            </svg>
+          </span>
+          <span class="card-copy"><strong>REPORTES</strong><small>Ventas y resultados</small></span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </button>
+      </nav>
+    </section>
+  } @else if (view() === 'mesas') {
+    <section class="tables-view" aria-labelledby="tables-title">
+      <div class="tables-toolbar">
+        <button class="back-button" type="button" (click)="backToMenu()" aria-label="Volver al menú">
+          <span aria-hidden="true">←</span> Menú
+        </button>
+
+        <div class="tables-heading">
+          <p class="eyebrow">SALÓN · {{ companyName() }}</p>
+          <h2 id="tables-title">Mesas</h2>
+        </div>
+
+        <button class="refresh-button" type="button" (click)="loadMesas()" [disabled]="loading()">
+          <span aria-hidden="true">↻</span> Actualizar
+        </button>
+      </div>
+
+      @if (!loading() && !error()) {
+        <div class="table-summary" aria-label="Resumen de mesas">
+          <span><i class="legend-dot free"></i>{{ mesas().length - mesasOcupadas() }} libres</span>
+          <span><i class="legend-dot busy"></i>{{ mesasOcupadas() }} ocupadas</span>
+          <strong>{{ mesas().length }} mesas</strong>
+        </div>
+      }
+
+      @if (mesaActionError()) {
+        <p class="action-error" role="alert">{{ mesaActionError() }}</p>
+      }
+
+      @if (loading()) {
+        <div class="state-panel" role="status">
+          <span class="loader" aria-hidden="true"></span>
+          <strong>Cargando mesas…</strong>
+        </div>
+      } @else if (error()) {
+        <div class="state-panel error-panel" role="alert">
+          <strong>No se pudieron cargar las mesas</strong>
+          <p>{{ error() }}</p>
+          <button type="button" (click)="loadMesas()">Reintentar</button>
+        </div>
+      } @else if (mesas().length === 0) {
+        <div class="state-panel">
+          <strong>No hay mesas activas para {{ companyName() }}</strong>
+        </div>
+      } @else {
+        <div class="tables-grid">
+          @for (mesa of mesas(); track mesa.id) {
+            <button
+              class="table-button"
+              [class.busy]="mesa.tieneCuentaAbierta"
+              [class.selected]="selectedMesa()?.id === mesa.id"
+              type="button"
+              (click)="selectMesa(mesa)"
+              [disabled]="openingMesa()"
+            >
+              <span class="table-graphic" aria-hidden="true">
+                <i class="chair top"></i><i class="chair right"></i>
+                <i class="table-top"></i>
+                <i class="chair bottom"></i><i class="chair left"></i>
+              </span>
+              <strong>{{ mesa.nombre }}</strong>
+              <span class="table-state">{{ mesa.tieneCuentaAbierta ? 'OCUPADA' : 'LIBRE' }}</span>
+
+              @if (mesa.tieneCuentaAbierta) {
+                <span class="table-detail">
+                  {{ mesa.numItems }} productos · {{ (mesa.totalActual ?? 0) | currency:'MXN':'symbol-narrow':'1.2-2' }}
+                </span>
+              } @else {
+                <span class="table-detail">Capacidad: {{ mesa.capacidad ?? '—' }}</span>
+              }
+            </button>
+          }
+        </div>
+      }
+    </section>
+  } @else {
+    <section class="tables-view" aria-labelledby="families-title">
+      <div class="tables-toolbar">
+        <button class="back-button" type="button" (click)="backToMesas()">
+          <span aria-hidden="true">←</span> Mesas
+        </button>
+
+        <div class="tables-heading">
+          <p class="eyebrow">{{ selectedMesa()?.nombre }} · CUENTA #{{ selectedMesa()?.idCuentaActual }}</p>
+          <h2 id="families-title">Familias del menú</h2>
+        </div>
+
+        <span></span>
+      </div>
+
+      @if (familiasLoading()) {
+        <div class="state-panel" role="status">
+          <span class="loader" aria-hidden="true"></span>
+          <strong>Cargando familias…</strong>
+        </div>
+      } @else if (familiasError()) {
+        <div class="state-panel error-panel" role="alert">
+          <strong>No se pudieron cargar las familias</strong>
+          <p>{{ familiasError() }}</p>
+          <button type="button" (click)="familiasResource.reload()">Reintentar</button>
+        </div>
+      } @else {
+        <div class="families-grid">
+          @for (familia of familias(); track familia.id) {
+            <button class="family-button" type="button">
+              <span class="family-icon" aria-hidden="true">{{ familia.description.charAt(0) }}</span>
+              <strong>{{ familia.description }}</strong>
+              <span aria-hidden="true">→</span>
+            </button>
+          } @empty {
+            <div class="state-panel"><strong>No hay familias con productos activos.</strong></div>
+          }
+        </div>
+      }
+    </section>
+  }
+
+  <footer><span>Panel del restaurante</span><span>Acceso para tablet</span></footer>
+</main>
