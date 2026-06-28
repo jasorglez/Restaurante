@@ -799,6 +799,29 @@ footer {
   .menu-card { transition: none; }
 }
 
+/* ── Mesa toolbar ──────────────────────────────────────────────────────────── */
+
+.mesa-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nueva-mesa-btn {
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 2px solid #147a4b;
+  background: #e6f5ed;
+  color: #147a4b;
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: 120ms ease;
+
+  &:hover { background: #147a4b; color: #fff; }
+}
+
 /* ── Cajas / Turno ─────────────────────────────────────────────────────────── */
 
 .turno-form {

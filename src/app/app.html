@@ -57,9 +57,12 @@
           <p class="eyebrow">SALÓN · {{ companyName() }}</p>
           <h2 id="tables-title">Mesas</h2>
         </div>
-        <button class="refresh-button" type="button" (click)="loadMesas()" [disabled]="loading()">
-          <span aria-hidden="true">↻</span> Actualizar
-        </button>
+        <div class="mesa-toolbar-actions">
+          <button class="nueva-mesa-btn" type="button" (click)="abrirNuevaMesa()" title="Agregar mesa">+ Mesa</button>
+          <button class="refresh-button" type="button" (click)="loadMesas()" [disabled]="loading()">
+            <span aria-hidden="true">↻</span> Actualizar
+          </button>
+        </div>
       </div>
 
       @if (!loading() && !error()) {
@@ -115,6 +118,40 @@
               }
             </button>
           }
+        </div>
+      }
+
+      @if (showNuevaMesa()) {
+        <div class="qty-overlay" role="dialog" aria-modal="true" aria-label="Nueva mesa">
+          <div class="qty-panel">
+            <strong class="qty-name">Agregar mesa</strong>
+
+            <div class="turno-fields" style="margin:12px 0 4px">
+              <label class="turno-label" for="mesa-nombre">Nombre de la mesa</label>
+              <input id="mesa-nombre" class="turno-input" type="text"
+                placeholder="Ej. Mesa 5, Terraza, VIP..."
+                [value]="nuevaMesaNombre()" (input)="setNuevaMesaNombre($event)"
+                [disabled]="creandoMesa()">
+
+              <label class="turno-label" for="mesa-cap" style="margin-top:10px">Capacidad (personas)</label>
+              <input id="mesa-cap" class="turno-input" type="number" min="1" step="1"
+                placeholder="Opcional"
+                [value]="nuevaMesaCapacidad() ?? ''" (input)="setNuevaMesaCapacidad($event)"
+                [disabled]="creandoMesa()">
+            </div>
+
+            @if (crearMesaError()) {
+              <p class="qty-error" role="alert">{{ crearMesaError() }}</p>
+            }
+
+            <button class="qty-btn confirmar-btn" type="button"
+              (click)="crearMesa()" [disabled]="creandoMesa() || !nuevaMesaNombre().trim()">
+              @if (creandoMesa()) { Guardando… } @else { Guardar mesa }
+            </button>
+            <button class="qty-cancel" type="button" (click)="showNuevaMesa.set(false)" [disabled]="creandoMesa()">
+              Cancelar
+            </button>
+          </div>
         </div>
       }
     </section>

@@ -49,6 +49,13 @@ export class App {
 
   protected readonly eliminandoId = signal<number | null>(null);
 
+  // ── Nueva mesa ────────────────────────────────────────────────────────────
+  protected readonly showNuevaMesa = signal(false);
+  protected readonly nuevaMesaNombre = signal('');
+  protected readonly nuevaMesaCapacidad = signal<number | null>(null);
+  protected readonly creandoMesa = signal(false);
+  protected readonly crearMesaError = signal('');
+
   // ── Cajas / Turno ─────────────────────────────────────────────────────────
   protected readonly cajasResource = httpResource<CajaInfo[]>(
     () => this.view() === 'cajas'
@@ -370,6 +377,44 @@ export class App {
   }
 
   protected loadMesas(): void { this.mesasResource.reload(); }
+
+  protected abrirNuevaMesa(): void {
+    this.nuevaMesaNombre.set('');
+    this.nuevaMesaCapacidad.set(null);
+    this.crearMesaError.set('');
+    this.showNuevaMesa.set(true);
+  }
+
+  protected setNuevaMesaNombre(e: Event): void {
+    this.nuevaMesaNombre.set((e.target as HTMLInputElement).value);
+  }
+
+  protected setNuevaMesaCapacidad(e: Event): void {
+    const val = +(e.target as HTMLInputElement).value;
+    this.nuevaMesaCapacidad.set(val > 0 ? val : null);
+  }
+
+  protected async crearMesa(): Promise<void> {
+    const nombre = this.nuevaMesaNombre().trim();
+    if (!nombre) { this.crearMesaError.set('El nombre es obligatorio.'); return; }
+
+    this.creandoMesa.set(true);
+    this.crearMesaError.set('');
+    try {
+      await firstValueFrom(
+        this.http.post(
+          `${environment.urlAdministration}/Restaurant/mesas`,
+          { idCompany: environment.companyId, nombre, capacidad: this.nuevaMesaCapacidad() },
+        ),
+      );
+      this.showNuevaMesa.set(false);
+      this.mesasResource.reload();
+    } catch {
+      this.crearMesaError.set('No se pudo crear la mesa. Intenta de nuevo.');
+    } finally {
+      this.creandoMesa.set(false);
+    }
+  }
 
   protected selectMesa(mesa: Mesa): void {
     this.selectedMesa.set(mesa);
