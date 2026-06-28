@@ -1,8 +1,11 @@
 export interface CajaInfo {
-  id: number;
+  idCaja: number;
   description: string;
+  descCashRegister: string | null;
   idStore: number;
-  active: boolean;
+  idBranch: number;
+  name: string | null;
+  idRoot: number;
 }
 
 export interface Turno {

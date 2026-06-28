@@ -88,7 +88,7 @@ export class App {
     () => {
       const caja = this.cajaSeleccionada();
       if (!caja || this.view() !== 'cajas') return undefined;
-      return `${environment.urlAdministration}/Restaurant/cajas/${caja.id}/turno-activo`;
+      return `${environment.urlAdministration}/Restaurant/cajas/${caja.idCaja}/turno-activo`;
     },
   );
 
@@ -278,8 +278,8 @@ export class App {
           `${environment.urlAdministration}/Restaurant/turnos`,
           {
             idCompany:      environment.companyId,
-            idCashRegister: caja.id,
-            idBranch:       caja.idStore,
+            idCashRegister: caja.idCaja,
+            idBranch:       caja.idBranch,
             cajero:         this.cajaNombre().trim() || null,
             fondoInicial:   this.fondoInicial() ?? 0,
           },
