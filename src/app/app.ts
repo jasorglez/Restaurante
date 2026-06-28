@@ -8,7 +8,8 @@ import { CuentaAbierta, Familia, ItemCuenta, Producto } from './models/familia';
 import { Mesa } from './models/mesa';
 
 type RestaurantModule = 'MESAS' | 'CAJAS' | 'REPORTES';
-type View = 'menu' | 'mesas' | 'familias' | 'productos';
+type View = 'menu' | 'mesas' | 'familias' | 'productos' | 'cuenta';
+type TipoPago = 'EFECTIVO' | 'TARJETA' | 'MIXTO';
 
 interface CompanyInfo { name: string; }
 
@@ -31,6 +32,12 @@ export class App {
   protected readonly selectedProducto = signal<Producto | null>(null);
   protected readonly agregandoItem = signal(false);
   protected readonly addError = signal('');
+
+  protected readonly eliminandoId = signal<number | null>(null);
+  protected readonly showPayment = signal(false);
+  protected readonly tipoPago = signal<TipoPago>('EFECTIVO');
+  protected readonly cobrando = signal(false);
+  protected readonly cobroError = signal('');
 
   // ── Empresa ───────────────────────────────────────────────────────────────
   protected readonly companyResource = httpResource<CompanyInfo>(
@@ -71,7 +78,7 @@ export class App {
     this.familiasResource.error() ? 'No fue posible cargar las familias del menú.' : '',
   );
 
-  // ── Subfamilias (se cargan al entrar a view='productos') ──────────────────
+  // ── Subfamilias ───────────────────────────────────────────────────────────
   protected readonly subfamiliasResource = httpResource<Familia[]>(
     () => {
       const fam = this.selectedFamilia();
@@ -86,7 +93,7 @@ export class App {
     return !this.subfamiliasResource.isLoading() && this.subfamiliasResource.value().length > 1;
   });
 
-  // ── Productos (espera a que subfamilias termine de cargar) ────────────────
+  // ── Productos ─────────────────────────────────────────────────────────────
   protected readonly productosResource = httpResource<Producto[]>(
     () => {
       if (this.view() !== 'productos') return undefined;
@@ -111,12 +118,13 @@ export class App {
     this.productosResource.error() ? 'No fue posible cargar los productos.' : '',
   );
 
-  // ── Items de la cuenta (para mostrar total corriente) ────────────────────
+  // ── Items de la cuenta ────────────────────────────────────────────────────
   protected readonly itemsResource = httpResource<ItemCuenta[]>(
     () => {
       const mesa = this.selectedMesa();
       const v = this.view();
-      if (!mesa?.idCuentaActual || (v !== 'familias' && v !== 'productos')) return undefined;
+      if (!mesa?.idCuentaActual) return undefined;
+      if (v !== 'familias' && v !== 'productos' && v !== 'cuenta') return undefined;
       return `${environment.urlChatBot}/restaurant-publico/cuentas/${mesa.idCuentaActual}/items`;
     },
     { defaultValue: [] },
@@ -201,12 +209,7 @@ export class App {
       await firstValueFrom(
         this.http.post(
           `${environment.urlChatBot}/restaurant-publico/cuentas/${mesa.idCuentaActual}/items`,
-          {
-            idMaterial: producto.id,
-            descripcion: producto.description,
-            cantidad,
-            precio: producto.price,
-          },
+          { idMaterial: producto.id, descripcion: producto.description, cantidad, precio: producto.price },
         ),
       );
       this.selectedProducto.set(null);
@@ -215,6 +218,64 @@ export class App {
       this.addError.set('No se pudo agregar el producto. Intenta de nuevo.');
     } finally {
       this.agregandoItem.set(false);
+    }
+  }
+
+  protected irACuenta(): void {
+    this.selectedProducto.set(null);
+    this.cobroError.set('');
+    this.showPayment.set(false);
+    this.view.set('cuenta');
+  }
+
+  protected async eliminarItem(item: ItemCuenta): Promise<void> {
+    const mesa = this.selectedMesa();
+    if (!mesa?.idCuentaActual) return;
+
+    this.eliminandoId.set(item.id);
+    try {
+      await firstValueFrom(
+        this.http.delete(
+          `${environment.urlChatBot}/restaurant-publico/cuentas/${mesa.idCuentaActual}/items/${item.id}`,
+          { body: { cantidad: item.cantidad, precio: item.precioUnitario } },
+        ),
+      );
+      this.itemsResource.reload();
+    } finally {
+      this.eliminandoId.set(null);
+    }
+  }
+
+  protected abrirPago(): void {
+    this.tipoPago.set('EFECTIVO');
+    this.cobroError.set('');
+    this.showPayment.set(true);
+  }
+
+  protected cancelarPago(): void {
+    this.showPayment.set(false);
+    this.cobroError.set('');
+  }
+
+  protected async confirmarCobro(): Promise<void> {
+    const mesa = this.selectedMesa();
+    if (!mesa?.idCuentaActual) return;
+
+    this.cobrando.set(true);
+    this.cobroError.set('');
+    try {
+      await firstValueFrom(
+        this.http.post(
+          `${environment.urlChatBot}/restaurant-publico/cuentas/${mesa.idCuentaActual}/cobrar`,
+          { idCompany: environment.companyId, tipoPago: this.tipoPago() },
+        ),
+      );
+      this.showPayment.set(false);
+      this.backToMesas();
+    } catch {
+      this.cobroError.set('No se pudo procesar el cobro. Intenta de nuevo.');
+    } finally {
+      this.cobrando.set(false);
     }
   }
 
@@ -232,6 +293,7 @@ export class App {
     this.selectedFamilia.set(null);
     this.selectedSubfamilia.set(null);
     this.selectedProducto.set(null);
+    this.showPayment.set(false);
     this.mesasResource.reload();
   }
 
@@ -241,5 +303,6 @@ export class App {
     this.selectedFamilia.set(null);
     this.selectedSubfamilia.set(null);
     this.selectedProducto.set(null);
+    this.showPayment.set(false);
   }
 }

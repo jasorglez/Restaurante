@@ -405,6 +405,218 @@ footer {
   font-size: 1.5rem;
   font-weight: 900;
 }
+/* ── Botón "Ver cuenta" en toolbar ────────────────────────────────────── */
+
+.cuenta-btn {
+  justify-self: end;
+  position: relative;
+  min-height: 48px;
+  padding: 0 18px;
+  border: 2px solid #147a4b;
+  border-radius: 14px;
+  color: #147a4b;
+  background: #fff;
+  font-weight: 800;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: 150ms ease;
+}
+.cuenta-btn:hover:not(:disabled) { background: #147a4b; color: #fff; }
+.cuenta-btn:disabled { opacity: 0.4; cursor: default; border-color: #aac; color: #aac; }
+
+.cuenta-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: #147a4b;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 900;
+  vertical-align: middle;
+}
+.cuenta-btn:hover .cuenta-badge { background: #fff; color: #147a4b; }
+
+/* ── Cuenta bar (sticky total en familias y productos) ─────────────────── */
+
+.cuenta-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 24px;
+  padding: 14px 20px;
+  border: 1px solid #cce4d4;
+  border-radius: 16px;
+  background: #f0faf4;
+}
+.cuenta-items { color: #4d6558; font-size: 0.88rem; font-weight: 700; }
+.cuenta-bar-btn {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 12px;
+  background: #147a4b;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 120ms ease;
+}
+.cuenta-bar-btn:hover { background: #0f5e38; }
+
+/* ── Vista de cuenta ───────────────────────────────────────────────────── */
+
+.items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.item-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1px solid #dfe8e1;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 4px 14px rgb(23 75 47 / 5%);
+  transition: opacity 200ms ease;
+}
+.item-row.eliminando { opacity: 0.4; pointer-events: none; }
+
+.item-info { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.item-desc {
+  font-size: 0.97rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.item-meta { color: #6a756e; font-size: 0.82rem; }
+
+.item-subtotal {
+  color: #147a4b;
+  font-size: 1rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.item-del {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #f0d0d0;
+  border-radius: 10px;
+  background: #fff6f6;
+  color: #c0392b;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 120ms ease;
+}
+.item-del:hover:not(:disabled) { background: #c0392b; color: #fff; border-color: #c0392b; }
+.item-del:disabled { opacity: 0.45; cursor: wait; }
+
+.total-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px;
+  border: 2px solid #147a4b;
+  border-radius: 18px;
+  background: #f0faf4;
+  margin-bottom: 20px;
+}
+.total-label {
+  color: #4d6558;
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+.total-amount { color: #147a4b; font-size: 1.6rem; font-weight: 800; }
+
+.cobro-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.agregar-btn {
+  padding: 16px;
+  border: 2px solid #d0ddd4;
+  border-radius: 16px;
+  background: #fff;
+  color: #33463a;
+  font-size: 0.95rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 150ms ease;
+}
+.agregar-btn:hover { border-color: #147a4b; color: #147a4b; }
+.cobrar-btn {
+  padding: 16px;
+  border: none;
+  border-radius: 16px;
+  background: #147a4b;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: 150ms ease;
+  box-shadow: 0 8px 22px rgb(20 122 75 / 28%);
+}
+.cobrar-btn:hover { background: #0f5e38; }
+
+/* ── Panel de pago ─────────────────────────────────────────────────────── */
+
+.pago-panel { padding-top: 32px; }
+.pago-label {
+  margin: 0 0 12px;
+  color: #6a756e;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.pago-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.pago-btn {
+  padding: 14px 8px;
+  border: 2px solid #d0ddd4;
+  border-radius: 14px;
+  background: #fff;
+  color: #33463a;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 130ms ease;
+}
+.pago-btn:hover:not(:disabled) { border-color: #147a4b; }
+.pago-btn.active { border-color: #147a4b; background: #f0faf4; color: #147a4b; font-weight: 900; }
+.pago-btn:disabled { opacity: 0.5; }
+
+.confirmar-btn {
+  width: 100%;
+  height: auto;
+  padding: 16px;
+  border-radius: 14px;
+  font-size: 1rem;
+  margin-bottom: 12px;
+  background: #147a4b;
+  color: #fff;
+  border-color: #147a4b;
+}
+.confirmar-btn:hover:not(:disabled) { background: #0f5e38; }
+
 /* ── Productos ─────────────────────────────────────────────────────────── */
 
 .products-grid {
@@ -565,6 +777,9 @@ footer {
   .qty-panel { padding: 22px 18px 30px; }
   .qty-btn { width: 52px; height: 52px; font-size: 1.25rem; }
   .qty-grid { gap: 8px; }
+  .cobro-actions { grid-template-columns: 1fr; }
+  .pago-grid { grid-template-columns: repeat(3, 1fr); }
+  .total-amount { font-size: 1.35rem; }
 }
 
 @media (orientation: landscape) and (max-height: 650px) {

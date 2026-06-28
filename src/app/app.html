@@ -7,13 +7,13 @@
         <h1>{{ companyName() }}</h1>
       </div>
     </div>
-
     <div class="status" aria-label="Estado del sistema">
       <span class="status-dot" aria-hidden="true"></span>
       Sistema disponible
     </div>
   </header>
 
+  <!-- ── MENÚ PRINCIPAL ─────────────────────────────────────────────────── -->
   @if (view() === 'menu') {
     <section class="content" aria-labelledby="main-title">
       <div class="intro">
@@ -21,33 +21,24 @@
         <h2 id="main-title">¿Qué deseas administrar?</h2>
         <p>Selecciona una opción para continuar</p>
       </div>
-
       <nav class="menu-grid" aria-label="Módulos del restaurante">
         <button class="menu-card mesas" type="button" (click)="selectModule('MESAS')">
           <span class="icon-wrap" aria-hidden="true">
-            <svg viewBox="0 0 64 64">
-              <path d="M14 26h36M20 26v22M44 26v22M10 48h12M42 48h12M18 16h28v10H18z" />
-            </svg>
+            <svg viewBox="0 0 64 64"><path d="M14 26h36M20 26v22M44 26v22M10 48h12M42 48h12M18 16h28v10H18z"/></svg>
           </span>
           <span class="card-copy"><strong>MESAS</strong><small>Órdenes y consumo</small></span>
           <span class="arrow" aria-hidden="true">→</span>
         </button>
-
         <button class="menu-card cajas" type="button" (click)="selectModule('CAJAS')">
           <span class="icon-wrap" aria-hidden="true">
-            <svg viewBox="0 0 64 64">
-              <path d="M13 20h38v29H13zM13 29h38M22 38h9M39 38h4M22 12h20v8" />
-            </svg>
+            <svg viewBox="0 0 64 64"><path d="M13 20h38v29H13zM13 29h38M22 38h9M39 38h4M22 12h20v8"/></svg>
           </span>
           <span class="card-copy"><strong>CAJAS</strong><small>Cobros y movimientos</small></span>
           <span class="arrow" aria-hidden="true">→</span>
         </button>
-
         <button class="menu-card reportes" type="button" (click)="selectModule('REPORTES')">
           <span class="icon-wrap" aria-hidden="true">
-            <svg viewBox="0 0 64 64">
-              <path d="M14 50V14h36M22 44V32M32 44V22M42 44V27M18 19l11 7 10-9 9 5" />
-            </svg>
+            <svg viewBox="0 0 64 64"><path d="M14 50V14h36M22 44V32M32 44V22M42 44V27M18 19l11 7 10-9 9 5"/></svg>
           </span>
           <span class="card-copy"><strong>REPORTES</strong><small>Ventas y resultados</small></span>
           <span class="arrow" aria-hidden="true">→</span>
@@ -55,31 +46,29 @@
       </nav>
     </section>
 
+  <!-- ── MESAS ──────────────────────────────────────────────────────────── -->
   } @else if (view() === 'mesas') {
     <section class="tables-view" aria-labelledby="tables-title">
       <div class="tables-toolbar">
-        <button class="back-button" type="button" (click)="backToMenu()" aria-label="Volver al menú">
+        <button class="back-button" type="button" (click)="backToMenu()">
           <span aria-hidden="true">←</span> Menú
         </button>
-
         <div class="tables-heading">
           <p class="eyebrow">SALÓN · {{ companyName() }}</p>
           <h2 id="tables-title">Mesas</h2>
         </div>
-
         <button class="refresh-button" type="button" (click)="loadMesas()" [disabled]="loading()">
           <span aria-hidden="true">↻</span> Actualizar
         </button>
       </div>
 
       @if (!loading() && !error()) {
-        <div class="table-summary" aria-label="Resumen de mesas">
+        <div class="table-summary">
           <span><i class="legend-dot free"></i>{{ mesas().length - mesasOcupadas() }} libres</span>
           <span><i class="legend-dot busy"></i>{{ mesasOcupadas() }} ocupadas</span>
           <strong>{{ mesas().length }} mesas</strong>
         </div>
       }
-
       @if (mesaActionError()) {
         <p class="action-error" role="alert">{{ mesaActionError() }}</p>
       }
@@ -117,7 +106,6 @@
               </span>
               <strong>{{ mesa.nombre }}</strong>
               <span class="table-state">{{ mesa.tieneCuentaAbierta ? 'OCUPADA' : 'LIBRE' }}</span>
-
               @if (mesa.tieneCuentaAbierta) {
                 <span class="table-detail">
                   {{ mesa.numItems }} productos · {{ (mesa.totalActual ?? 0) | currency:'MXN':'symbol-narrow':'1.2-2' }}
@@ -131,19 +119,21 @@
       }
     </section>
 
+  <!-- ── FAMILIAS ───────────────────────────────────────────────────────── -->
   } @else if (view() === 'familias') {
     <section class="tables-view" aria-labelledby="families-title">
       <div class="tables-toolbar">
         <button class="back-button" type="button" (click)="backToMesas()">
           <span aria-hidden="true">←</span> Mesas
         </button>
-
         <div class="tables-heading">
           <p class="eyebrow">{{ selectedMesa()?.nombre }} · CUENTA #{{ selectedMesa()?.idCuentaActual }}</p>
           <h2 id="families-title">Familias del menú</h2>
         </div>
-
-        <span></span>
+        <button class="cuenta-btn" type="button" (click)="irACuenta()" [disabled]="!items().length">
+          Ver cuenta
+          @if (items().length) { <span class="cuenta-badge">{{ items().length }}</span> }
+        </button>
       </div>
 
       @if (familiasLoading()) {
@@ -172,24 +162,22 @@
 
         @if (items().length) {
           <div class="cuenta-bar">
-            <span class="cuenta-items">
-              {{ items().length }} producto{{ items().length === 1 ? '' : 's' }} en cuenta
-            </span>
-            <strong class="cuenta-total">
-              {{ totalCuenta() | currency:'MXN':'symbol-narrow':'1.2-2' }}
-            </strong>
+            <span class="cuenta-items">{{ items().length }} producto{{ items().length === 1 ? '' : 's' }} en cuenta</span>
+            <button class="cuenta-bar-btn" type="button" (click)="irACuenta()">
+              {{ totalCuenta() | currency:'MXN':'symbol-narrow':'1.2-2' }} — Ver cuenta →
+            </button>
           </div>
         }
       }
     </section>
 
-  } @else {
+  <!-- ── PRODUCTOS / SUBFAMILIAS ────────────────────────────────────────── -->
+  } @else if (view() === 'productos') {
     <section class="tables-view" aria-labelledby="products-title">
       <div class="tables-toolbar">
         <button class="back-button" type="button" (click)="backToFamilias()">
           <span aria-hidden="true">←</span> Familias
         </button>
-
         <div class="tables-heading">
           <p class="eyebrow">
             {{ selectedMesa()?.nombre }}
@@ -200,8 +188,10 @@
             @if (mostrarSubfamilias()) { Categorías } @else { Productos }
           </h2>
         </div>
-
-        <span></span>
+        <button class="cuenta-btn" type="button" (click)="irACuenta()" [disabled]="!items().length">
+          Ver cuenta
+          @if (items().length) { <span class="cuenta-badge">{{ items().length }}</span> }
+        </button>
       </div>
 
       @if (productosLoading()) {
@@ -241,26 +231,23 @@
 
       @if (items().length) {
         <div class="cuenta-bar">
-          <span class="cuenta-items">
-            {{ items().length }} producto{{ items().length === 1 ? '' : 's' }} en cuenta
-          </span>
-          <strong class="cuenta-total">
-            {{ totalCuenta() | currency:'MXN':'symbol-narrow':'1.2-2' }}
-          </strong>
+          <span class="cuenta-items">{{ items().length }} producto{{ items().length === 1 ? '' : 's' }} en cuenta</span>
+          <button class="cuenta-bar-btn" type="button" (click)="irACuenta()">
+            {{ totalCuenta() | currency:'MXN':'symbol-narrow':'1.2-2' }} — Ver cuenta →
+          </button>
         </div>
       }
     </section>
 
+    <!-- Panel selector de cantidad -->
     @if (selectedProducto()) {
       <div class="qty-overlay" role="dialog" aria-modal="true" aria-label="Seleccionar cantidad">
         <div class="qty-panel">
           <strong class="qty-name">{{ selectedProducto()!.description }}</strong>
           <p class="qty-price">{{ selectedProducto()!.price | currency:'MXN':'symbol-narrow':'1.2-2' }} / u</p>
-
           @if (addError()) {
             <p class="qty-error" role="alert">{{ addError() }}</p>
           }
-
           <div class="qty-grid">
             @for (n of [1, 2, 3, 4, 5]; track n) {
               <button class="qty-btn" type="button" (click)="agregarProducto(n)" [disabled]="agregandoItem()">
@@ -268,8 +255,131 @@
               </button>
             }
           </div>
-
           <button class="qty-cancel" type="button" (click)="cancelarProducto()" [disabled]="agregandoItem()">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    }
+
+  <!-- ── CUENTA / COBRO ─────────────────────────────────────────────────── -->
+  } @else {
+    <section class="tables-view" aria-labelledby="cuenta-title">
+      <div class="tables-toolbar">
+        <button class="back-button" type="button" (click)="backToFamilias()">
+          <span aria-hidden="true">←</span> Familias
+        </button>
+        <div class="tables-heading">
+          <p class="eyebrow">{{ selectedMesa()?.nombre }} · CUENTA #{{ selectedMesa()?.idCuentaActual }}</p>
+          <h2 id="cuenta-title">Detalle de cuenta</h2>
+        </div>
+        <span></span>
+      </div>
+
+      @if (itemsResource.isLoading()) {
+        <div class="state-panel" role="status">
+          <span class="loader" aria-hidden="true"></span>
+          <strong>Cargando cuenta…</strong>
+        </div>
+      } @else if (items().length === 0) {
+        <div class="state-panel">
+          <strong>La cuenta está vacía</strong>
+          <p>Agrega productos desde el menú de familias.</p>
+          <button type="button" (click)="backToFamilias()">← Ir a familias</button>
+        </div>
+      } @else {
+        <div class="items-list">
+          @for (item of items(); track item.id) {
+            <div class="item-row" [class.eliminando]="eliminandoId() === item.id">
+              <div class="item-info">
+                <strong class="item-desc">{{ item.descripcion }}</strong>
+                <span class="item-meta">
+                  {{ item.cantidad }} × {{ item.precioUnitario | currency:'MXN':'symbol-narrow':'1.2-2' }}
+                </span>
+              </div>
+              <span class="item-subtotal">
+                {{ item.subtotal | currency:'MXN':'symbol-narrow':'1.2-2' }}
+              </span>
+              <button
+                class="item-del"
+                type="button"
+                (click)="eliminarItem(item)"
+                [disabled]="eliminandoId() !== null"
+                aria-label="Eliminar {{ item.descripcion }}"
+              >
+                @if (eliminandoId() === item.id) { … } @else { ✕ }
+              </button>
+            </div>
+          }
+        </div>
+
+        <div class="total-bar">
+          <span class="total-label">TOTAL</span>
+          <strong class="total-amount">{{ totalCuenta() | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+        </div>
+
+        <div class="cobro-actions">
+          <button class="agregar-btn" type="button" (click)="backToFamilias()">
+            + Agregar productos
+          </button>
+          <button class="cobrar-btn" type="button" (click)="abrirPago()">
+            Cobrar
+          </button>
+        </div>
+      }
+    </section>
+
+    <!-- Panel de pago -->
+    @if (showPayment()) {
+      <div class="qty-overlay" role="dialog" aria-modal="true" aria-label="Confirmar cobro">
+        <div class="qty-panel pago-panel">
+          <strong class="qty-name">Cobrar cuenta</strong>
+          <p class="qty-price">{{ totalCuenta() | currency:'MXN':'symbol-narrow':'1.2-2' }}</p>
+
+          <p class="pago-label">Forma de pago</p>
+          <div class="pago-grid">
+            <button
+              class="pago-btn"
+              [class.active]="tipoPago() === 'EFECTIVO'"
+              type="button"
+              (click)="tipoPago.set('EFECTIVO')"
+              [disabled]="cobrando()"
+            >
+              💵 Efectivo
+            </button>
+            <button
+              class="pago-btn"
+              [class.active]="tipoPago() === 'TARJETA'"
+              type="button"
+              (click)="tipoPago.set('TARJETA')"
+              [disabled]="cobrando()"
+            >
+              💳 Tarjeta
+            </button>
+            <button
+              class="pago-btn"
+              [class.active]="tipoPago() === 'MIXTO'"
+              type="button"
+              (click)="tipoPago.set('MIXTO')"
+              [disabled]="cobrando()"
+            >
+              🔀 Mixto
+            </button>
+          </div>
+
+          @if (cobroError()) {
+            <p class="qty-error" role="alert">{{ cobroError() }}</p>
+          }
+
+          <button
+            class="qty-btn confirmar-btn"
+            type="button"
+            (click)="confirmarCobro()"
+            [disabled]="cobrando()"
+          >
+            @if (cobrando()) { Procesando… } @else { Confirmar cobro }
+          </button>
+          <button class="qty-cancel" type="button" (click)="cancelarPago()" [disabled]="cobrando()">
             Cancelar
           </button>
         </div>
