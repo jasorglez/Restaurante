@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '1.50 (28 Junio 2026) PDFs con pdfmake para tabletas',
+  version: '1.51 (28 Junio 2026) Cambiar empresa desde header',
 }; 
