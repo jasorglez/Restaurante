@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '4.45 (27 Junio 2026) Fix saldos — Accounts() usa conceptos Quantity*Price+Iva2 sin depender de ie.total',
+  version: '1.46 (28 Junio 2026) Logo Bi2 favicon y título POS',
 }; 
