@@ -205,13 +205,37 @@ export class App {
     { defaultValue: [] },
   );
 
-  protected readonly reporteTurnosResource = httpResource<CajaReporte[]>(
+  protected readonly reporteTurnosResource = httpResource<any[]>(
     () => {
       if (this.view() !== 'reportes' || this.reporteSubView() !== 'caja') return undefined;
       return `${environment.urlAdministration}/Restaurant/reportes/${this.companyId()!}/turnos?fecha=${this.reporteFecha()}`;
     },
     { defaultValue: [] },
   );
+
+  // Acepta tanto CajaReporte[] (nuevo backend) como Turno[] (backend viejo) y normaliza
+  protected readonly reporteCajasAgrupadas = computed<CajaReporte[]>(() => {
+    const raw = this.reporteTurnosResource.value();
+    if (!raw.length) return [];
+    // Nuevo formato: cada elemento tiene la propiedad 'turnos'
+    if ('turnos' in raw[0]) return raw as CajaReporte[];
+    // Formato viejo (Turno[]): agrupar por caja, ventas del primer turno de cada caja
+    const mapa = new Map<number, { cajaId: number; turnos: Turno[] }>();
+    for (const t of raw as Turno[]) {
+      if (!mapa.has(t.idCashRegister)) mapa.set(t.idCashRegister, { cajaId: t.idCashRegister, turnos: [] });
+      mapa.get(t.idCashRegister)!.turnos.push(t);
+    }
+    return Array.from(mapa.values()).map(({ cajaId, turnos }) => ({
+      idCashRegister: cajaId,
+      ventasEfectivo: turnos[0].ventasEfectivo || 0,
+      ventasTarjeta:  turnos[0].ventasTarjeta  || 0,
+      ventasCheque:   turnos[0].ventasCheque   || 0,
+      ventasVales:    turnos[0].ventasVales     || 0,
+      ventasMixto:    turnos[0].ventasMixto     || 0,
+      ventasTotal:    turnos[0].ventasTotal     || 0,
+      turnos,
+    }));
+  });
 
   protected readonly mesasPorGrupo = computed<GrupoMesa[]>(() => {
     const mapa = new Map<string, ReporteMesa[]>();
@@ -232,7 +256,7 @@ export class App {
   );
 
   protected readonly totalReporteCaja = computed(() =>
-    this.reporteTurnosResource.value().reduce((s, c) => s + (c.ventasTotal || 0), 0),
+    this.reporteCajasAgrupadas().reduce((s, c) => s + (c.ventasTotal || 0), 0),
   );
 
   protected setReporteFecha(e: Event): void {
@@ -656,7 +680,7 @@ export class App {
       };
       pdfMake.createPdf(docDef).open();
     } else {
-      const cajas = this.reporteTurnosResource.value();
+      const cajas = this.reporteCajasAgrupadas();
       const fmt   = (n: number) => `$${n.toFixed(2)}`;
       const hora  = (d: string) => new Date(d).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
       const docDef: any = {

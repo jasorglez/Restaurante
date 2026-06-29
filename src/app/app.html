@@ -853,7 +853,7 @@
           <div class="state-panel"><span class="loader"></span><strong>Cargando…</strong></div>
         } @else if (reporteTurnosResource.error()) {
           <div class="state-panel error-panel"><strong>Error al cargar el reporte</strong></div>
-        } @else if (reporteTurnosResource.value().length === 0) {
+        } @else if (reporteCajasAgrupadas().length === 0) {
           <div class="state-panel"><strong>Sin turnos para esta fecha</strong></div>
         } @else {
 
@@ -872,7 +872,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (caja of reporteTurnosResource.value(); track caja.idCashRegister) {
+              @for (caja of reporteCajasAgrupadas(); track caja.idCashRegister) {
                 <tr class="caja-group-header">
                   <td colspan="4">Caja {{ caja.idCashRegister }} · {{ (caja.turnos?.length ?? 0) }} turno(s)</td>
                   <td>—</td>
