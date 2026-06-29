@@ -647,19 +647,40 @@ export class App {
           { text: this.companyName(), alignment: 'center', fontSize: 16, bold: true, margin: [0, 0, 0, 4] },
           { text: 'Reporte de Caja', alignment: 'center', fontSize: 14, bold: true, margin: [0, 0, 0, 2] },
           { text: `Fecha: ${new Date(fecha).toLocaleDateString('es-MX')}`, alignment: 'center', fontSize: 10, color: '#666', margin: [0, 0, 0, 16] },
+          ...turnos.flatMap((t: Turno) => [
+            {
+              table: {
+                widths: ['*', 120],
+                body: [
+                  [{ text: `Caja ${t.idCashRegister} · Turno #${t.id}`, colSpan: 2, bold: true, fontSize: 10, margin: [0, 0, 0, 0] }],
+                  [{ text: `Cajero: ${t.cajero || '—'}`, colSpan: 2, fontSize: 9 }],
+                  [{ text: `Horario: ${new Date(t.fechaInicio).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })} - ${t.fechaCierre ? new Date(t.fechaCierre).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : 'ABIERTO'}`, colSpan: 2, fontSize: 9 }]
+                ]
+              },
+              margin: [0, 0, 0, 8]
+            },
+            {
+              table: {
+                widths: ['*', 100],
+                body: [
+                  [{ text: 'Tipo de Venta', bold: true, fontSize: 9 }, { text: 'Monto', bold: true, fontSize: 9, alignment: 'right' }],
+                  ...(t.ventasEfectivo ? [[{ text: 'Efectivo', fontSize: 9 }, { text: `$${t.ventasEfectivo.toFixed(2)}`, fontSize: 9, alignment: 'right' }]] : []),
+                  ...(t.ventasTarjeta ? [[{ text: 'Tarjeta', fontSize: 9 }, { text: `$${t.ventasTarjeta.toFixed(2)}`, fontSize: 9, alignment: 'right' }]] : []),
+                  ...(t.ventasCheque ? [[{ text: 'Cheque', fontSize: 9 }, { text: `$${t.ventasCheque.toFixed(2)}`, fontSize: 9, alignment: 'right' }]] : []),
+                  ...(t.ventasVales ? [[{ text: 'Vales', fontSize: 9 }, { text: `$${t.ventasVales.toFixed(2)}`, fontSize: 9, alignment: 'right' }]] : []),
+                  ...(t.ventasMixto ? [[{ text: 'Mixto', fontSize: 9 }, { text: `$${t.ventasMixto.toFixed(2)}`, fontSize: 9, alignment: 'right' }]] : []),
+                  [{ text: 'TOTAL:', bold: true, fontSize: 10 }, { text: `$${(t.ventasTotal ?? 0).toFixed(2)}`, bold: true, fontSize: 10, alignment: 'right', color: '#147a4b' }]
+                ]
+              },
+              margin: [0, 0, 0, 12]
+            }
+          ]),
+          { text: '═'.repeat(60), margin: [0, 12, 0, 8] },
           {
             table: {
-              widths: ['*', 100, 80, 80, 100],
+              widths: ['*', 120],
               body: [
-                [{ text: 'Caja / Turno', bold: true, fontSize: 9 }, { text: 'Cajero', bold: true, fontSize: 9 }, { text: 'Inicio', bold: true, fontSize: 9 }, { text: 'Cierre', bold: true, fontSize: 9 }, { text: 'Total Ventas', bold: true, fontSize: 9, alignment: 'right' }],
-                ...turnos.map((t: Turno) => [
-                  { text: `Caja ${t.idCashRegister} #${t.id}`, fontSize: 9 },
-                  { text: t.cajero || '—', fontSize: 9 },
-                  { text: new Date(t.fechaInicio).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }), fontSize: 9 },
-                  { text: t.fechaCierre ? new Date(t.fechaCierre).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : 'ABIERTO', fontSize: 9, color: t.active ? '#b36a00' : '#666' },
-                  { text: `$${(t.ventasTotal ?? 0).toFixed(2)}`, fontSize: 9, alignment: 'right' }
-                ]),
-                [{ text: 'TOTAL:', bold: true, fontSize: 10, colSpan: 4 }, {}, {}, {}, { text: `$${this.totalReporteCaja().toFixed(2)}`, bold: true, fontSize: 10, alignment: 'right', color: '#147a4b' }]
+                [{ text: 'TOTAL GENERAL DEL DÍA:', bold: true, fontSize: 11 }, { text: `$${this.totalReporteCaja().toFixed(2)}`, bold: true, fontSize: 11, alignment: 'right', color: '#147a4b' }]
               ]
             }
           }
