@@ -45,9 +45,14 @@
         <h1>{{ companyName() }}</h1>
       </div>
     </div>
-    <div class="status" aria-label="Estado del sistema">
-      <span class="status-dot" aria-hidden="true"></span>
-      Sistema disponible
+    <div class="topbar-actions">
+      <div class="status" aria-label="Estado del sistema">
+        <span class="status-dot" aria-hidden="true"></span>
+        Sistema disponible
+      </div>
+      <button class="cambiar-empresa-header" type="button" title="Cambiar empresa" (click)="cambiarEmpresa()">
+        ⇄
+      </button>
     </div>
   </header>
 

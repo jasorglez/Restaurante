@@ -68,6 +68,12 @@ h1 {
   line-height: 1.1;
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .status {
   display: flex;
   align-items: center;
@@ -87,6 +93,22 @@ h1 {
   border-radius: 50%;
   background: #23a565;
   box-shadow: 0 0 0 4px rgb(35 165 101 / 14%);
+}
+
+.cambiar-empresa-header {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: #e6f5ed;
+  color: #147a4b;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background 120ms ease;
+
+  &:hover { background: #d0ebe0; }
 }
 
 .content {
