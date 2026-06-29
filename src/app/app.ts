@@ -2,9 +2,13 @@ import { CurrencyPipe, DatePipe } from '@angular/common';
 import { HttpClient, httpResource } from '@angular/common/http';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import pdfMake from 'pdfmake/build/pdfmake';
+import * as pdfFonts from 'pdfmake/build/vfs_fonts';
+
+(pdfMake as any).vfs = (pdfFonts as any).pdfMake.vfs;
 
 import { environment } from '../environments/environment';
-import { CajaInfo, EgresoCaja, ResumenCorte, Turno } from './models/caja';
+import { CajaInfo, EgresoCaja, ResumenCorte, Turno, VentaPorTipo } from './models/caja';
 import { CuentaAbierta, Familia, ItemCuenta, Producto } from './models/familia';
 import { Mesa } from './models/mesa';
 import { GrupoMesa, ReporteMesa } from './models/reporte';
@@ -508,11 +512,155 @@ export class App {
   }
 
   protected imprimirCorte(): void {
-    window.print();
+    const corte = this.corteResumenSnapshot();
+    if (!corte) return;
+
+    const t = corte.turno;
+    const docDef: any = {
+      pageSize: 'A4',
+      pageMargins: [20, 20, 20, 20],
+      content: [
+        { text: this.companyName(), alignment: 'center', fontSize: 16, bold: true, margin: [0, 0, 0, 4] },
+        { text: 'Corte de Caja', alignment: 'center', fontSize: 14, bold: true, margin: [0, 0, 0, 12] },
+        {
+          table: {
+            widths: ['*', '*'],
+            body: [
+              [{ text: 'Caja:', fontSize: 10, bold: true }, { text: t.idCashRegister, fontSize: 10 }],
+              [{ text: 'Cajero:', fontSize: 10, bold: true }, { text: t.cajero || 'N/A', fontSize: 10 }],
+              [{ text: 'Fecha Inicio:', fontSize: 10, bold: true }, { text: new Date(t.fechaInicio).toLocaleString('es-MX'), fontSize: 10 }],
+              [{ text: 'Fecha Cierre:', fontSize: 10, bold: true }, { text: t.fechaCierre ? new Date(t.fechaCierre).toLocaleString('es-MX') : 'Abierto', fontSize: 10 }]
+            ]
+          },
+          margin: [0, 0, 0, 16]
+        },
+        { text: 'Resumen de Ventas', fontSize: 12, bold: true, margin: [0, 0, 0, 8] },
+        {
+          table: {
+            widths: ['*', 80, 80],
+            body: [
+              [{ text: 'Tipo Pago', bold: true, fontSize: 10 }, { text: 'Cantidad', bold: true, fontSize: 10, alignment: 'center' }, { text: 'Total', bold: true, fontSize: 10, alignment: 'right' }],
+              ...corte.ventas.map((v: VentaPorTipo) => [
+                { text: v.paymentType, fontSize: 10 },
+                { text: String(v.numVentas), fontSize: 10, alignment: 'center' },
+                { text: `$${v.total.toFixed(2)}`, fontSize: 10, alignment: 'right' }
+              ]),
+              [{ text: 'TOTAL VENTAS', bold: true, fontSize: 10 }, { text: '', fontSize: 10 }, { text: `$${corte.totales.totalVentas.toFixed(2)}`, bold: true, fontSize: 10, alignment: 'right' }]
+            ]
+          },
+          margin: [0, 0, 0, 16]
+        },
+        ...(corte.egresos.length > 0 ? [
+          { text: 'Egresos', fontSize: 12, bold: true, margin: [0, 0, 0, 8] },
+          {
+            table: {
+              widths: ['*', '*', 80],
+              body: [
+                [{ text: 'Tipo', bold: true, fontSize: 10 }, { text: 'Descripción', bold: true, fontSize: 10 }, { text: 'Monto', bold: true, fontSize: 10, alignment: 'right' }],
+                ...corte.egresos.map((e: EgresoCaja) => [
+                  { text: e.tipo, fontSize: 9 },
+                  { text: e.descripcion || '—', fontSize: 9 },
+                  { text: `$${e.monto.toFixed(2)}`, fontSize: 9, alignment: 'right' }
+                ]),
+                [{ text: 'TOTAL EGRESOS', bold: true, fontSize: 10 }, { text: '', fontSize: 10 }, { text: `$${corte.totales.totalEgresos.toFixed(2)}`, bold: true, fontSize: 10, alignment: 'right' }]
+              ]
+            },
+            margin: [0, 0, 0, 16]
+          }
+        ] : []),
+        { text: '═'.repeat(60), margin: [0, 0, 0, 8] },
+        {
+          table: {
+            widths: ['*', 120],
+            body: [
+              [{ text: 'Fondo Inicial:', fontSize: 11, bold: true }, { text: `$${t.fondoInicial.toFixed(2)}`, fontSize: 11, alignment: 'right' }],
+              [{ text: 'Total Ventas:', fontSize: 11, bold: true }, { text: `$${corte.totales.totalVentas.toFixed(2)}`, fontSize: 11, alignment: 'right' }],
+              [{ text: 'Total Egresos:', fontSize: 11, bold: true }, { text: `$${corte.totales.totalEgresos.toFixed(2)}`, fontSize: 11, alignment: 'right' }],
+              [{ text: 'ESPERADO:', fontSize: 11, bold: true }, { text: `$${corte.totales.efectivoEsperado.toFixed(2)}`, fontSize: 11, alignment: 'right', color: '#147a4b', bold: true }],
+              [{ text: 'CONTADO:', fontSize: 11, bold: true }, { text: `$${(t.efectivoContado ?? 0).toFixed(2)}`, fontSize: 11, alignment: 'right', color: t.diferencia === 0 ? '#147a4b' : '#c0392b', bold: true }],
+              [{ text: 'DIFERENCIA:', fontSize: 11, bold: true }, { text: `$${(t.diferencia ?? 0).toFixed(2)}`, fontSize: 11, alignment: 'right', color: t.diferencia === 0 ? '#147a4b' : '#c0392b', bold: true }]
+            ]
+          }
+        }
+      ]
+    };
+
+    pdfMake.createPdf(docDef).open();
   }
 
   protected imprimirReporte(): void {
-    window.print();
+    const fecha = this.reporteFecha();
+    const subView = this.reporteSubView();
+
+    if (subView === 'mesas') {
+      const grupos = this.mesasPorGrupo();
+      const docDef: any = {
+        pageSize: 'A4',
+        pageMargins: [20, 20, 20, 20],
+        content: [
+          { text: this.companyName(), alignment: 'center', fontSize: 16, bold: true, margin: [0, 0, 0, 4] },
+          { text: 'Reporte de Mesas', alignment: 'center', fontSize: 14, bold: true, margin: [0, 0, 0, 2] },
+          { text: `Fecha: ${new Date(fecha).toLocaleDateString('es-MX')}`, alignment: 'center', fontSize: 10, color: '#666', margin: [0, 0, 0, 16] },
+          ...grupos.flatMap(g => [
+            { text: `Mesa: ${g.nombreMesa}`, fontSize: 12, bold: true, margin: [0, 12, 0, 8], color: '#147a4b' },
+            {
+              table: {
+                widths: ['*', 60, 60, 80],
+                body: [
+                  [{ text: 'Descripción', bold: true, fontSize: 9 }, { text: 'Qty', bold: true, fontSize: 9, alignment: 'center' }, { text: 'Unitario', bold: true, fontSize: 9, alignment: 'right' }, { text: 'Subtotal', bold: true, fontSize: 9, alignment: 'right' }],
+                  ...g.cuentas.flatMap(c => c.items.map(item => [
+                    { text: item.descripcion ?? 'Item', fontSize: 9 },
+                    { text: String(item.cantidad), fontSize: 9, alignment: 'center' },
+                    { text: `$${item.precioUnitario.toFixed(2)}`, fontSize: 9, alignment: 'right' },
+                    { text: `$${item.subtotal.toFixed(2)}`, fontSize: 9, alignment: 'right' }
+                  ])),
+                  [{ text: `Subtotal mesa: $${g.subtotal.toFixed(2)}`, colSpan: 4, bold: true, fontSize: 10, alignment: 'right' }]
+                ]
+              },
+              margin: [0, 0, 0, 8]
+            }
+          ]),
+          { text: '─'.repeat(80), margin: [0, 12, 0, 8] },
+          {
+            table: {
+              widths: ['*', 120],
+              body: [
+                [{ text: 'TOTAL GENERAL:', bold: true, fontSize: 12 }, { text: `$${this.totalReporteMesas().toFixed(2)}`, bold: true, fontSize: 12, alignment: 'right', color: '#147a4b' }]
+              ]
+            }
+          }
+        ]
+      };
+      pdfMake.createPdf(docDef).open();
+    } else {
+      const turnos = this.reporteTurnosResource.value();
+      const docDef: any = {
+        pageSize: 'A4',
+        pageMargins: [20, 20, 20, 20],
+        content: [
+          { text: this.companyName(), alignment: 'center', fontSize: 16, bold: true, margin: [0, 0, 0, 4] },
+          { text: 'Reporte de Caja', alignment: 'center', fontSize: 14, bold: true, margin: [0, 0, 0, 2] },
+          { text: `Fecha: ${new Date(fecha).toLocaleDateString('es-MX')}`, alignment: 'center', fontSize: 10, color: '#666', margin: [0, 0, 0, 16] },
+          {
+            table: {
+              widths: ['*', 100, 80, 80, 100],
+              body: [
+                [{ text: 'Caja / Turno', bold: true, fontSize: 9 }, { text: 'Cajero', bold: true, fontSize: 9 }, { text: 'Inicio', bold: true, fontSize: 9 }, { text: 'Cierre', bold: true, fontSize: 9 }, { text: 'Total Ventas', bold: true, fontSize: 9, alignment: 'right' }],
+                ...turnos.map((t: Turno) => [
+                  { text: `Caja ${t.idCashRegister} #${t.id}`, fontSize: 9 },
+                  { text: t.cajero || '—', fontSize: 9 },
+                  { text: new Date(t.fechaInicio).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }), fontSize: 9 },
+                  { text: t.fechaCierre ? new Date(t.fechaCierre).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : 'ABIERTO', fontSize: 9, color: t.active ? '#b36a00' : '#666' },
+                  { text: `$${(t.ventasTotal ?? 0).toFixed(2)}`, fontSize: 9, alignment: 'right' }
+                ]),
+                [{ text: 'TOTAL:', bold: true, fontSize: 10, colSpan: 4 }, {}, {}, {}, { text: `$${this.totalReporteCaja().toFixed(2)}`, bold: true, fontSize: 10, alignment: 'right', color: '#147a4b' }]
+              ]
+            }
+          }
+        ]
+      };
+      pdfMake.createPdf(docDef).open();
+    }
   }
 
   protected loadMesas(): void { this.mesasResource.reload(); }
@@ -774,7 +922,50 @@ export class App {
   }
 
   protected imprimirTicket(): void {
-    window.print();
+    const t = this.ticketData();
+    if (!t) return;
+
+    const docDef: any = {
+      pageSize: { width: 80, height: 'auto' },
+      pageMargins: [8, 8, 8, 8],
+      content: [
+        { text: 'Bi2 · Punto de Venta', alignment: 'center', fontSize: 10, bold: true },
+        { text: t.companyName, alignment: 'center', fontSize: 9, margin: [0, 2, 0, 6] },
+        { text: '─'.repeat(32), alignment: 'center', fontSize: 7, margin: [0, 0, 0, 4] },
+        { text: `Mesa: ${t.mesaNombre}`, fontSize: 8, margin: [0, 0, 0, 2] },
+        { text: `Ticket #${t.idCuenta} · ${new Date(t.fecha).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`, fontSize: 7, color: '#666', margin: [0, 0, 0, 8] },
+        {
+          table: {
+            widths: ['*', 40, 40],
+            body: [
+              [{ text: 'Producto', bold: true, fontSize: 7 }, { text: 'Qty', bold: true, fontSize: 7, alignment: 'center' }, { text: 'Total', bold: true, fontSize: 7, alignment: 'right' }],
+              ...t.items.map(i => [
+                { text: i.descripcion ?? 'Item', fontSize: 7 },
+                { text: String(i.cantidad), fontSize: 7, alignment: 'center' },
+                { text: `$${i.subtotal.toFixed(2)}`, fontSize: 7, alignment: 'right' }
+              ])
+            ]
+          },
+          margin: [0, 0, 0, 8]
+        },
+        { text: '─'.repeat(32), alignment: 'center', fontSize: 7, margin: [0, 0, 0, 4] },
+        {
+          table: {
+            widths: ['*', 60],
+            body: [
+              [{ text: 'Subtotal:', fontSize: 7 }, { text: `$${t.total.toFixed(2)}`, fontSize: 7, alignment: 'right' }],
+              [{ text: 'Total:', fontSize: 8, bold: true }, { text: `$${t.total.toFixed(2)}`, fontSize: 8, bold: true, alignment: 'right' }],
+              [{ text: `Pago: ${t.tipoPago}`, fontSize: 7 }, { text: `$${t.montoPagado.toFixed(2)}`, fontSize: 7, alignment: 'right' }],
+              ...(t.cambio > 0 ? [[{ text: 'Cambio:', fontSize: 7, color: '#147a4b', bold: true }, { text: `$${t.cambio.toFixed(2)}`, fontSize: 7, alignment: 'right', color: '#147a4b', bold: true }]] : [])
+            ]
+          },
+          margin: [0, 0, 0, 8]
+        },
+        { text: '¡Gracias por su visita!', alignment: 'center', fontSize: 7, italics: true, color: '#888' }
+      ]
+    };
+
+    pdfMake.createPdf(docDef).open();
   }
 
   protected cerrarTicket(): void {

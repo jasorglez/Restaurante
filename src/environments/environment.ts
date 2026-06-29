@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '1.49 (28 Junio 2026) Mostrar Nueva Mesa aunque no haya mesas',
+  version: '1.50 (28 Junio 2026) PDFs con pdfmake para tabletas',
 }; 
