@@ -30,6 +30,16 @@
   gap: 14px;
 }
 
+.brand-logo {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  object-fit: contain;
+  background: #fff;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 12%);
+  flex-shrink: 0;
+}
+
 .brand-mark {
   width: 52px;
   height: 52px;

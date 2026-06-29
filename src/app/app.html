@@ -1,7 +1,11 @@
 <main class="dashboard-shell">
   <header class="topbar">
     <div class="brand">
-      <span class="brand-mark" aria-hidden="true">R</span>
+      @if (companyLogo()) {
+        <img class="brand-logo" [src]="companyLogo()!" [alt]="companyName()" />
+      } @else {
+        <span class="brand-mark" aria-hidden="true">R</span>
+      }
       <div>
         <p class="eyebrow">PUNTO DE VENTA</p>
         <h1>{{ companyName() }}</h1>

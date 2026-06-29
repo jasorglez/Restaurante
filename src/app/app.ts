@@ -13,7 +13,7 @@ type RestaurantModule = 'MESAS' | 'CAJAS' | 'REPORTES';
 type View = 'menu' | 'mesas' | 'familias' | 'productos' | 'cuenta' | 'cajas' | 'reportes';
 type TipoPago = 'EFECTIVO' | 'TARJETA' | 'MIXTO';
 
-interface CompanyInfo { name: string; }
+interface CompanyInfo { name: string; picture: string | null; picture2: string | null; }
 
 interface TicketData {
   companyName: string;
@@ -204,6 +204,9 @@ export class App {
   );
   protected readonly companyName = computed(
     () => this.companyResource.value()?.name?.trim() || 'Cargando empresa…',
+  );
+  protected readonly companyLogo = computed(
+    () => this.companyResource.value()?.picture ?? null,
   );
 
   // ── Mesas ─────────────────────────────────────────────────────────────────
