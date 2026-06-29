@@ -513,15 +513,33 @@ export class App {
     }
   }
 
-  protected imprimirCorte(): void {
+  private async logoToDataUrl(): Promise<string | null> {
+    const url = this.companyLogo();
+    if (!url) return null;
+    if (url.startsWith('data:')) return url;
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      return await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch { return null; }
+  }
+
+  protected async imprimirCorte(): Promise<void> {
     const corte = this.corteResumenSnapshot();
     if (!corte) return;
 
     const t = corte.turno;
+    const logo = await this.logoToDataUrl();
     const docDef: any = {
       pageSize: 'A4',
       pageMargins: [20, 20, 20, 20],
       content: [
+        ...(logo ? [{ image: logo, width: 60, height: 60, alignment: 'center', margin: [0, 0, 0, 8] }] : []),
         { text: this.companyName(), alignment: 'center', fontSize: 16, bold: true, margin: [0, 0, 0, 4] },
         { text: 'Corte de Caja', alignment: 'center', fontSize: 14, bold: true, margin: [0, 0, 0, 12] },
         {
@@ -590,18 +608,19 @@ export class App {
     pdfMake.createPdf(docDef).open();
   }
 
-  protected imprimirReporte(): void {
+  protected async imprimirReporte(): Promise<void> {
     const fecha = this.reporteFecha();
     const subView = this.reporteSubView();
 
+    const logo = await this.logoToDataUrl();
+
     if (subView === 'mesas') {
       const grupos = this.mesasPorGrupo();
-      const logo = this.companyLogo();
       const docDef: any = {
         pageSize: 'A4',
         pageMargins: [20, 20, 20, 20],
         content: [
-          ...(logo && logo.startsWith('data:') ? [{ image: logo, width: 60, height: 60, alignment: 'center', margin: [0, 0, 0, 12] }] : []),
+          ...(logo ? [{ image: logo, width: 60, height: 60, alignment: 'center', margin: [0, 0, 0, 12] }] : []),
           { text: this.companyName(), alignment: 'center', fontSize: 16, bold: true, margin: [0, 0, 0, 4] },
           { text: 'Reporte de Mesas', alignment: 'center', fontSize: 14, bold: true, margin: [0, 0, 0, 2] },
           { text: `Fecha: ${new Date(fecha).toLocaleDateString('es-MX')}`, alignment: 'center', fontSize: 10, color: '#666', margin: [0, 0, 0, 16] },
@@ -638,12 +657,11 @@ export class App {
       pdfMake.createPdf(docDef).open();
     } else {
       const turnos = this.reporteTurnosResource.value();
-      const logo = this.companyLogo();
       const docDef: any = {
         pageSize: 'A4',
         pageMargins: [20, 20, 20, 20],
         content: [
-          ...(logo && logo.startsWith('data:') ? [{ image: logo, width: 60, height: 60, alignment: 'center', margin: [0, 0, 0, 12] }] : []),
+          ...(logo ? [{ image: logo, width: 60, height: 60, alignment: 'center', margin: [0, 0, 0, 12] }] : []),
           { text: this.companyName(), alignment: 'center', fontSize: 16, bold: true, margin: [0, 0, 0, 4] },
           { text: 'Reporte de Caja', alignment: 'center', fontSize: 14, bold: true, margin: [0, 0, 0, 2] },
           { text: `Fecha: ${new Date(fecha).toLocaleDateString('es-MX')}`, alignment: 'center', fontSize: 10, color: '#666', margin: [0, 0, 0, 16] },
@@ -948,14 +966,16 @@ export class App {
     }
   }
 
-  protected imprimirTicket(): void {
+  protected async imprimirTicket(): Promise<void> {
     const t = this.ticketData();
     if (!t) return;
+    const logo = await this.logoToDataUrl();
 
     const docDef: any = {
       pageSize: { width: 80, height: 'auto' },
       pageMargins: [8, 8, 8, 8],
       content: [
+        ...(logo ? [{ image: logo, width: 48, height: 48, alignment: 'center', margin: [0, 0, 0, 4] }] : []),
         { text: 'Bi2 · Punto de Venta', alignment: 'center', fontSize: 10, bold: true },
         { text: t.companyName, alignment: 'center', fontSize: 9, margin: [0, 2, 0, 6] },
         { text: '─'.repeat(32), alignment: 'center', fontSize: 7, margin: [0, 0, 0, 4] },
