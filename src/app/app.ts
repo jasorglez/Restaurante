@@ -7,9 +7,10 @@ import { environment } from '../environments/environment';
 import { CajaInfo, EgresoCaja, ResumenCorte, Turno } from './models/caja';
 import { CuentaAbierta, Familia, ItemCuenta, Producto } from './models/familia';
 import { Mesa } from './models/mesa';
+import { GrupoMesa, ReporteMesa } from './models/reporte';
 
 type RestaurantModule = 'MESAS' | 'CAJAS' | 'REPORTES';
-type View = 'menu' | 'mesas' | 'familias' | 'productos' | 'cuenta' | 'cajas';
+type View = 'menu' | 'mesas' | 'familias' | 'productos' | 'cuenta' | 'cajas' | 'reportes';
 type TipoPago = 'EFECTIVO' | 'TARJETA' | 'MIXTO';
 
 interface CompanyInfo { name: string; }
@@ -128,6 +129,52 @@ export class App {
     const contado  = this.efectivoContado() ?? 0;
     return contado - esperado;
   });
+
+  // ── Reportes ──────────────────────────────────────────────────────────────
+  protected readonly reporteSubView = signal<'mesas' | 'caja'>('mesas');
+  protected readonly reporteFecha   = signal<string>(new Date().toISOString().split('T')[0]);
+
+  protected readonly reporteMesasResource = httpResource<ReporteMesa[]>(
+    () => {
+      if (this.view() !== 'reportes' || this.reporteSubView() !== 'mesas') return undefined;
+      return `${environment.urlAdministration}/Restaurant/reportes/${environment.companyId}/mesas?fecha=${this.reporteFecha()}`;
+    },
+    { defaultValue: [] },
+  );
+
+  protected readonly reporteTurnosResource = httpResource<Turno[]>(
+    () => {
+      if (this.view() !== 'reportes' || this.reporteSubView() !== 'caja') return undefined;
+      return `${environment.urlAdministration}/Restaurant/reportes/${environment.companyId}/turnos?fecha=${this.reporteFecha()}`;
+    },
+    { defaultValue: [] },
+  );
+
+  protected readonly mesasPorGrupo = computed<GrupoMesa[]>(() => {
+    const mapa = new Map<string, ReporteMesa[]>();
+    for (const c of this.reporteMesasResource.value()) {
+      const arr = mapa.get(c.nombreMesa) ?? [];
+      arr.push(c);
+      mapa.set(c.nombreMesa, arr);
+    }
+    return Array.from(mapa.entries()).map(([nombreMesa, cuentas]) => ({
+      nombreMesa,
+      cuentas,
+      subtotal: cuentas.reduce((s, c) => s + c.total, 0),
+    }));
+  });
+
+  protected readonly totalReporteMesas = computed(() =>
+    this.reporteMesasResource.value().reduce((s, c) => s + c.total, 0),
+  );
+
+  protected readonly totalReporteCaja = computed(() =>
+    this.reporteTurnosResource.value().reduce((s, t) => s + (t.ventasTotal ?? 0), 0),
+  );
+
+  protected setReporteFecha(e: Event): void {
+    this.reporteFecha.set((e.target as HTMLInputElement).value);
+  }
 
   // ── Pago ──────────────────────────────────────────────────────────────────
   protected readonly showPayment = signal(false);
@@ -254,6 +301,11 @@ export class App {
       this.turnoActivo.set(null);
       this.turnoError.set('');
       this.view.set('cajas');
+    }
+    if (module === 'REPORTES') {
+      this.reporteSubView.set('mesas');
+      this.reporteFecha.set(new Date().toISOString().split('T')[0]);
+      this.view.set('reportes');
     }
   }
 
@@ -393,6 +445,10 @@ export class App {
   }
 
   protected imprimirCorte(): void {
+    window.print();
+  }
+
+  protected imprimirReporte(): void {
     window.print();
   }
 

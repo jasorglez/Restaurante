@@ -1439,4 +1439,165 @@ footer {
     box-shadow: none;
   }
   .nota-btns, .no-print { display: none !important; }
+
+  /* Reporte de mesas / caja */
+  .reporte-view,
+  .reporte-view * { visibility: visible; }
+  .reporte-view {
+    position: fixed;
+    inset: 0;
+    overflow: visible;
+    background: #fff;
+    padding: 8mm;
+  }
+}
+
+/* ── Reportes ────────────────────────────────────────────────────────────────── */
+
+.reporte-view { padding-bottom: 40px; }
+
+.reporte-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #f5f7f5;
+  border-bottom: 1px solid #dde4de;
+  flex-wrap: wrap;
+}
+
+.reporte-fecha-input {
+  padding: 8px 12px;
+  border: 1.5px solid #c5d0c8;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  background: #fff;
+  color: #17211b;
+  cursor: pointer;
+}
+
+.reporte-tabs {
+  display: flex;
+  gap: 4px;
+  background: #e5eee8;
+  border-radius: 12px;
+  padding: 3px;
+}
+
+.reporte-tab {
+  padding: 7px 18px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #5a7060;
+  cursor: pointer;
+  transition: 120ms ease;
+
+  &.active {
+    background: #fff;
+    color: #147a4b;
+    box-shadow: 0 1px 4px rgb(0 0 0 / 12%);
+  }
+}
+
+.reporte-print-header {
+  display: none;
+  text-align: center;
+  margin-bottom: 12px;
+  h2 { font-size: 1.1rem; font-weight: 900; }
+  p  { font-size: 0.82rem; color: #555; margin-top: 2px; }
+}
+
+.reporte-grupo {
+  margin: 16px 16px 0;
+}
+
+.reporte-grupo-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #1c7c4b;
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.95rem;
+  border-radius: 10px 10px 0 0;
+}
+
+.reporte-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  background: #fff;
+  border: 1px solid #dde4de;
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  overflow: hidden;
+
+  th {
+    background: #f0f5f1;
+    color: #4a6050;
+    font-weight: 800;
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    padding: 7px 10px;
+    text-align: left;
+    border-bottom: 1px solid #dde4de;
+  }
+  td {
+    padding: 7px 10px;
+    border-bottom: 1px solid #f0f0f0;
+    color: #2d3d32;
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  .text-right { text-align: right; font-weight: 700; }
+}
+
+.reporte-table-full { margin: 16px; width: calc(100% - 32px); }
+
+.reporte-items-row td {
+  padding: 2px 10px 7px;
+  background: #fafcfa;
+}
+
+.reporte-items-list {
+  font-size: 0.75rem;
+  color: #7a8f80;
+  font-style: italic;
+}
+
+.reporte-subtotal td {
+  background: #f0f7f3;
+  font-weight: 800;
+  color: #147a4b;
+  font-size: 0.82rem;
+}
+
+.reporte-grand-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 12px 16px 0;
+  padding: 14px 18px;
+  background: #147a4b;
+  color: #fff;
+  border-radius: 12px;
+  font-weight: 900;
+  font-size: 1.05rem;
+}
+
+.reporte-grand-total-row td {
+  background: #f0f7f3;
+  font-weight: 900;
+  color: #147a4b;
+  font-size: 0.9rem;
+}
+
+.turno-abierto td { color: #b36a00; font-style: italic; }
+
+@media print {
+  .reporte-print-header { display: block; }
 }
