@@ -765,8 +765,9 @@ export class App {
 
       this.showPayment.set(false);
       this.ticketVisible.set(true);
-    } catch {
-      this.cobroError.set('No se pudo procesar el cobro. Intenta de nuevo.');
+    } catch (err: any) {
+      const msg = err?.error?.error ?? err?.message ?? 'No se pudo procesar el cobro. Intenta de nuevo.';
+      this.cobroError.set(msg);
     } finally {
       this.cobrando.set(false);
     }
