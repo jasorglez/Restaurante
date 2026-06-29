@@ -872,18 +872,25 @@
               </tr>
             </thead>
             <tbody>
-              @for (t of reporteTurnosResource.value(); track t.id) {
-                <tr [class.turno-abierto]="!t.fechaCierre">
-                  <td>{{ t.id }}</td>
-                  <td>{{ t.cajero || '—' }}</td>
-                  <td>{{ t.fechaInicio | date:'HH:mm' }}</td>
-                  <td>{{ t.fechaCierre ? (t.fechaCierre | date:'HH:mm') : 'Abierto' }}</td>
-                  <td>{{ t.fondoInicial | currency:'MXN':'symbol-narrow':'1.2-2' }}</td>
-                  <td>{{ (t.ventasEfectivo ?? 0) | currency:'MXN':'symbol-narrow':'1.2-2' }}</td>
-                  <td>{{ (t.ventasTarjeta ?? 0) | currency:'MXN':'symbol-narrow':'1.2-2' }}</td>
-                  <td>{{ ((t.ventasCheque ?? 0) + (t.ventasVales ?? 0) + (t.ventasMixto ?? 0)) | currency:'MXN':'symbol-narrow':'1.2-2' }}</td>
-                  <td class="text-right">{{ (t.ventasTotal ?? 0) | currency:'MXN':'symbol-narrow':'1.2-2' }}</td>
+              @for (caja of reporteTurnosResource.value(); track caja.idCashRegister) {
+                <tr class="caja-group-header">
+                  <td colspan="4">Caja {{ caja.idCashRegister }} · {{ (caja.turnos?.length ?? 0) }} turno(s)</td>
+                  <td>—</td>
+                  <td>{{ (caja.ventasEfectivo ?? 0) | currency:'MXN':'symbol-narrow':'1.2-2' }}</td>
+                  <td>{{ (caja.ventasTarjeta ?? 0) | currency:'MXN':'symbol-narrow':'1.2-2' }}</td>
+                  <td>{{ ((caja.ventasCheque ?? 0) + (caja.ventasVales ?? 0) + (caja.ventasMixto ?? 0)) | currency:'MXN':'symbol-narrow':'1.2-2' }}</td>
+                  <td class="text-right">{{ (caja.ventasTotal ?? 0) | currency:'MXN':'symbol-narrow':'1.2-2' }}</td>
                 </tr>
+                @for (t of (caja.turnos ?? []); track t.id) {
+                  <tr class="turno-sub-row" [class.turno-abierto]="!t.fechaCierre">
+                    <td>{{ t.id }}</td>
+                    <td>↳ {{ t.cajero || '—' }}</td>
+                    <td>{{ t.fechaInicio | date:'HH:mm' }}</td>
+                    <td>{{ t.fechaCierre ? (t.fechaCierre | date:'HH:mm') : 'Abierto' }}</td>
+                    <td>{{ t.fondoInicial | currency:'MXN':'symbol-narrow':'1.2-2' }}</td>
+                    <td colspan="4" class="turno-sub-nota">ventas agrupadas en la caja</td>
+                  </tr>
+                }
               }
             </tbody>
             <tfoot>

@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '1.52 (28 Junio 2026) Reportes con logos y desglose de ventas',
+  version: '1.53 (28 Junio 2026) Reporte de caja agrupado por caja sin duplicar ventas',
 }; 

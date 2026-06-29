@@ -1669,6 +1669,29 @@ footer {
 
 .turno-abierto td { color: #b36a00; font-style: italic; }
 
+.caja-group-header td {
+  background: #e8f5ee;
+  font-weight: 700;
+  color: #147a4b;
+  font-size: 0.83rem;
+  border-top: 2px solid #b2dcc6;
+}
+
+.turno-sub-row td {
+  background: #fafafa;
+  font-size: 0.78rem;
+  color: #555;
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+
+.turno-sub-nota {
+  text-align: right;
+  font-style: italic;
+  color: #999 !important;
+  font-size: 0.75rem !important;
+}
+
 @media print {
   .reporte-print-header { display: block; }
 }

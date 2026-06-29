@@ -47,6 +47,17 @@ export interface EgresoCaja {
   active: boolean;
 }
 
+export interface CajaReporte {
+  idCashRegister: number;
+  ventasEfectivo: number;
+  ventasTarjeta: number;
+  ventasCheque: number;
+  ventasVales: number;
+  ventasMixto: number;
+  ventasTotal: number;
+  turnos: Turno[];
+}
+
 export interface TotalesCorte {
   efectivo: number;
   tarjeta: number;
