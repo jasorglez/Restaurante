@@ -827,6 +827,38 @@ footer {
   .menu-card { transition: none; }
 }
 
+/* ── Tarjeta wrap + botón editar ───────────────────────────────────────────── */
+
+.table-card-wrap {
+  position: relative;
+
+  .table-button { width: 100%; height: 100%; }
+}
+
+.edit-mesa-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: none;
+  background: rgb(255 255 255 / 85%);
+  font-size: 0.82rem;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms ease, background 120ms ease;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 15%);
+
+  &:hover { background: #fff; }
+}
+
+.table-card-wrap:hover .edit-mesa-btn,
+.table-card-wrap:focus-within .edit-mesa-btn { opacity: 1; }
+
 /* ── Tarjeta Nueva Mesa ─────────────────────────────────────────────────────── */
 
 .add-mesa-btn {

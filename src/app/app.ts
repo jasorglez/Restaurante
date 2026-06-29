@@ -51,7 +51,14 @@ export class App {
   protected readonly eliminandoId = signal<number | null>(null);
 
   // ── Nueva mesa ────────────────────────────────────────────────────────────
-  protected readonly showNuevaMesa = signal(false);
+  protected readonly showNuevaMesa  = signal(false);
+
+  // ── Editar mesa ───────────────────────────────────────────────────────────
+  protected readonly editandoMesa       = signal<Mesa | null>(null);
+  protected readonly editMesaNombre     = signal('');
+  protected readonly editMesaCapacidad  = signal<number | null>(null);
+  protected readonly guardandoMesa      = signal(false);
+  protected readonly editMesaError      = signal('');
   protected readonly nuevaMesaNombre = signal('');
   protected readonly nuevaMesaCapacidad = signal<number | null>(null);
   protected readonly creandoMesa = signal(false);
@@ -493,6 +500,46 @@ export class App {
       this.crearMesaError.set('No se pudo crear la mesa. Intenta de nuevo.');
     } finally {
       this.creandoMesa.set(false);
+    }
+  }
+
+  protected abrirEditMesa(mesa: Mesa, e: Event): void {
+    e.stopPropagation();
+    this.editMesaNombre.set(mesa.nombre);
+    this.editMesaCapacidad.set(mesa.capacidad);
+    this.editMesaError.set('');
+    this.editandoMesa.set(mesa);
+  }
+
+  protected setEditMesaNombre(e: Event): void {
+    this.editMesaNombre.set((e.target as HTMLInputElement).value);
+  }
+
+  protected setEditMesaCapacidad(e: Event): void {
+    const v = (e.target as HTMLInputElement).value;
+    this.editMesaCapacidad.set(v ? parseInt(v, 10) : null);
+  }
+
+  protected async guardarMesa(): Promise<void> {
+    const mesa   = this.editandoMesa();
+    const nombre = this.editMesaNombre().trim();
+    if (!mesa || !nombre) { this.editMesaError.set('El nombre es obligatorio.'); return; }
+
+    this.guardandoMesa.set(true);
+    this.editMesaError.set('');
+    try {
+      await firstValueFrom(
+        this.http.put(
+          `${environment.urlAdministration}/Restaurant/mesas/${mesa.id}`,
+          { id: mesa.id, idCompany: environment.companyId, nombre, capacidad: this.editMesaCapacidad(), activo: true },
+        ),
+      );
+      this.editandoMesa.set(null);
+      this.mesasResource.reload();
+    } catch {
+      this.editMesaError.set('No se pudo guardar. Intenta de nuevo.');
+    } finally {
+      this.guardandoMesa.set(false);
     }
   }
 

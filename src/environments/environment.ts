@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '1.46 (28 Junio 2026) Logo Bi2 favicon y título POS',
+  version: '1.47 (28 Junio 2026) Editar nombre y capacidad de mesas',
 }; 
