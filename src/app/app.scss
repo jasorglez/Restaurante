@@ -214,6 +214,13 @@ footer {
   font-size: 0.75rem;
 }
 
+.app-version {
+  font-size: 0.68rem;
+  color: #aab8af;
+  font-style: italic;
+  letter-spacing: 0.01em;
+}
+
 .tables-view {
   width: min(1240px, calc(100% - 48px));
   margin: 0 auto;

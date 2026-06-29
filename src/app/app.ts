@@ -208,6 +208,7 @@ export class App {
   protected readonly companyLogo = computed(
     () => this.companyResource.value()?.picture ?? null,
   );
+  protected readonly appVersion = environment.version;
 
   // ── Mesas ─────────────────────────────────────────────────────────────────
   protected readonly mesasResource = httpResource<Mesa[]>(
