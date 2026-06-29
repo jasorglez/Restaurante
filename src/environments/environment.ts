@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '1.55 (29 Junio 2026) Fix decimal en inputs de cobro y reconteo de caja',
+  version: '1.56 (29 Junio 2026) Panel de producto centrado en pantalla (tableta)',
 }; 
