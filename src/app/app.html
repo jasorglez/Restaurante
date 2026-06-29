@@ -127,10 +127,6 @@
           <p>{{ error() }}</p>
           <button type="button" (click)="loadMesas()">Reintentar</button>
         </div>
-      } @else if (mesas().length === 0) {
-        <div class="state-panel">
-          <strong>No hay mesas activas para {{ companyName() }}</strong>
-        </div>
       } @else {
         <div class="tables-grid">
           @for (mesa of mesas(); track mesa.id) {
