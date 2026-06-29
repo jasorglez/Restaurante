@@ -182,6 +182,7 @@ export class App {
     },
   );
   protected readonly efectivoContado = signal<number | null>(null);
+  private efectivoContadoEl: HTMLInputElement | null = null;
   protected readonly cerrandoTurno = signal(false);
   protected readonly cerrarError = signal('');
   protected readonly corteResultado = signal<Turno | null>(null);
@@ -266,8 +267,10 @@ export class App {
   // ── Pago ──────────────────────────────────────────────────────────────────
   protected readonly showPayment = signal(false);
   protected readonly tipoPago = signal<TipoPago>('EFECTIVO');
-  protected readonly montoPagado = signal<number | null>(null);
+  protected readonly montoPagado  = signal<number | null>(null);
   protected readonly montoTarjeta = signal<number | null>(null);
+  private montoPagadoEl:  HTMLInputElement | null = null;
+  private montoTarjetaEl: HTMLInputElement | null = null;
   protected readonly cobrando = signal(false);
   protected readonly cobroError = signal('');
 
@@ -493,14 +496,19 @@ export class App {
   // ── Corte ─────────────────────────────────────────────────────────────────
   protected abrirCorte(): void {
     this.efectivoContado.set(null);
+    this.efectivoContadoEl = null;
     this.cerrarError.set('');
     this.corteResultado.set(null);
     this.cajasSubView.set('corte');
   }
 
   protected setEfectivoContado(e: Event): void {
-    const val = +(e.target as HTMLInputElement).value;
-    this.efectivoContado.set(val >= 0 ? val : null);
+    const input = e.target as HTMLInputElement;
+    this.efectivoContadoEl = input;
+    const str = input.value.trim();
+    if (str.endsWith('.')) return; // punto sin decimales aún — no actualizar
+    const val = parseFloat(str);
+    this.efectivoContado.set(!isNaN(val) && val >= 0 ? val : null);
   }
 
   protected async cerrarTurno(): Promise<void> {
@@ -936,22 +944,34 @@ export class App {
     this.tipoPago.set(tipo);
     this.montoPagado.set(null);
     this.montoTarjeta.set(null);
+    if (this.montoPagadoEl)  this.montoPagadoEl.value  = '';
+    if (this.montoTarjetaEl) this.montoTarjetaEl.value = '';
   }
 
   protected setMontoPagado(e: Event): void {
-    const val = +(e.target as HTMLInputElement).value;
-    this.montoPagado.set(val > 0 ? val : null);
+    const input = e.target as HTMLInputElement;
+    this.montoPagadoEl = input;
+    const str = input.value.trim();
+    if (str.endsWith('.')) return; // punto sin decimales — no actualizar
+    const val = parseFloat(str);
+    this.montoPagado.set(!isNaN(val) && val > 0 ? val : null);
   }
 
   protected setMontoTarjeta(e: Event): void {
-    const val = +(e.target as HTMLInputElement).value;
-    this.montoTarjeta.set(val > 0 ? val : null);
+    const input = e.target as HTMLInputElement;
+    this.montoTarjetaEl = input;
+    const str = input.value.trim();
+    if (str.endsWith('.')) return;
+    const val = parseFloat(str);
+    this.montoTarjeta.set(!isNaN(val) && val > 0 ? val : null);
   }
 
   protected abrirPago(): void {
     this.tipoPago.set('EFECTIVO');
     this.montoPagado.set(null);
     this.montoTarjeta.set(null);
+    this.montoPagadoEl  = null;
+    this.montoTarjetaEl = null;
     this.cobroError.set('');
     this.showPayment.set(true);
   }

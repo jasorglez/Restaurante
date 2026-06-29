@@ -646,8 +646,7 @@
             <p class="corte-section-title">Conteo físico</p>
             <div class="monto-row turno-monto">
               <span class="monto-currency">$</span>
-              <input class="monto-input" type="number" min="0" step="1" placeholder="0.00"
-                [value]="efectivoContado() ?? ''"
+              <input class="monto-input" type="text" inputmode="decimal" placeholder="0.00"
                 (input)="setEfectivoContado($event)"
                 [disabled]="cerrandoTurno()">
             </div>
@@ -999,16 +998,16 @@
               }
               <div class="monto-row">
                 <span class="monto-currency">$</span>
-                <input class="monto-input" type="number" min="0" step="1" placeholder="0.00"
-                  [value]="montoPagado() ?? ''" (input)="setMontoPagado($event)" [disabled]="cobrando()">
+                <input class="monto-input" type="text" inputmode="decimal" placeholder="0.00"
+                  (input)="setMontoPagado($event)" [disabled]="cobrando()">
               </div>
 
               @if (tipoPago() === 'MIXTO') {
                 <label class="monto-label mt">Tarjeta</label>
                 <div class="monto-row">
                   <span class="monto-currency">$</span>
-                  <input class="monto-input" type="number" min="0" step="1" placeholder="0.00"
-                    [value]="montoTarjeta() ?? ''" (input)="setMontoTarjeta($event)" [disabled]="cobrando()">
+                  <input class="monto-input" type="text" inputmode="decimal" placeholder="0.00"
+                    (input)="setMontoTarjeta($event)" [disabled]="cobrando()">
                 </div>
               }
 
