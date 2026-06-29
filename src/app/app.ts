@@ -257,7 +257,9 @@ export class App {
 
   // ── Empresa ───────────────────────────────────────────────────────────────
   protected readonly companyResource = httpResource<CompanyInfo>(
-    () => `${environment.urlSmp}/Root/${this.companyId()!}/pdf-info`,
+    () => this.companyId()
+      ? `${environment.urlSmp}/Root/${this.companyId()}/pdf-info`
+      : undefined,
   );
   protected readonly companyName = computed(
     () => this.companyResource.value()?.name?.trim() || 'Cargando empresa…',
