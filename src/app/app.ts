@@ -14,6 +14,9 @@ type View = 'menu' | 'mesas' | 'familias' | 'productos' | 'cuenta' | 'cajas' | '
 type TipoPago = 'EFECTIVO' | 'TARJETA' | 'MIXTO';
 
 interface CompanyInfo { name: string; picture: string | null; picture2: string | null; }
+interface EmpresaItem  { id: number; name: string; picture: string | null; }
+
+const LS_EMPRESA = 'pv_empresa_id';
 
 interface TicketData {
   companyName: string;
@@ -37,6 +40,48 @@ interface TicketData {
 export class App {
   private readonly http = inject(HttpClient);
 
+  // ── Selección de empresa ──────────────────────────────────────────────────
+  protected readonly companyId   = signal<number | null>(this.resolveCompanyId());
+  protected readonly selEmpresa  = signal(false);   // mostrar pantalla de selección
+  protected readonly empresas    = signal<EmpresaItem[]>([]);
+  protected readonly cargandoEmpresas = signal(false);
+
+  private resolveCompanyId(): number | null {
+    const param = new URLSearchParams(window.location.search).get('empresa');
+    if (param) {
+      const n = parseInt(param, 10);
+      if (!isNaN(n)) { localStorage.setItem(LS_EMPRESA, String(n)); return n; }
+    }
+    const stored = localStorage.getItem(LS_EMPRESA);
+    return stored ? parseInt(stored, 10) : null;
+  }
+
+  protected async cargarEmpresas(): Promise<void> {
+    this.cargandoEmpresas.set(true);
+    try {
+      const lista = await firstValueFrom(
+        this.http.get<EmpresaItem[]>(`${environment.urlSmp}/Root/lista-publica`),
+      );
+      this.empresas.set(lista ?? []);
+    } finally {
+      this.cargandoEmpresas.set(false);
+    }
+  }
+
+  protected seleccionarEmpresa(e: EmpresaItem): void {
+    localStorage.setItem(LS_EMPRESA, String(e.id));
+    this.companyId.set(e.id);
+    this.selEmpresa.set(false);
+    // recargar para que todos los resources reactivos se actualicen
+    window.location.replace(window.location.pathname + `?empresa=${e.id}`);
+  }
+
+  protected cambiarEmpresa(): void {
+    this.cargarEmpresas();
+    this.selEmpresa.set(true);
+  }
+
+  // ── Vista principal ────────────────────────────────────────────────────────
   protected readonly view = signal<View>('menu');
   protected readonly selectedMesa = signal<Mesa | null>(null);
   protected readonly openingMesa = signal(false);
@@ -67,7 +112,7 @@ export class App {
   // ── Cajas / Turno ─────────────────────────────────────────────────────────
   protected readonly cajasResource = httpResource<CajaInfo[]>(
     () => this.view() === 'cajas'
-      ? `${environment.urlAdministration}/Restaurant/cajas/${environment.companyId}`
+      ? `${environment.urlAdministration}/Restaurant/cajas/${this.companyId()!}`
       : undefined,
     { defaultValue: [] },
   );
@@ -101,6 +146,11 @@ export class App {
   );
 
   constructor() {
+    // Si no hay empresa guardada, carga lista y muestra selección
+    if (!this.companyId()) {
+      void this.cargarEmpresas();
+      this.selEmpresa.set(true);
+    }
     // Cuando el recurso resuelve un turno abierto, lo activa automáticamente
     effect(() => {
       const t = this.turnoActivoResource.value();
@@ -144,7 +194,7 @@ export class App {
   protected readonly reporteMesasResource = httpResource<ReporteMesa[]>(
     () => {
       if (this.view() !== 'reportes' || this.reporteSubView() !== 'mesas') return undefined;
-      return `${environment.urlAdministration}/Restaurant/reportes/${environment.companyId}/mesas?fecha=${this.reporteFecha()}`;
+      return `${environment.urlAdministration}/Restaurant/reportes/${this.companyId()!}/mesas?fecha=${this.reporteFecha()}`;
     },
     { defaultValue: [] },
   );
@@ -152,7 +202,7 @@ export class App {
   protected readonly reporteTurnosResource = httpResource<Turno[]>(
     () => {
       if (this.view() !== 'reportes' || this.reporteSubView() !== 'caja') return undefined;
-      return `${environment.urlAdministration}/Restaurant/reportes/${environment.companyId}/turnos?fecha=${this.reporteFecha()}`;
+      return `${environment.urlAdministration}/Restaurant/reportes/${this.companyId()!}/turnos?fecha=${this.reporteFecha()}`;
     },
     { defaultValue: [] },
   );
@@ -207,7 +257,7 @@ export class App {
 
   // ── Empresa ───────────────────────────────────────────────────────────────
   protected readonly companyResource = httpResource<CompanyInfo>(
-    () => `${environment.urlSmp}/Root/${environment.companyId}/pdf-info`,
+    () => `${environment.urlSmp}/Root/${this.companyId()!}/pdf-info`,
   );
   protected readonly companyName = computed(
     () => this.companyResource.value()?.name?.trim() || 'Cargando empresa…',
@@ -220,7 +270,7 @@ export class App {
   // ── Mesas ─────────────────────────────────────────────────────────────────
   protected readonly mesasResource = httpResource<Mesa[]>(
     () => this.view() === 'mesas'
-      ? `${environment.urlAdministration}/Restaurant/mesas/${environment.companyId}`
+      ? `${environment.urlAdministration}/Restaurant/mesas/${this.companyId()!}`
       : undefined,
     { defaultValue: [] },
   );
@@ -238,7 +288,7 @@ export class App {
   // ── Familias ──────────────────────────────────────────────────────────────
   protected readonly familiasResource = httpResource<Familia[]>(
     () => this.view() === 'familias'
-      ? `${environment.urlChatBot}/restaurant-publico/familias/${environment.companyId}`
+      ? `${environment.urlChatBot}/restaurant-publico/familias/${this.companyId()!}`
       : undefined,
     { defaultValue: [] },
   );
@@ -253,7 +303,7 @@ export class App {
     () => {
       const fam = this.selectedFamilia();
       if (!fam || this.view() !== 'productos') return undefined;
-      return `${environment.urlChatBot}/restaurant-publico/subfamilias/${environment.companyId}/${fam.id}`;
+      return `${environment.urlChatBot}/restaurant-publico/subfamilias/${this.companyId()!}/${fam.id}`;
     },
     { defaultValue: [] },
   );
@@ -271,10 +321,10 @@ export class App {
       if (!fam || this.subfamiliasResource.isLoading()) return undefined;
       const sub = this.selectedSubfamilia();
       if (sub) {
-        return `${environment.urlChatBot}/restaurant-publico/productos/${environment.companyId}/subfamilia/${sub.id}`;
+        return `${environment.urlChatBot}/restaurant-publico/productos/${this.companyId()!}/subfamilia/${sub.id}`;
       }
       if (!this.mostrarSubfamilias()) {
-        return `${environment.urlChatBot}/restaurant-publico/productos/${environment.companyId}/familia/${fam.id}`;
+        return `${environment.urlChatBot}/restaurant-publico/productos/${this.companyId()!}/familia/${fam.id}`;
       }
       return undefined;
     },
@@ -340,7 +390,7 @@ export class App {
         this.http.post<Turno>(
           `${environment.urlAdministration}/Restaurant/turnos`,
           {
-            idCompany:      environment.companyId,
+            idCompany:      this.companyId()!,
             idCashRegister: caja.idCaja,
             idBranch:       caja.idBranch,
             cajero:         this.cajaNombre().trim() || null,
@@ -491,7 +541,7 @@ export class App {
       await firstValueFrom(
         this.http.post(
           `${environment.urlAdministration}/Restaurant/mesas`,
-          { idCompany: environment.companyId, nombre, capacidad: this.nuevaMesaCapacidad() },
+          { idCompany: this.companyId()!, nombre, capacidad: this.nuevaMesaCapacidad() },
         ),
       );
       this.showNuevaMesa.set(false);
@@ -531,7 +581,7 @@ export class App {
       await firstValueFrom(
         this.http.put(
           `${environment.urlAdministration}/Restaurant/mesas/${mesa.id}`,
-          { id: mesa.id, idCompany: environment.companyId, nombre, capacidad: this.editMesaCapacidad(), activo: true },
+          { id: mesa.id, idCompany: this.companyId()!, nombre, capacidad: this.editMesaCapacidad(), activo: true },
         ),
       );
       this.editandoMesa.set(null);
@@ -559,7 +609,7 @@ export class App {
       const cuenta = await firstValueFrom(
         this.http.post<CuentaAbierta>(
           `${environment.urlChatBot}/restaurant-publico/cuentas/abrir`,
-          { idCompany: environment.companyId, idMesa: mesa.id },
+          { idCompany: this.companyId()!, idMesa: mesa.id },
         ),
       );
       this.selectedMesa.set({
@@ -694,7 +744,7 @@ export class App {
       await firstValueFrom(
         this.http.post(
           `${environment.urlChatBot}/restaurant-publico/cuentas/${mesa.idCuentaActual}/cobrar`,
-          { idCompany: environment.companyId, tipoPago: tipo },
+          { idCompany: this.companyId()!, tipoPago: tipo },
         ),
       );
 
