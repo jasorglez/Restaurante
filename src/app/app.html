@@ -1,3 +1,37 @@
+<!-- ── SELECCIÓN DE EMPRESA ──────────────────────────────────────────────── -->
+@if (selEmpresa()) {
+  <div class="empresa-overlay">
+    <div class="empresa-modal">
+      <div class="empresa-modal-header">
+        <span class="empresa-modal-icon" aria-hidden="true">🏢</span>
+        <h2>Selecciona tu restaurante</h2>
+        <p>Elige la empresa con la que deseas trabajar</p>
+      </div>
+      @if (cargandoEmpresas()) {
+        <div class="empresa-loading">
+          <span class="spinner" aria-hidden="true"></span>
+          Cargando empresas…
+        </div>
+      } @else if (empresas().length === 0) {
+        <p class="empresa-empty">No se encontraron empresas disponibles.</p>
+      } @else {
+        <div class="empresa-grid">
+          @for (e of empresas(); track e.id) {
+            <button class="empresa-card" type="button" (click)="seleccionarEmpresa(e)">
+              @if (e.picture) {
+                <img class="empresa-logo" [src]="e.picture" [alt]="e.name" />
+              } @else {
+                <span class="empresa-logo-placeholder" aria-hidden="true">🍽️</span>
+              }
+              <span class="empresa-name">{{ e.name }}</span>
+            </button>
+          }
+        </div>
+      }
+    </div>
+  </div>
+}
+
 <main class="dashboard-shell">
   <header class="topbar">
     <div class="brand">
@@ -48,6 +82,11 @@
           <span class="arrow" aria-hidden="true">→</span>
         </button>
       </nav>
+      <div class="cambiar-empresa-wrap">
+        <button class="cambiar-empresa-btn" type="button" (click)="cambiarEmpresa()">
+          ⇄ Cambiar empresa
+        </button>
+      </div>
     </section>
 
   <!-- ── MESAS ──────────────────────────────────────────────────────────── -->
