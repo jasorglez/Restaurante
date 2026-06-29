@@ -3,9 +3,11 @@ import { HttpClient, httpResource } from '@angular/common/http';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import pdfMake from 'pdfmake/build/pdfmake';
-import * as pdfFonts from 'pdfmake/build/vfs_fonts';
+import pdfFonts from 'pdfmake/build/vfs_fonts';
 
-(pdfMake as any).vfs = (pdfFonts as any).pdfMake.vfs;
+if (pdfFonts && (pdfFonts as any).pdfMake) {
+  (pdfMake as any).vfs = (pdfFonts as any).pdfMake.vfs;
+}
 
 import { environment } from '../environments/environment';
 import { CajaInfo, EgresoCaja, ResumenCorte, Turno, VentaPorTipo } from './models/caja';
