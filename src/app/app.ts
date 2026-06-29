@@ -232,7 +232,7 @@ export class App {
   );
 
   protected readonly totalReporteCaja = computed(() =>
-    this.reporteTurnosResource.value().reduce((s, t) => s + (t.ventasTotal ?? 0), 0),
+    this.reporteTurnosResource.value().reduce((s, t) => s + (t.ventasTotal || 0), 0),
   );
 
   protected setReporteFecha(e: Event): void {
@@ -670,27 +670,27 @@ export class App {
               table: {
                 widths: ['*', 120],
                 body: [
-                  [{ text: `Caja ${t.idCashRegister} · Turno #${t.id}`, colSpan: 2, bold: true, fontSize: 10, margin: [0, 0, 0, 0] }],
+                  [{ text: `Caja ${t.idCashRegister} · Turno #${t.id}`, colSpan: 2, bold: true, fontSize: 10 }],
                   [{ text: `Cajero: ${t.cajero || '—'}`, colSpan: 2, fontSize: 9 }],
                   [{ text: `Horario: ${new Date(t.fechaInicio).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })} - ${t.fechaCierre ? new Date(t.fechaCierre).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : 'ABIERTO'}`, colSpan: 2, fontSize: 9 }]
                 ]
               },
-              margin: [0, 0, 0, 8]
+              margin: [0, 0, 0, 6]
             },
             {
               table: {
                 widths: ['*', 100],
                 body: [
                   [{ text: 'Tipo de Venta', bold: true, fontSize: 9 }, { text: 'Monto', bold: true, fontSize: 9, alignment: 'right' }],
-                  ...(t.ventasEfectivo ? [[{ text: 'Efectivo', fontSize: 9 }, { text: `$${t.ventasEfectivo.toFixed(2)}`, fontSize: 9, alignment: 'right' }]] : []),
-                  ...(t.ventasTarjeta ? [[{ text: 'Tarjeta', fontSize: 9 }, { text: `$${t.ventasTarjeta.toFixed(2)}`, fontSize: 9, alignment: 'right' }]] : []),
-                  ...(t.ventasCheque ? [[{ text: 'Cheque', fontSize: 9 }, { text: `$${t.ventasCheque.toFixed(2)}`, fontSize: 9, alignment: 'right' }]] : []),
-                  ...(t.ventasVales ? [[{ text: 'Vales', fontSize: 9 }, { text: `$${t.ventasVales.toFixed(2)}`, fontSize: 9, alignment: 'right' }]] : []),
-                  ...(t.ventasMixto ? [[{ text: 'Mixto', fontSize: 9 }, { text: `$${t.ventasMixto.toFixed(2)}`, fontSize: 9, alignment: 'right' }]] : []),
-                  [{ text: 'TOTAL:', bold: true, fontSize: 10 }, { text: `$${(t.ventasTotal ?? 0).toFixed(2)}`, bold: true, fontSize: 10, alignment: 'right', color: '#147a4b' }]
+                  ...(t.ventasEfectivo > 0 ? [[{ text: 'Efectivo', fontSize: 9 }, { text: `$${t.ventasEfectivo.toFixed(2)}`, fontSize: 9, alignment: 'right' }]] : []),
+                  ...(t.ventasTarjeta > 0  ? [[{ text: 'Tarjeta',  fontSize: 9 }, { text: `$${t.ventasTarjeta.toFixed(2)}`,  fontSize: 9, alignment: 'right' }]] : []),
+                  ...(t.ventasCheque > 0   ? [[{ text: 'Cheque',   fontSize: 9 }, { text: `$${t.ventasCheque.toFixed(2)}`,   fontSize: 9, alignment: 'right' }]] : []),
+                  ...(t.ventasVales > 0    ? [[{ text: 'Vales',    fontSize: 9 }, { text: `$${t.ventasVales.toFixed(2)}`,    fontSize: 9, alignment: 'right' }]] : []),
+                  ...(t.ventasMixto > 0    ? [[{ text: 'Mixto',    fontSize: 9 }, { text: `$${t.ventasMixto.toFixed(2)}`,    fontSize: 9, alignment: 'right' }]] : []),
+                  [{ text: 'TOTAL:', bold: true, fontSize: 10 }, { text: `$${t.ventasTotal.toFixed(2)}`, bold: true, fontSize: 10, alignment: 'right', color: '#147a4b' }]
                 ]
               },
-              margin: [0, 0, 0, 12]
+              margin: [0, 0, 0, 16]
             }
           ]),
           { text: '═'.repeat(60), margin: [0, 12, 0, 8] },

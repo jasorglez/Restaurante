@@ -12,21 +12,22 @@ export interface Turno {
   id: number;
   idCompany: number;
   idCashRegister: number;
-  idBranch: number;
+  idBranch?: number;
   cajero: string | null;
   fondoInicial: number;
   fechaInicio: string;
   fechaCierre: string | null;
-  ventasEfectivo: number | null;
-  ventasTarjeta: number | null;
-  ventasCheque: number | null;
-  ventasVales: number | null;
-  ventasMixto: number | null;
-  ventasTotal: number | null;
+  ventasEfectivo: number;
+  ventasTarjeta: number;
+  ventasCheque: number;
+  ventasVales: number;
+  ventasMixto: number;
+  ventasTotal: number;
   efectivoContado: number | null;
   efectivoEsperado: number | null;
   diferencia: number | null;
   active: boolean;
+  notas?: string | null;
 }
 
 export interface VentaPorTipo {
