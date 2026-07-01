@@ -117,8 +117,10 @@ export class App {
 
   // ── Nuevo agrupador (familia / subfamilia) ─────────────────────────────────
   protected readonly showNuevoAgrupador   = signal(false);
-  protected readonly agrupadorPaso        = signal<'familia' | 'subfamilias'>('familia');
+  protected readonly agrupadorPaso        = signal<'inicio' | 'subfamilias'>('inicio');
+  protected readonly agrupadorModo        = signal<'nueva' | 'existente'>('nueva');
   protected readonly nuevoAgrupadorNombre = signal('');
+  protected readonly agrupadorFamiliaExistente = signal<number | null>(null);
   protected readonly agrupadorParent      = signal<Familia | null>(null);
   protected readonly nuevaSubfamiliaNombre = signal('');
   protected readonly subfamiliasCreadas   = signal<Familia[]>([]);
@@ -807,8 +809,10 @@ export class App {
 
   // ── Nuevo agrupador (familia / subfamilia) ─────────────────────────────────
   protected abrirNuevaFamilia(): void {
-    this.agrupadorPaso.set('familia');
+    this.agrupadorPaso.set('inicio');
+    this.agrupadorModo.set('nueva');
     this.nuevoAgrupadorNombre.set('');
+    this.agrupadorFamiliaExistente.set(null);
     this.agrupadorParent.set(null);
     this.nuevaSubfamiliaNombre.set('');
     this.subfamiliasCreadas.set([]);
@@ -827,15 +831,36 @@ export class App {
     this.showNuevoAgrupador.set(true);
   }
 
+  protected setAgrupadorModo(modo: 'nueva' | 'existente'): void {
+    this.agrupadorModo.set(modo);
+    this.crearAgrupadorError.set('');
+  }
+
   protected setNuevoAgrupadorNombre(e: Event): void {
     this.nuevoAgrupadorNombre.set((e.target as HTMLInputElement).value);
+  }
+
+  protected setAgrupadorFamiliaExistente(e: Event): void {
+    const val = (e.target as HTMLSelectElement).value;
+    this.agrupadorFamiliaExistente.set(val ? +val : null);
   }
 
   protected setNuevaSubfamiliaNombre(e: Event): void {
     this.nuevaSubfamiliaNombre.set((e.target as HTMLInputElement).value);
   }
 
-  protected async crearFamilia(): Promise<void> {
+  // Paso 1: crear familia nueva o elegir una existente; luego pasa a subagrupadores.
+  protected async continuarAgrupador(): Promise<void> {
+    if (this.agrupadorModo() === 'existente') {
+      const id  = this.agrupadorFamiliaExistente();
+      const fam = this.familias().find(f => f.id === id) ?? null;
+      if (!fam) { this.crearAgrupadorError.set('Selecciona una familia.'); return; }
+      this.agrupadorParent.set(fam);
+      this.crearAgrupadorError.set('');
+      this.agrupadorPaso.set('subfamilias');
+      return;
+    }
+
     const nombre = this.nuevoAgrupadorNombre().trim();
     if (!nombre) { this.crearAgrupadorError.set('El nombre es obligatorio.'); return; }
 

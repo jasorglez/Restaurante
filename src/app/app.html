@@ -1152,23 +1152,53 @@
   <div class="qty-overlay" role="dialog" aria-modal="true" aria-label="Nuevo agrupador">
     <div class="qty-panel">
 
-      @if (agrupadorPaso() === 'familia') {
-        <strong class="qty-name">Nuevo agrupador (familia)</strong>
+      @if (agrupadorPaso() === 'inicio') {
+        <strong class="qty-name">Nuevo agrupador</strong>
+
         <div class="turno-fields" style="margin:12px 0 4px">
-          <label class="turno-label" for="agr-nombre">Nombre del agrupador</label>
-          <input id="agr-nombre" class="turno-input" type="text"
-            placeholder="Ej. Extras, Bebidas, Postres..."
-            [value]="nuevoAgrupadorNombre()" (input)="setNuevoAgrupadorNombre($event)"
-            [disabled]="creandoAgrupador()">
+          <label class="turno-label" style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="radio" name="agr-modo" [checked]="agrupadorModo() === 'nueva'"
+              (change)="setAgrupadorModo('nueva')" [disabled]="creandoAgrupador()">
+            Crear familia nueva
+          </label>
+          <label class="turno-label" style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="radio" name="agr-modo" [checked]="agrupadorModo() === 'existente'"
+              (change)="setAgrupadorModo('existente')" [disabled]="creandoAgrupador()">
+            Agregar a familia existente
+          </label>
         </div>
+
+        @if (agrupadorModo() === 'nueva') {
+          <div class="turno-fields" style="margin:8px 0 4px">
+            <label class="turno-label" for="agr-nombre">Nombre de la familia</label>
+            <input id="agr-nombre" class="turno-input" type="text"
+              placeholder="Ej. Extras, Bebidas, Postres..."
+              [value]="nuevoAgrupadorNombre()" (input)="setNuevoAgrupadorNombre($event)"
+              [disabled]="creandoAgrupador()">
+          </div>
+        } @else {
+          <div class="turno-fields" style="margin:8px 0 4px">
+            <label class="turno-label" for="agr-fam">Familia</label>
+            <select id="agr-fam" class="turno-input"
+              (change)="setAgrupadorFamiliaExistente($event)" [disabled]="creandoAgrupador()">
+              <option value="">Selecciona una familia…</option>
+              @for (f of familias(); track f.id) {
+                <option [value]="f.id" [selected]="agrupadorFamiliaExistente() === f.id">{{ f.description }}</option>
+              }
+            </select>
+          </div>
+        }
 
         @if (crearAgrupadorError()) {
           <p class="qty-error" role="alert">{{ crearAgrupadorError() }}</p>
         }
 
         <button class="qty-btn confirmar-btn" type="button"
-          (click)="crearFamilia()" [disabled]="creandoAgrupador() || !nuevoAgrupadorNombre().trim()">
-          @if (creandoAgrupador()) { Guardando… } @else { Crear y continuar → }
+          (click)="continuarAgrupador()"
+          [disabled]="creandoAgrupador()
+            || (agrupadorModo() === 'nueva' && !nuevoAgrupadorNombre().trim())
+            || (agrupadorModo() === 'existente' && !agrupadorFamiliaExistente())">
+          @if (creandoAgrupador()) { Guardando… } @else { Continuar → }
         </button>
         <button class="qty-cancel" type="button" (click)="showNuevoAgrupador.set(false)" [disabled]="creandoAgrupador()">
           Cancelar
