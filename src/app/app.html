@@ -367,10 +367,14 @@
       } @else {
         <div class="products-grid">
           @for (prod of productosResource.value(); track prod.id) {
-            <button class="product-button" type="button" (click)="selectProducto(prod)">
-              <strong>{{ prod.description }}</strong>
-              <span class="product-price">{{ prod.price | currency:'MXN':'symbol-narrow':'1.2-2' }}</span>
-            </button>
+            <div class="product-card-wrap">
+              <button class="product-button" type="button" (click)="selectProducto(prod)">
+                <strong>{{ prod.description }}</strong>
+                <span class="product-price">{{ prod.price | currency:'MXN':'symbol-narrow':'1.2-2' }}</span>
+              </button>
+              <button class="edit-mesa-btn" type="button" title="Editar producto"
+                (click)="abrirEditProducto(prod, $event)">✏️</button>
+            </div>
           } @empty {
             <div class="state-panel"><strong>No hay productos en esta categoría.</strong></div>
           }
@@ -1284,6 +1288,37 @@
         @if (creandoProducto()) { Guardando… } @else { Guardar producto }
       </button>
       <button class="qty-cancel" type="button" (click)="showNuevoProducto.set(false)" [disabled]="creandoProducto()">
+        Cancelar
+      </button>
+    </div>
+  </div>
+}
+
+@if (editandoProducto()) {
+  <div class="qty-overlay" role="dialog" aria-modal="true" aria-label="Editar producto">
+    <div class="qty-panel">
+      <strong class="qty-name">Editar producto</strong>
+
+      <div class="turno-fields" style="margin:12px 0 4px">
+        <label class="turno-label" for="edit-prod-desc">Descripción</label>
+        <input id="edit-prod-desc" class="turno-input" type="text" placeholder="Ej. Café Americano Grande"
+          [value]="editProdDescripcion()" (input)="setEditProdDescripcion($event)" [disabled]="guardandoProducto()">
+
+        <label class="turno-label" for="edit-prod-precio" style="margin-top:10px">Precio de venta</label>
+        <input id="edit-prod-precio" class="turno-input" type="text" inputmode="decimal" placeholder="0.00"
+          [value]="editProdPrecioStr()" (input)="setEditProdPrecio($event)" [disabled]="guardandoProducto()">
+      </div>
+
+      @if (editProductoError()) {
+        <p class="qty-error" role="alert">{{ editProductoError() }}</p>
+      }
+
+      <button class="qty-btn confirmar-btn" type="button"
+        (click)="guardarProducto()"
+        [disabled]="guardandoProducto() || !editProdDescripcion().trim() || editProdPrecio() === null">
+        @if (guardandoProducto()) { Guardando… } @else { Guardar cambios }
+      </button>
+      <button class="qty-cancel" type="button" (click)="editandoProducto.set(null)" [disabled]="guardandoProducto()">
         Cancelar
       </button>
     </div>

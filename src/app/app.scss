@@ -858,6 +858,12 @@ footer {
   .table-button { width: 100%; height: 100%; }
 }
 
+.product-card-wrap {
+  position: relative;
+
+  .product-button { width: 100%; height: 100%; }
+}
+
 .edit-mesa-btn {
   position: absolute;
   top: 8px;
@@ -880,7 +886,9 @@ footer {
 }
 
 .table-card-wrap:hover .edit-mesa-btn,
-.table-card-wrap:focus-within .edit-mesa-btn { opacity: 1; }
+.table-card-wrap:focus-within .edit-mesa-btn,
+.product-card-wrap:hover .edit-mesa-btn,
+.product-card-wrap:focus-within .edit-mesa-btn { opacity: 1; }
 
 /* ── Tarjeta Nueva Mesa ─────────────────────────────────────────────────────── */
 

@@ -136,6 +136,14 @@ export class App {
   protected readonly creandoProducto    = signal(false);
   protected readonly crearProductoError = signal('');
 
+  // ── Editar producto ────────────────────────────────────────────────────────
+  protected readonly editandoProducto     = signal<Producto | null>(null);
+  protected readonly editProdDescripcion  = signal('');
+  protected readonly editProdPrecioStr    = signal('');
+  protected readonly editProdPrecio       = signal<number | null>(null);
+  protected readonly guardandoProducto    = signal(false);
+  protected readonly editProductoError    = signal('');
+
   // ── Cajas / Turno ─────────────────────────────────────────────────────────
   protected readonly cajasResource = httpResource<CajaInfo[]>(
     () => this.view() === 'cajas'
@@ -1000,6 +1008,53 @@ export class App {
       this.crearProductoError.set('No se pudo crear el producto. Intenta de nuevo.');
     } finally {
       this.creandoProducto.set(false);
+    }
+  }
+
+  // ── Editar producto (descripción y precio) ─────────────────────────────────
+  protected abrirEditProducto(prod: Producto, e: Event): void {
+    e.stopPropagation();
+    this.editProdDescripcion.set(prod.description);
+    this.editProdPrecioStr.set(prod.price != null ? String(prod.price) : '');
+    this.editProdPrecio.set(prod.price ?? null);
+    this.editProductoError.set('');
+    this.editandoProducto.set(prod);
+  }
+
+  protected setEditProdDescripcion(e: Event): void {
+    this.editProdDescripcion.set((e.target as HTMLInputElement).value);
+  }
+
+  protected setEditProdPrecio(e: Event): void {
+    const str = (e.target as HTMLInputElement).value;
+    this.editProdPrecioStr.set(str);
+    const val = parseFloat(str.trim());
+    this.editProdPrecio.set(!isNaN(val) && val >= 0 ? val : null);
+  }
+
+  protected async guardarProducto(): Promise<void> {
+    const prod   = this.editandoProducto();
+    const desc   = this.editProdDescripcion().trim();
+    const precio = this.editProdPrecio();
+    if (!prod) return;
+    if (!desc) { this.editProductoError.set('La descripción es obligatoria.'); return; }
+    if (precio === null) { this.editProductoError.set('El precio de venta es obligatorio.'); return; }
+
+    this.guardandoProducto.set(true);
+    this.editProductoError.set('');
+    try {
+      await firstValueFrom(
+        this.http.put(
+          `${environment.urlChatBot}/restaurant-publico/productos/${prod.id}`,
+          { idCompany: this.companyId()!, description: desc, ventaMN: precio },
+        ),
+      );
+      this.editandoProducto.set(null);
+      this.productosResource.reload();
+    } catch {
+      this.editProductoError.set('No se pudo guardar. Intenta de nuevo.');
+    } finally {
+      this.guardandoProducto.set(false);
     }
   }
 
