@@ -85,14 +85,30 @@ export class App {
   // Clave requerida para poder cambiar de empresa (evita que un usuario
   // normal salga de su propia empresa).
   private static readonly CLAVE_CAMBIO_EMPRESA = 'QAdmin9317';
+  protected readonly pedirClave  = signal(false);
+  protected readonly claveInput  = signal('');
+  protected readonly claveError  = signal('');
 
   protected cambiarEmpresa(): void {
-    const clave = window.prompt('Ingresa la contraseña para cambiar de empresa:');
-    if (clave === null) return;                     // canceló
-    if (clave !== App.CLAVE_CAMBIO_EMPRESA) {
-      window.alert('Contraseña incorrecta.');
+    this.claveInput.set('');
+    this.claveError.set('');
+    this.pedirClave.set(true);
+  }
+
+  protected cancelarClave(): void {
+    this.pedirClave.set(false);
+    this.claveInput.set('');
+    this.claveError.set('');
+  }
+
+  protected confirmarClave(): void {
+    if (this.claveInput() !== App.CLAVE_CAMBIO_EMPRESA) {
+      this.claveError.set('Contraseña incorrecta.');
       return;                                        // se queda en su empresa
     }
+    this.pedirClave.set(false);
+    this.claveInput.set('');
+    this.claveError.set('');
     this.cargarEmpresas();
     this.selEmpresa.set(true);
   }

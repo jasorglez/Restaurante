@@ -1,3 +1,32 @@
+<!-- ── CONTRASEÑA PARA CAMBIAR EMPRESA ───────────────────────────────────── -->
+@if (pedirClave()) {
+  <div class="empresa-overlay">
+    <div class="empresa-modal clave-modal">
+      <div class="empresa-modal-header">
+        <span class="empresa-modal-icon" aria-hidden="true">🔒</span>
+        <h2>Contraseña requerida</h2>
+        <p>Ingresa la contraseña para cambiar de empresa</p>
+      </div>
+      <input
+        class="clave-input"
+        type="password"
+        autocomplete="off"
+        placeholder="Contraseña"
+        [value]="claveInput()"
+        (input)="claveInput.set($any($event.target).value)"
+        (keyup.enter)="confirmarClave()"
+        autofocus />
+      @if (claveError()) {
+        <p class="clave-error">{{ claveError() }}</p>
+      }
+      <div class="clave-acciones">
+        <button class="clave-cancelar" type="button" (click)="cancelarClave()">Cancelar</button>
+        <button class="clave-aceptar" type="button" (click)="confirmarClave()">Continuar</button>
+      </div>
+    </div>
+  </div>
+}
+
 <!-- ── SELECCIÓN DE EMPRESA ──────────────────────────────────────────────── -->
 @if (selEmpresa()) {
   <div class="empresa-overlay">

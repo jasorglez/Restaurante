@@ -1898,6 +1898,60 @@ footer {
   line-height: 1;
 }
 
+.clave-modal {
+  width: min(420px, 100%);
+}
+
+.clave-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 14px 16px;
+  border: 2px solid #d5e2da;
+  border-radius: 14px;
+  font-size: 1.1rem;
+  letter-spacing: 0.15em;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.15s;
+
+  &:focus {
+    border-color: #2f9e6a;
+  }
+}
+
+.clave-error {
+  margin: 10px 0 0;
+  color: #d43b3b;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.clave-acciones {
+  display: flex;
+  gap: 12px;
+  margin-top: 22px;
+
+  button {
+    flex: 1;
+    padding: 13px 16px;
+    border-radius: 14px;
+    font-size: 1rem;
+    font-weight: 800;
+    cursor: pointer;
+    border: none;
+  }
+}
+
+.clave-cancelar {
+  background: #eef2f0;
+  color: #4a544d;
+}
+
+.clave-aceptar {
+  background: #2f9e6a;
+  color: #fff;
+}
+
 .empresa-loading {
   display: flex;
   align-items: center;
