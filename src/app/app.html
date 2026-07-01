@@ -1046,7 +1046,8 @@
             <p class="qty-error" role="alert">{{ cobroError() }}</p>
           }
 
-          <button class="qty-btn confirmar-btn" type="button" (click)="confirmarCobro()" [disabled]="cobrando()">
+          <button class="qty-btn confirmar-btn" type="button" (click)="confirmarCobro()"
+            [disabled]="cobrando() || !pagoSuficiente()">
             @if (cobrando()) { Procesando… } @else { Confirmar cobro }
           </button>
           <button class="qty-cancel" type="button" (click)="cancelarPago()" [disabled]="cobrando()">

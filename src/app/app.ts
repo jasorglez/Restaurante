@@ -305,6 +305,18 @@ export class App {
     return Math.max(0, efectivo - Math.max(0, total - tarjeta));
   });
 
+  // El pago cubre la cuenta: efectivo (o efectivo+tarjeta en mixto) >= total.
+  // Tarjeta exacta siempre alcanza. Evita confirmar con el monto vacío/insuficiente.
+  protected readonly pagoSuficiente = computed(() => {
+    const total = this.totalCuenta();
+    const tipo = this.tipoPago();
+    if (tipo === 'TARJETA') return true;
+    const efectivo = this.montoPagado() ?? 0;
+    if (tipo === 'EFECTIVO') return efectivo >= total;
+    const tarjeta = this.montoTarjeta() ?? 0;
+    return (efectivo + tarjeta) >= total;
+  });
+
   // ── Ticket ────────────────────────────────────────────────────────────────
   protected readonly ticketData = signal<TicketData | null>(null);
   protected readonly ticketVisible = signal(false);
@@ -1180,6 +1192,10 @@ export class App {
   protected async confirmarCobro(): Promise<void> {
     const mesa = this.selectedMesa();
     if (!mesa?.idCuentaActual) return;
+    if (!this.pagoSuficiente()) {
+      this.cobroError.set('El monto recibido no cubre el total de la cuenta.');
+      return;
+    }
 
     const tipo = this.tipoPago();
     const snapshotItems = [...this.items()];
