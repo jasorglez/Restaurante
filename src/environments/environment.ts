@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '1.64 (01 Julio 2026) Contraseña de cambiar empresa oculta en modal',
+  version: '1.65 (01 Julio 2026) Scroll en selección de empresa en celular',
 }; 

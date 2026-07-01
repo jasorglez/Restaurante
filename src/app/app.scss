@@ -1864,10 +1864,15 @@ footer {
   place-items: center;
   z-index: 500;
   padding: 24px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .empresa-modal {
   width: min(640px, 100%);
+  max-height: calc(100dvh - 48px);
+  display: flex;
+  flex-direction: column;
   background: #fff;
   border-radius: 28px;
   box-shadow: 0 20px 60px rgb(0 0 0 / 15%);
@@ -1877,6 +1882,7 @@ footer {
 .empresa-modal-header {
   text-align: center;
   margin-bottom: 32px;
+  flex: 0 0 auto;
 
   h2 {
     margin: 10px 0 6px;
@@ -1972,6 +1978,12 @@ footer {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 14px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 4px;
+  margin: -4px;
 }
 
 .empresa-card {
