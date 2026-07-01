@@ -98,6 +98,12 @@ export class App {
   protected readonly selectedProducto = signal<Producto | null>(null);
   protected readonly agregandoItem = signal(false);
   protected readonly addError = signal('');
+  // Nota / modificador del producto que se está agregando (ej. "sin cebolla").
+  protected readonly prodNota = signal('');
+  protected readonly notasRapidas = ['Sin cebolla', 'Sin picante', 'Bien cocido', 'Para llevar'];
+
+  // ── Buscador de productos ──────────────────────────────────────────────────
+  protected readonly prodBusqueda = signal('');
 
   protected readonly eliminandoId = signal<number | null>(null);
 
@@ -413,6 +419,18 @@ export class App {
     this.productosResource.error() ? 'No fue posible cargar los productos.' : '',
   );
 
+  // Búsqueda global en el catálogo (activa con 2+ caracteres).
+  protected readonly buscando = computed(() => this.prodBusqueda().trim().length >= 2);
+  protected readonly busquedaResource = httpResource<Producto[]>(
+    () => {
+      if (this.view() !== 'productos') return undefined;
+      const term = this.prodBusqueda().trim();
+      if (term.length < 2) return undefined;
+      return `${environment.urlChatBot}/restaurant-publico/productos/${this.companyId()!}/buscar?term=${encodeURIComponent(term)}`;
+    },
+    { defaultValue: [] },
+  );
+
   // ── Items de la cuenta ────────────────────────────────────────────────────
   protected readonly itemsResource = httpResource<ItemCuenta[]>(
     () => {
@@ -428,6 +446,15 @@ export class App {
   protected readonly totalCuenta = computed(() =>
     this.items().reduce((sum, i) => sum + i.subtotal, 0),
   );
+
+  // ── Dividir cuenta (partes iguales) ────────────────────────────────────────
+  protected readonly dividirEntre = signal(1);
+  protected readonly montoPorPersona = computed(() => {
+    const n = this.dividirEntre();
+    return n > 1 ? this.totalCuenta() / n : 0;
+  });
+  protected masComensales(): void { this.dividirEntre.update(n => Math.min(20, n + 1)); }
+  protected menosComensales(): void { this.dividirEntre.update(n => Math.max(1, n - 1)); }
 
   // ── Navegación ────────────────────────────────────────────────────────────
   protected selectModule(module: RestaurantModule): void {
@@ -1147,6 +1174,7 @@ export class App {
 
   protected selectProducto(producto: Producto): void {
     this.selectedProducto.set(producto);
+    this.prodNota.set('');
     this.addError.set('');
   }
 
@@ -1155,10 +1183,31 @@ export class App {
     this.addError.set('');
   }
 
+  protected setProdNota(e: Event): void {
+    this.prodNota.set((e.target as HTMLInputElement).value);
+  }
+
+  // Agrega (o quita si ya está) una nota rápida a la nota del producto.
+  protected toggleNotaChip(text: string): void {
+    const partes = this.prodNota().split(',').map(s => s.trim()).filter(Boolean);
+    const existe = partes.some(p => p.toLowerCase() === text.toLowerCase());
+    const nuevas = existe
+      ? partes.filter(p => p.toLowerCase() !== text.toLowerCase())
+      : [...partes, text];
+    this.prodNota.set(nuevas.join(', '));
+  }
+
+  protected notaChipActiva(text: string): boolean {
+    return this.prodNota().split(',').map(s => s.trim().toLowerCase()).includes(text.toLowerCase());
+  }
+
   protected async agregarProducto(cantidad: number): Promise<void> {
     const producto = this.selectedProducto();
     const mesa = this.selectedMesa();
     if (!producto || !mesa?.idCuentaActual) return;
+
+    const nota = this.prodNota().trim();
+    const descripcion = nota ? `${producto.description} (${nota})` : producto.description;
 
     this.agregandoItem.set(true);
     this.addError.set('');
@@ -1166,10 +1215,11 @@ export class App {
       await firstValueFrom(
         this.http.post(
           `${environment.urlChatBot}/restaurant-publico/cuentas/${mesa.idCuentaActual}/items`,
-          { idMaterial: producto.id, descripcion: producto.description, cantidad, precio: producto.price },
+          { idMaterial: producto.id, descripcion, cantidad, precio: producto.price },
         ),
       );
       this.selectedProducto.set(null);
+      this.prodNota.set('');
       this.itemsResource.reload();
     } catch {
       this.addError.set('No se pudo agregar el producto. Intenta de nuevo.');
@@ -1178,10 +1228,19 @@ export class App {
     }
   }
 
+  protected limpiarBusqueda(): void {
+    this.prodBusqueda.set('');
+  }
+
+  protected setProdBusqueda(e: Event): void {
+    this.prodBusqueda.set((e.target as HTMLInputElement).value);
+  }
+
   protected irACuenta(): void {
     this.selectedProducto.set(null);
     this.cobroError.set('');
     this.showPayment.set(false);
+    this.dividirEntre.set(1);
     this.view.set('cuenta');
   }
 

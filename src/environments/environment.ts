@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '1.61 (30 Junio 2026) Editar producto: descripción y precio de venta',
+  version: '1.62 (30 Junio 2026) Buscador de productos, notas a cocina y dividir cuenta',
 }; 

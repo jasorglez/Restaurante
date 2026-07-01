@@ -622,6 +622,155 @@ footer {
 }
 .cobrar-btn:hover { background: #0f5e38; }
 
+/* ── Dividir cuenta ────────────────────────────────────────────────────── */
+.dividir-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 12px 18px;
+  border: 1px dashed #bcd2c4;
+  border-radius: 16px;
+  background: #fafdfb;
+  margin-bottom: 16px;
+}
+.dividir-label {
+  color: #4d6558;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+.dividir-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+
+  button {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    border: 1px solid #cfe0d5;
+    background: #fff;
+    color: #147a4b;
+    font-size: 1.2rem;
+    font-weight: 900;
+    line-height: 1;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+
+    &:hover:not(:disabled) { border-color: #147a4b; background: #f0faf4; }
+    &:disabled { opacity: 0.4; cursor: default; }
+  }
+  strong { min-width: 24px; text-align: center; font-size: 1.15rem; color: #173c28; }
+}
+.dividir-monto {
+  margin-left: auto;
+  color: #147a4b;
+  font-size: 1rem;
+  font-weight: 900;
+}
+.dividir-hint {
+  margin-left: auto;
+  color: #93a29a;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.pago-dividido {
+  margin: -4px 0 14px;
+  color: #147a4b;
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+/* ── Buscador de productos ─────────────────────────────────────────────── */
+.buscar-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 18px;
+}
+.buscar-icon {
+  position: absolute;
+  left: 16px;
+  font-size: 0.95rem;
+  opacity: 0.6;
+  pointer-events: none;
+}
+.buscar-input {
+  width: 100%;
+  padding: 14px 44px 14px 44px;
+  border: 1px solid #d8e4db;
+  border-radius: 16px;
+  background: #fff;
+  color: #173c28;
+  font-size: 1rem;
+  box-shadow: 0 6px 18px rgb(23 75 47 / 6%);
+  transition: 130ms ease;
+
+  &::-webkit-search-cancel-button { display: none; }
+  &:focus { outline: none; border-color: #159357; box-shadow: 0 8px 22px rgb(21 147 87 / 15%); }
+}
+.buscar-clear {
+  position: absolute;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: #eef4f0;
+  color: #4d6558;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+
+  &:hover { background: #dfeee6; }
+}
+
+/* ── Nota / modificador del producto ───────────────────────────────────── */
+.nota-section { margin: 14px 0 4px; }
+.nota-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.nota-chip {
+  padding: 7px 12px;
+  border: 1px solid #d8e4db;
+  border-radius: 999px;
+  background: #fff;
+  color: #4d6558;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 120ms ease;
+
+  &:hover:not(:disabled) { border-color: #147a4b; }
+  &.active { border-color: #147a4b; background: #147a4b; color: #fff; }
+  &:disabled { opacity: 0.5; cursor: default; }
+}
+.nota-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #d8e4db;
+  border-radius: 14px;
+  font-size: 0.95rem;
+  color: #173c28;
+
+  &:focus { outline: none; border-color: #159357; }
+}
+.qty-cant-label {
+  margin: 12px 0 8px;
+  color: #6a756e;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
 /* ── Panel de pago ─────────────────────────────────────────────────────── */
 
 .pago-panel { padding-top: 32px; }
