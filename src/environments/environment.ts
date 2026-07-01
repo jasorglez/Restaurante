@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '1.58 (30 Junio 2026) Agrupador: familia nueva o existente + subagrupadores',
+  version: '1.59 (30 Junio 2026) Crear producto dentro del agrupador (identificador, descripción, precios)',
 }; 

@@ -374,6 +374,11 @@
           } @empty {
             <div class="state-panel"><strong>No hay productos en esta categoría.</strong></div>
           }
+          <!-- Crear producto dentro del agrupador actual -->
+          <button class="product-button add-mesa-btn" type="button" (click)="abrirNuevoProducto()">
+            <strong>＋ Nuevo producto</strong>
+            <span class="table-state">Agregar</span>
+          </button>
         </div>
       }
 
@@ -1237,6 +1242,49 @@
         </button>
       }
 
+    </div>
+  </div>
+}
+
+<!-- ── NUEVO PRODUCTO (dentro del agrupador) ─────────────────────────────── -->
+@if (showNuevoProducto()) {
+  <div class="qty-overlay" role="dialog" aria-modal="true" aria-label="Nuevo producto">
+    <div class="qty-panel">
+      <strong class="qty-name">Nuevo producto</strong>
+      <p class="qty-price">
+        {{ selectedFamilia()?.description }}@if (selectedSubfamilia()) { · {{ selectedSubfamilia()!.description }} }
+      </p>
+
+      <div class="turno-fields" style="margin:12px 0 4px">
+        <label class="turno-label" for="prod-id">Identificador (clave)</label>
+        <input id="prod-id" class="turno-input" type="text" placeholder="Opcional — se genera solo"
+          [value]="prodIdentificador()" (input)="setProdIdentificador($event)" [disabled]="creandoProducto()">
+
+        <label class="turno-label" for="prod-desc" style="margin-top:10px">Descripción</label>
+        <input id="prod-desc" class="turno-input" type="text" placeholder="Ej. Café Americano Grande"
+          [value]="prodDescripcion()" (input)="setProdDescripcion($event)" [disabled]="creandoProducto()">
+
+        <label class="turno-label" for="prod-precio" style="margin-top:10px">Precio de venta</label>
+        <input id="prod-precio" class="turno-input" type="text" inputmode="decimal" placeholder="0.00"
+          (input)="setProdPrecio($event)" [disabled]="creandoProducto()">
+
+        <label class="turno-label" for="prod-costo" style="margin-top:10px">Costo (opcional)</label>
+        <input id="prod-costo" class="turno-input" type="text" inputmode="decimal" placeholder="0.00"
+          (input)="setProdCosto($event)" [disabled]="creandoProducto()">
+      </div>
+
+      @if (crearProductoError()) {
+        <p class="qty-error" role="alert">{{ crearProductoError() }}</p>
+      }
+
+      <button class="qty-btn confirmar-btn" type="button"
+        (click)="crearProducto()"
+        [disabled]="creandoProducto() || !prodDescripcion().trim() || prodPrecio() === null">
+        @if (creandoProducto()) { Guardando… } @else { Guardar producto }
+      </button>
+      <button class="qty-cancel" type="button" (click)="showNuevoProducto.set(false)" [disabled]="creandoProducto()">
+        Cancelar
+      </button>
     </div>
   </div>
 }

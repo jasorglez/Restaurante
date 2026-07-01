@@ -127,6 +127,15 @@ export class App {
   protected readonly creandoAgrupador     = signal(false);
   protected readonly crearAgrupadorError  = signal('');
 
+  // ── Nuevo producto (dentro del agrupador) ──────────────────────────────────
+  protected readonly showNuevoProducto  = signal(false);
+  protected readonly prodIdentificador  = signal('');
+  protected readonly prodDescripcion    = signal('');
+  protected readonly prodPrecio         = signal<number | null>(null);
+  protected readonly prodCosto          = signal<number | null>(null);
+  protected readonly creandoProducto    = signal(false);
+  protected readonly crearProductoError = signal('');
+
   // ── Cajas / Turno ─────────────────────────────────────────────────────────
   protected readonly cajasResource = httpResource<CajaInfo[]>(
     () => this.view() === 'cajas'
@@ -914,6 +923,72 @@ export class App {
     this.crearAgrupadorError.set('');
     this.familiasResource.reload();
     this.subfamiliasResource.reload();
+  }
+
+  // ── Nuevo producto (dentro del agrupador) ──────────────────────────────────
+  protected abrirNuevoProducto(): void {
+    this.prodIdentificador.set('');
+    this.prodDescripcion.set('');
+    this.prodPrecio.set(null);
+    this.prodCosto.set(null);
+    this.crearProductoError.set('');
+    this.showNuevoProducto.set(true);
+  }
+
+  protected setProdIdentificador(e: Event): void {
+    this.prodIdentificador.set((e.target as HTMLInputElement).value);
+  }
+
+  protected setProdDescripcion(e: Event): void {
+    this.prodDescripcion.set((e.target as HTMLInputElement).value);
+  }
+
+  protected setProdPrecio(e: Event): void {
+    const str = (e.target as HTMLInputElement).value.trim();
+    if (str.endsWith('.')) return; // punto sin decimales — no actualizar
+    const val = parseFloat(str);
+    this.prodPrecio.set(!isNaN(val) && val >= 0 ? val : null);
+  }
+
+  protected setProdCosto(e: Event): void {
+    const str = (e.target as HTMLInputElement).value.trim();
+    if (str.endsWith('.')) return;
+    const val = parseFloat(str);
+    this.prodCosto.set(!isNaN(val) && val >= 0 ? val : null);
+  }
+
+  protected async crearProducto(): Promise<void> {
+    const fam    = this.selectedFamilia();
+    const desc   = this.prodDescripcion().trim();
+    const precio = this.prodPrecio();
+    if (!fam) return;
+    if (!desc) { this.crearProductoError.set('La descripción es obligatoria.'); return; }
+    if (precio === null) { this.crearProductoError.set('El precio de venta es obligatorio.'); return; }
+
+    this.creandoProducto.set(true);
+    this.crearProductoError.set('');
+    try {
+      await firstValueFrom(
+        this.http.post<Producto>(
+          `${environment.urlChatBot}/restaurant-publico/productos`,
+          {
+            idCompany:     this.companyId()!,
+            idFamilia:     fam.id,
+            idSubfamilia:  this.selectedSubfamilia()?.id ?? null,
+            identificador: this.prodIdentificador().trim() || null,
+            description:   desc,
+            ventaMN:       precio,
+            costoMN:       this.prodCosto(),
+          },
+        ),
+      );
+      this.showNuevoProducto.set(false);
+      this.productosResource.reload();
+    } catch {
+      this.crearProductoError.set('No se pudo crear el producto. Intenta de nuevo.');
+    } finally {
+      this.creandoProducto.set(false);
+    }
   }
 
   protected abrirEditMesa(mesa: Mesa, e: Event): void {
