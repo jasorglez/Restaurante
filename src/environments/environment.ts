@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '1.56 (29 Junio 2026) Panel de producto centrado en pantalla (tableta)',
+  version: '1.57 (30 Junio 2026) Crear agrupadores (familias/subfamilias) al agregar productos',
 }; 

@@ -292,8 +292,14 @@
               <span aria-hidden="true">→</span>
             </button>
           } @empty {
-            <div class="state-panel"><strong>No hay familias con productos activos.</strong></div>
+            <div class="state-panel"><strong>Aún no hay familias. Crea la primera abajo.</strong></div>
           }
+          <!-- Crear nuevo agrupador (familia) -->
+          <button class="family-button add-mesa-btn" type="button" (click)="abrirNuevaFamilia()">
+            <span class="add-mesa-icon">＋</span>
+            <strong>Nuevo agrupador</strong>
+            <span class="table-state">Agregar familia</span>
+          </button>
         </div>
 
         @if (items().length) {
@@ -351,6 +357,12 @@
           } @empty {
             <div class="state-panel"><strong>No hay subcategorías.</strong></div>
           }
+          <!-- Crear nuevo subagrupador (subfamilia) de la familia actual -->
+          <button class="family-button add-mesa-btn" type="button" (click)="abrirNuevaSubfamilia()">
+            <span class="add-mesa-icon">＋</span>
+            <strong>Nuevo subagrupador</strong>
+            <span class="table-state">Agregar subfamilia</span>
+          </button>
         </div>
       } @else {
         <div class="products-grid">
@@ -1130,6 +1142,70 @@
         <p class="ticket-thanks">Vuelva pronto</p>
         <div class="ticket-divider">══════════════════════</div>
       </div>
+
+    </div>
+  </div>
+}
+
+<!-- ── NUEVO AGRUPADOR (familia / subfamilia) ───────────────────────────── -->
+@if (showNuevoAgrupador()) {
+  <div class="qty-overlay" role="dialog" aria-modal="true" aria-label="Nuevo agrupador">
+    <div class="qty-panel">
+
+      @if (agrupadorPaso() === 'familia') {
+        <strong class="qty-name">Nuevo agrupador (familia)</strong>
+        <div class="turno-fields" style="margin:12px 0 4px">
+          <label class="turno-label" for="agr-nombre">Nombre del agrupador</label>
+          <input id="agr-nombre" class="turno-input" type="text"
+            placeholder="Ej. Extras, Bebidas, Postres..."
+            [value]="nuevoAgrupadorNombre()" (input)="setNuevoAgrupadorNombre($event)"
+            [disabled]="creandoAgrupador()">
+        </div>
+
+        @if (crearAgrupadorError()) {
+          <p class="qty-error" role="alert">{{ crearAgrupadorError() }}</p>
+        }
+
+        <button class="qty-btn confirmar-btn" type="button"
+          (click)="crearFamilia()" [disabled]="creandoAgrupador() || !nuevoAgrupadorNombre().trim()">
+          @if (creandoAgrupador()) { Guardando… } @else { Crear y continuar → }
+        </button>
+        <button class="qty-cancel" type="button" (click)="showNuevoAgrupador.set(false)" [disabled]="creandoAgrupador()">
+          Cancelar
+        </button>
+
+      } @else {
+        <strong class="qty-name">¿Tiene subagrupadores?</strong>
+        <p class="qty-price">Familia: {{ agrupadorParent()?.description }}</p>
+
+        @if (subfamiliasCreadas().length) {
+          <div class="turno-fields" style="margin:6px 0">
+            @for (s of subfamiliasCreadas(); track s.id) {
+              <span class="cuenta-items">• {{ s.description }}</span>
+            }
+          </div>
+        }
+
+        <div class="turno-fields" style="margin:12px 0 4px">
+          <label class="turno-label" for="subagr-nombre">Nombre del subagrupador</label>
+          <input id="subagr-nombre" class="turno-input" type="text"
+            placeholder="Ej. Con crema, Sin azúcar..."
+            [value]="nuevaSubfamiliaNombre()" (input)="setNuevaSubfamiliaNombre($event)"
+            [disabled]="creandoAgrupador()">
+        </div>
+
+        @if (crearAgrupadorError()) {
+          <p class="qty-error" role="alert">{{ crearAgrupadorError() }}</p>
+        }
+
+        <button class="qty-btn confirmar-btn" type="button"
+          (click)="agregarSubfamilia()" [disabled]="creandoAgrupador() || !nuevaSubfamiliaNombre().trim()">
+          @if (creandoAgrupador()) { Guardando… } @else { ＋ Agregar subagrupador }
+        </button>
+        <button class="qty-cancel" type="button" (click)="cerrarNuevoAgrupador()" [disabled]="creandoAgrupador()">
+          Terminar
+        </button>
+      }
 
     </div>
   </div>

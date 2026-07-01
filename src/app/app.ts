@@ -115,6 +115,16 @@ export class App {
   protected readonly creandoMesa = signal(false);
   protected readonly crearMesaError = signal('');
 
+  // ── Nuevo agrupador (familia / subfamilia) ─────────────────────────────────
+  protected readonly showNuevoAgrupador   = signal(false);
+  protected readonly agrupadorPaso        = signal<'familia' | 'subfamilias'>('familia');
+  protected readonly nuevoAgrupadorNombre = signal('');
+  protected readonly agrupadorParent      = signal<Familia | null>(null);
+  protected readonly nuevaSubfamiliaNombre = signal('');
+  protected readonly subfamiliasCreadas   = signal<Familia[]>([]);
+  protected readonly creandoAgrupador     = signal(false);
+  protected readonly crearAgrupadorError  = signal('');
+
   // ── Cajas / Turno ─────────────────────────────────────────────────────────
   protected readonly cajasResource = httpResource<CajaInfo[]>(
     () => this.view() === 'cajas'
@@ -793,6 +803,92 @@ export class App {
     } finally {
       this.creandoMesa.set(false);
     }
+  }
+
+  // ── Nuevo agrupador (familia / subfamilia) ─────────────────────────────────
+  protected abrirNuevaFamilia(): void {
+    this.agrupadorPaso.set('familia');
+    this.nuevoAgrupadorNombre.set('');
+    this.agrupadorParent.set(null);
+    this.nuevaSubfamiliaNombre.set('');
+    this.subfamiliasCreadas.set([]);
+    this.crearAgrupadorError.set('');
+    this.showNuevoAgrupador.set(true);
+  }
+
+  protected abrirNuevaSubfamilia(): void {
+    const fam = this.selectedFamilia();
+    if (!fam) return;
+    this.agrupadorPaso.set('subfamilias');
+    this.agrupadorParent.set(fam);
+    this.nuevaSubfamiliaNombre.set('');
+    this.subfamiliasCreadas.set([]);
+    this.crearAgrupadorError.set('');
+    this.showNuevoAgrupador.set(true);
+  }
+
+  protected setNuevoAgrupadorNombre(e: Event): void {
+    this.nuevoAgrupadorNombre.set((e.target as HTMLInputElement).value);
+  }
+
+  protected setNuevaSubfamiliaNombre(e: Event): void {
+    this.nuevaSubfamiliaNombre.set((e.target as HTMLInputElement).value);
+  }
+
+  protected async crearFamilia(): Promise<void> {
+    const nombre = this.nuevoAgrupadorNombre().trim();
+    if (!nombre) { this.crearAgrupadorError.set('El nombre es obligatorio.'); return; }
+
+    this.creandoAgrupador.set(true);
+    this.crearAgrupadorError.set('');
+    try {
+      const fam = await firstValueFrom(
+        this.http.post<Familia>(
+          `${environment.urlChatBot}/restaurant-publico/familias`,
+          { idCompany: this.companyId()!, description: nombre },
+        ),
+      );
+      this.agrupadorParent.set(fam);
+      this.familiasResource.reload();
+      // Paso 2: preguntar si la familia tiene subagrupadores (subfamilias).
+      this.agrupadorPaso.set('subfamilias');
+    } catch {
+      this.crearAgrupadorError.set('No se pudo crear el agrupador. Intenta de nuevo.');
+    } finally {
+      this.creandoAgrupador.set(false);
+    }
+  }
+
+  protected async agregarSubfamilia(): Promise<void> {
+    const parent = this.agrupadorParent();
+    const nombre = this.nuevaSubfamiliaNombre().trim();
+    if (!parent) return;
+    if (!nombre) { this.crearAgrupadorError.set('El nombre es obligatorio.'); return; }
+
+    this.creandoAgrupador.set(true);
+    this.crearAgrupadorError.set('');
+    try {
+      const sub = await firstValueFrom(
+        this.http.post<Familia>(
+          `${environment.urlChatBot}/restaurant-publico/subfamilias`,
+          { idCompany: this.companyId()!, idFamilia: parent.id, description: nombre },
+        ),
+      );
+      this.subfamiliasCreadas.update(list => [...list, sub]);
+      this.nuevaSubfamiliaNombre.set('');
+      this.subfamiliasResource.reload();
+    } catch {
+      this.crearAgrupadorError.set('No se pudo crear el subagrupador. Intenta de nuevo.');
+    } finally {
+      this.creandoAgrupador.set(false);
+    }
+  }
+
+  protected cerrarNuevoAgrupador(): void {
+    this.showNuevoAgrupador.set(false);
+    this.crearAgrupadorError.set('');
+    this.familiasResource.reload();
+    this.subfamiliasResource.reload();
   }
 
   protected abrirEditMesa(mesa: Mesa, e: Event): void {
