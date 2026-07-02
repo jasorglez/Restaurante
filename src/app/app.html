@@ -293,7 +293,7 @@
         </button>
         <div class="tables-heading">
           <p class="eyebrow">{{ selectedMesa()?.nombre }} · CUENTA #{{ selectedMesa()?.idCuentaActual }}</p>
-          <h2 id="families-title">Familias del menú</h2>
+          <h2 id="families-title">Menú</h2>
         </div>
         <button class="cuenta-btn" type="button" (click)="irACuenta()" [disabled]="!items().length">
           Ver cuenta
@@ -315,11 +315,15 @@
       } @else {
         <div class="families-grid">
           @for (familia of familias(); track familia.id) {
-            <button class="family-button" type="button" (click)="selectFamilia(familia)">
-              <span class="family-icon" aria-hidden="true">{{ familia.description.charAt(0) }}</span>
-              <strong>{{ familia.description }}</strong>
-              <span aria-hidden="true">→</span>
-            </button>
+            <div class="family-cell">
+              <button class="family-button" type="button" (click)="selectFamilia(familia)">
+                <span class="family-icon" aria-hidden="true">{{ familia.description.charAt(0) }}</span>
+                <strong>{{ familia.description }}</strong>
+                <span class="family-arrow" aria-hidden="true">→</span>
+              </button>
+              <button class="family-edit" type="button" title="Editar agrupador"
+                (click)="abrirEditarFamilia(familia)">✎</button>
+            </div>
           } @empty {
             <div class="state-panel"><strong>Aún no hay familias. Crea la primera abajo.</strong></div>
           }
@@ -1341,6 +1345,32 @@
         </button>
       }
 
+    </div>
+  </div>
+}
+
+<!-- ── EDITAR AGRUPADOR (familia) ────────────────────────────────────────── -->
+@if (showEditarFamilia()) {
+  <div class="qty-overlay" role="dialog" aria-modal="true" aria-label="Editar agrupador">
+    <div class="qty-panel">
+      <strong class="qty-name">Editar agrupador</strong>
+      <div class="turno-fields" style="margin:12px 0 4px">
+        <label class="turno-label" for="edit-fam-nombre">Nombre del agrupador</label>
+        <input id="edit-fam-nombre" class="turno-input" type="text" placeholder="Nombre"
+          [value]="editarFamiliaNombre()" (input)="setEditarFamiliaNombre($event)"
+          (keyup.enter)="guardarEditarFamilia()" [disabled]="guardandoFamilia()">
+      </div>
+      @if (editarFamiliaError()) {
+        <p class="qty-error" role="alert">{{ editarFamiliaError() }}</p>
+      }
+      <button class="qty-confirm" type="button"
+        (click)="guardarEditarFamilia()"
+        [disabled]="guardandoFamilia() || !editarFamiliaNombre().trim()">
+        @if (guardandoFamilia()) { Guardando… } @else { Guardar }
+      </button>
+      <button class="qty-cancel" type="button" (click)="showEditarFamilia.set(false)" [disabled]="guardandoFamilia()">
+        Cancelar
+      </button>
     </div>
   </div>
 }

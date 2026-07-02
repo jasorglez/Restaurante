@@ -443,7 +443,47 @@ footer {
   outline: none;
   box-shadow: 0 16px 34px rgb(23 75 47 / 15%);
 }
-.family-button strong { font-size: 1.12rem; }
+.family-button strong {
+  font-size: 1.12rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.family-arrow { justify-self: end; }
+
+/* Celda que contiene el botón de la familia + su botón de editar */
+.family-cell {
+  position: relative;
+  display: flex;
+}
+.family-cell .family-button {
+  flex: 1 1 auto;
+  width: 100%;
+}
+.family-edit {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #d8e4db;
+  border-radius: 10px;
+  background: #f4faf6;
+  color: #147a4b;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: 150ms ease;
+  z-index: 1;
+}
+.family-edit:hover,
+.family-edit:focus-visible {
+  background: #147a4b;
+  color: #fff;
+  border-color: #147a4b;
+  outline: none;
+}
+
 .family-icon {
   width: 58px;
   height: 58px;
@@ -972,7 +1012,18 @@ footer {
   .refresh-button { width: 48px; padding: 0; font-size: 0; }
   .refresh-button span { font-size: 1.3rem; }
   .tables-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .families-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .families-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .family-button {
+    min-height: 118px;
+    padding: 16px 14px;
+    gap: 10px;
+  }
+  .family-button strong { font-size: 0.98rem; }
+  .family-icon { width: 44px; height: 44px; font-size: 1.2rem; border-radius: 13px; }
+  .family-arrow { display: none; }
+  .family-button { grid-template-columns: auto 1fr; }
+  .add-mesa-btn.family-button { grid-template-columns: 1fr; text-align: center; }
+  .add-mesa-btn .table-state { overflow-wrap: anywhere; }
   .products-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .qty-panel { padding: 22px 18px 28px; border-radius: 22px; }
   .qty-btn { width: 52px; height: 52px; font-size: 1.25rem; }

@@ -159,6 +159,13 @@ export class App {
   protected readonly creandoAgrupador     = signal(false);
   protected readonly crearAgrupadorError  = signal('');
 
+  // ── Editar agrupador (familia) ─────────────────────────────────────────────
+  protected readonly showEditarFamilia    = signal(false);
+  protected readonly editandoFamilia      = signal<Familia | null>(null);
+  protected readonly editarFamiliaNombre  = signal('');
+  protected readonly guardandoFamilia     = signal(false);
+  protected readonly editarFamiliaError   = signal('');
+
   // ── Nuevo producto (dentro del agrupador) ──────────────────────────────────
   protected readonly showNuevoProducto  = signal(false);
   protected readonly prodIdentificador  = signal('');
@@ -996,6 +1003,46 @@ export class App {
     this.crearAgrupadorError.set('');
     this.familiasResource.reload();
     this.subfamiliasResource.reload();
+  }
+
+  // ── Editar agrupador (familia) ─────────────────────────────────────────────
+  protected abrirEditarFamilia(familia: Familia): void {
+    this.editandoFamilia.set(familia);
+    this.editarFamiliaNombre.set(familia.description);
+    this.editarFamiliaError.set('');
+    this.showEditarFamilia.set(true);
+  }
+
+  protected setEditarFamiliaNombre(e: Event): void {
+    this.editarFamiliaNombre.set((e.target as HTMLInputElement).value);
+  }
+
+  protected async guardarEditarFamilia(): Promise<void> {
+    const familia = this.editandoFamilia();
+    const nombre  = this.editarFamiliaNombre().trim();
+    if (!familia) return;
+    if (!nombre) { this.editarFamiliaError.set('El nombre es obligatorio.'); return; }
+
+    this.guardandoFamilia.set(true);
+    this.editarFamiliaError.set('');
+    try {
+      await firstValueFrom(
+        this.http.put<Familia>(
+          `${environment.urlChatBot}/restaurant-publico/familias/${familia.id}`,
+          { idCompany: this.companyId()!, description: nombre },
+        ),
+      );
+      // Refleja el nombre nuevo si la familia editada está seleccionada.
+      if (this.selectedFamilia()?.id === familia.id) {
+        this.selectedFamilia.set({ ...familia, description: nombre });
+      }
+      this.familiasResource.reload();
+      this.showEditarFamilia.set(false);
+    } catch {
+      this.editarFamiliaError.set('No se pudo editar el agrupador. Intenta de nuevo.');
+    } finally {
+      this.guardandoFamilia.set(false);
+    }
   }
 
   // ── Nuevo producto (dentro del agrupador) ──────────────────────────────────
