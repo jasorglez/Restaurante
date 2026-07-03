@@ -45,6 +45,17 @@ export interface MovimientoInv {
   fecha: string;
 }
 
+/** Resumen de movimientos por producto en un rango. */
+export interface ResumenMov {
+  idMaterial: number;
+  descripcion: string;
+  vendePorCopa: boolean;
+  onzasPorPieza: number;
+  ingresosOnzas: number;
+  egresosOnzas: number;
+  ingresosPiezas: number;
+}
+
 export interface ResultadoMovimiento {
   ok: boolean;
   existenciaOnzas: number;

@@ -1039,7 +1039,7 @@
           <h2 id="inv-title">Inventario</h2>
         </div>
         <button class="refresh-button" type="button" title="Actualizar"
-          (click)="inventarioSubView() === 'existencias' ? existenciasResource.reload() : movimientosResource.reload()">↻</button>
+          (click)="existenciasResource.reload(); resumenResource.reload(); movimientosResource.reload()">↻</button>
       </div>
 
       <div class="reporte-tabs">
@@ -1049,6 +1049,8 @@
           type="button" (click)="inventarioSubView.set('alta')">➕ Alta</button>
         <button class="reporte-tab" [class.active]="inventarioSubView() === 'movimientos'"
           type="button" (click)="inventarioSubView.set('movimientos')">🧾 Movimientos</button>
+        <button class="reporte-tab" [class.active]="inventarioSubView() === 'detalle'"
+          type="button" (click)="inventarioSubView.set('detalle')">🔎 Detalle</button>
         <button class="reporte-tab" [class.active]="inventarioSubView() === 'equivalencias'"
           type="button" (click)="inventarioSubView.set('equivalencias')">⚖️ Equivalencias</button>
       </div>
@@ -1174,16 +1176,62 @@
         }
       }
 
-      <!-- ── MOVIMIENTOS ── -->
+      <!-- ── MOVIMIENTOS (RESUMEN POR PRODUCTO) ── -->
       @else if (inventarioSubView() === 'movimientos') {
         <div class="inv-fechas">
           <label>Desde <input type="date" [value]="movDesde()" (change)="setMovDesde($event)"></label>
           <label>Hasta <input type="date" [value]="movHasta()" (change)="setMovHasta($event)"></label>
         </div>
+        <div class="inv-unidad">
+          <button type="button" [class.active]="existenciaUnidad() === 'piezas'" (click)="existenciaUnidad.set('piezas')">Piezas</button>
+          <button type="button" [class.active]="existenciaUnidad() === 'onzas'" (click)="existenciaUnidad.set('onzas')">Onzas</button>
+        </div>
+        @if (resumenLoading()) {
+          <div class="state-panel" role="status"><span class="loader" aria-hidden="true"></span><strong>Cargando resumen…</strong></div>
+        } @else if (resumenView().length === 0) {
+          <div class="state-panel"><strong>Sin movimientos en el rango</strong></div>
+        } @else {
+          <div class="inv-tabla-wrap">
+            <table class="inv-tabla">
+              <thead>
+                <tr><th>Producto</th><th class="num">Ingresos</th><th class="num">Egresos</th><th class="num">Total</th></tr>
+              </thead>
+              <tbody>
+                @for (r of resumenView(); track r.idMaterial) {
+                  <tr>
+                    <td>{{ r.descripcion }}</td>
+                    <td class="num pos">{{ r.ingresos.toFixed(1) }}</td>
+                    <td class="num neg">{{ r.egresos.toFixed(1) }}</td>
+                    <td class="num" [class.bajo-cero]="r.total < 0">{{ r.total.toFixed(1) }}</td>
+                  </tr>
+                }
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td>TOTALES</td>
+                  <td class="num pos">{{ resumenTotales().ingresos.toFixed(1) }}</td>
+                  <td class="num neg">{{ resumenTotales().egresos.toFixed(1) }}</td>
+                  <td class="num">{{ resumenTotales().total.toFixed(1) }}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          <p class="inv-help">Valores en {{ existenciaUnidad() === 'onzas' ? 'onzas' : 'piezas' }}.</p>
+        }
+      }
+
+      <!-- ── DETALLE (LÍNEA POR LÍNEA + BÚSQUEDA) ── -->
+      @else if (inventarioSubView() === 'detalle') {
+        <div class="inv-fechas">
+          <label>Desde <input type="date" [value]="movDesde()" (change)="setMovDesde($event)"></label>
+          <label>Hasta <input type="date" [value]="movHasta()" (change)="setMovHasta($event)"></label>
+        </div>
+        <input class="turno-input" type="text" placeholder="Buscar producto…"
+          [value]="movDetalleBusqueda()" (input)="setMovBusqueda($event)">
         @if (movimientosLoading()) {
           <div class="state-panel" role="status"><span class="loader" aria-hidden="true"></span><strong>Cargando movimientos…</strong></div>
         } @else if (movimientos().length === 0) {
-          <div class="state-panel"><strong>Sin movimientos en el rango</strong></div>
+          <div class="state-panel"><strong>Sin movimientos</strong></div>
         } @else {
           <ul class="inv-list mov">
             @for (m of movimientos(); track m.id) {

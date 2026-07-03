@@ -12,14 +12,14 @@ if (pdfFonts && (pdfFonts as any).pdfMake) {
 import { environment } from '../environments/environment';
 import { CajaInfo, CajaReporte, EgresoCaja, ResumenCorte, Turno, VentaPorTipo } from './models/caja';
 import { CuentaAbierta, Familia, ItemCuenta, Producto } from './models/familia';
-import { Equivalencia, Existencia, MovimientoInv, ProductoInventario, ResultadoMovimiento } from './models/inventario';
+import { Equivalencia, Existencia, MovimientoInv, ProductoInventario, ResultadoMovimiento, ResumenMov } from './models/inventario';
 import { Mesa } from './models/mesa';
 import { GrupoMesa, ReporteMesa } from './models/reporte';
 
 type RestaurantModule = 'MESAS' | 'CAJAS' | 'REPORTES' | 'INVENTARIO';
 type View = 'menu' | 'mesas' | 'familias' | 'productos' | 'cuenta' | 'cajas' | 'reportes' | 'inventario';
 type Presentacion = 'COMPLETA' | 'COPA';
-type InventarioSubView = 'existencias' | 'alta' | 'movimientos' | 'equivalencias';
+type InventarioSubView = 'existencias' | 'alta' | 'movimientos' | 'detalle' | 'equivalencias';
 type TipoPago = 'EFECTIVO' | 'TARJETA' | 'MIXTO';
 
 interface CompanyInfo { name: string; picture: string | null; picture2: string | null; }
@@ -359,14 +359,49 @@ export class App {
     new Date(Date.now() - 29 * 864e5).toISOString().split('T')[0],
   );
   protected readonly movHasta = signal<string>(new Date().toISOString().split('T')[0]);
-  protected readonly movimientosResource = httpResource<MovimientoInv[]>(
+  // Resumen por producto (pestaña "Movimientos")
+  protected readonly resumenResource = httpResource<ResumenMov[]>(
     () => this.view() === 'inventario' && this.inventarioSubView() === 'movimientos'
+      ? this.invUrl(`${this.companyId()!}/resumen?desde=${this.movDesde()}&hasta=${this.movHasta()}`)
+      : undefined,
+    { defaultValue: [] },
+  );
+  protected readonly resumenLoading = this.resumenResource.isLoading;
+
+  // Filas del resumen ya convertidas a la unidad elegida (piezas u onzas).
+  protected readonly resumenView = computed(() => {
+    const enOnzas = this.existenciaUnidad() === 'onzas';
+    return this.resumenResource.value().map(r => {
+      const ozPieza = r.onzasPorPieza > 0 ? r.onzasPorPieza : 1;
+      const ingresos = enOnzas ? r.ingresosOnzas : r.ingresosPiezas;
+      const egresos  = enOnzas ? r.egresosOnzas  : r.egresosOnzas / ozPieza;
+      return { idMaterial: r.idMaterial, descripcion: r.descripcion, ingresos, egresos, total: ingresos - egresos };
+    });
+  });
+  protected readonly resumenTotales = computed(() => {
+    const rows = this.resumenView();
+    return {
+      ingresos: rows.reduce((s, r) => s + r.ingresos, 0),
+      egresos:  rows.reduce((s, r) => s + r.egresos, 0),
+      total:    rows.reduce((s, r) => s + r.total, 0),
+    };
+  });
+
+  // Detalle línea por línea (pestaña "Detalle") con búsqueda por producto
+  protected readonly movDetalleBusqueda = signal('');
+  protected setMovBusqueda(e: Event): void { this.movDetalleBusqueda.set((e.target as HTMLInputElement).value); }
+  protected readonly movimientosResource = httpResource<MovimientoInv[]>(
+    () => this.view() === 'inventario' && this.inventarioSubView() === 'detalle'
       ? this.invUrl(`${this.companyId()!}/movimientos?desde=${this.movDesde()}&hasta=${this.movHasta()}`)
       : undefined,
     { defaultValue: [] },
   );
-  protected readonly movimientos        = this.movimientosResource.value;
   protected readonly movimientosLoading = this.movimientosResource.isLoading;
+  protected readonly movimientos = computed(() => {
+    const term = this.movDetalleBusqueda().trim().toLowerCase();
+    const all = this.movimientosResource.value();
+    return term ? all.filter(m => m.descripcion.toLowerCase().includes(term)) : all;
+  });
   protected setMovDesde(e: Event): void { this.movDesde.set((e.target as HTMLInputElement).value); }
   protected setMovHasta(e: Event): void { this.movHasta.set((e.target as HTMLInputElement).value); }
 
