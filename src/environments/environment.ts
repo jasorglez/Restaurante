@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '1.73 (03 Julio 2026) Mover producto entre familias/subfamilias desde el modal de editar producto',
+  version: '1.74 (03 Julio 2026) Iconos duotono más atractivos en el Menú Principal',
 }; 

@@ -2506,3 +2506,19 @@ footer {
 @media (max-width: 560px) {
   .menu-grid { grid-template-columns: 1fr; }
 }
+
+/* Iconos duotono del menú principal */
+.menu-card .icon-wrap svg { width: 66%; }
+.menu-card .icon-wrap svg .ico-bg {
+  fill: var(--accent);
+  fill-opacity: 0.18;
+  stroke: none;
+}
+.menu-card .icon-wrap svg .ico-fg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.menu-card:hover .icon-wrap svg .ico-bg { fill-opacity: 0.28; }
