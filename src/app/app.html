@@ -1045,6 +1045,8 @@
       <div class="reporte-tabs">
         <button class="reporte-tab" [class.active]="inventarioSubView() === 'existencias'"
           type="button" (click)="inventarioSubView.set('existencias')">📦 Existencias</button>
+        <button class="reporte-tab" [class.active]="inventarioSubView() === 'alta'"
+          type="button" (click)="inventarioSubView.set('alta')">➕ Alta</button>
         <button class="reporte-tab" [class.active]="inventarioSubView() === 'movimientos'"
           type="button" (click)="inventarioSubView.set('movimientos')">🧾 Movimientos</button>
         <button class="reporte-tab" [class.active]="inventarioSubView() === 'equivalencias'"
@@ -1105,6 +1107,70 @@
               </li>
             }
           </ul>
+        }
+      }
+
+      <!-- ── ALTA / INICIO DE INVENTARIO ── -->
+      @else if (inventarioSubView() === 'alta') {
+        @if (!altaProducto()) {
+          <p class="inv-help">Busca cualquier producto del catálogo para darle inventario inicial.</p>
+          <input class="turno-input" type="text" placeholder="Buscar producto (2+ letras)…"
+            [value]="altaBusqueda()" (input)="setAltaBusqueda($event)">
+          @if (altaBusquedaResource.isLoading()) {
+            <div class="state-panel" role="status"><span class="loader" aria-hidden="true"></span><strong>Buscando…</strong></div>
+          } @else if (altaBusquedaResource.value().length > 0) {
+            <ul class="inv-list">
+              @for (p of altaBusquedaResource.value(); track p.id) {
+                <li class="inv-item alta-pick" (click)="seleccionarAltaProducto(p)">
+                  <div class="inv-item-main">
+                    <strong>{{ p.description }}</strong>
+                    <span class="inv-exist">{{ p.price | currency:'MXN':'symbol-narrow':'1.2-2' }}</span>
+                  </div>
+                  <span class="alta-arrow" aria-hidden="true">→</span>
+                </li>
+              }
+            </ul>
+          }
+        } @else {
+          <div class="alta-form">
+            <div class="alta-head">
+              <strong>{{ altaProducto()!.description }}</strong>
+              <button type="button" class="inv-cancel" (click)="cancelarAlta()">✕ Cambiar</button>
+            </div>
+
+            <label class="cfg-check">
+              <input type="checkbox" [checked]="cfgVendeCopa()" (change)="setCfgVendeCopa($event)" [disabled]="guardandoAlta()">
+              <span>Se vende también por copa/onza</span>
+            </label>
+
+            @if (cfgVendeCopa()) {
+              <label class="turno-label" style="margin-top:8px">Equivalencia (onzas por pieza)</label>
+              <select class="turno-input" [value]="cfgIdEquiv() ?? ''" (change)="setCfgIdEquiv($event)" [disabled]="guardandoAlta()">
+                <option value="">— Selecciona —</option>
+                @for (eq of equivalencias(); track eq.id) {
+                  <option [value]="eq.id" [selected]="cfgIdEquiv() === eq.id">{{ eq.nombre }} ({{ eq.onzas.toFixed(1) }} oz)</option>
+                }
+              </select>
+
+              <label class="turno-label" style="margin-top:8px">Precio por copa</label>
+              <input class="turno-input" type="number" min="0" step="0.01" placeholder="0.00"
+                [value]="cfgPrecioCopa() ?? ''" (input)="setCfgPrecioCopa($event)" [disabled]="guardandoAlta()">
+            }
+
+            <label class="turno-label" style="margin-top:8px">Stock mínimo (piezas) para alerta</label>
+            <input class="turno-input" type="number" min="0" step="1" placeholder="0"
+              [value]="cfgStockMin() ?? ''" (input)="setCfgStockMin($event)" [disabled]="guardandoAlta()">
+
+            <label class="turno-label" style="margin-top:8px">Piezas iniciales (existencia actual)</label>
+            <input class="turno-input" type="number" min="0" step="1" placeholder="0"
+              [value]="altaPiezas() ?? ''" (input)="setAltaPiezas($event)" [disabled]="guardandoAlta()">
+
+            @if (altaError()) { <p class="qty-error" role="alert">{{ altaError() }}</p> }
+
+            <button class="qty-btn confirmar-btn" type="button" (click)="guardarAlta()" [disabled]="guardandoAlta()">
+              @if (guardandoAlta()) { Guardando… } @else { Dar de alta inventario }
+            </button>
+          </div>
         }
       }
 

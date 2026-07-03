@@ -19,7 +19,7 @@ import { GrupoMesa, ReporteMesa } from './models/reporte';
 type RestaurantModule = 'MESAS' | 'CAJAS' | 'REPORTES' | 'INVENTARIO';
 type View = 'menu' | 'mesas' | 'familias' | 'productos' | 'cuenta' | 'cajas' | 'reportes' | 'inventario';
 type Presentacion = 'COMPLETA' | 'COPA';
-type InventarioSubView = 'existencias' | 'movimientos' | 'equivalencias';
+type InventarioSubView = 'existencias' | 'alta' | 'movimientos' | 'equivalencias';
 type TipoPago = 'EFECTIVO' | 'TARJETA' | 'MIXTO';
 
 interface CompanyInfo { name: string; picture: string | null; picture2: string | null; }
@@ -373,7 +373,8 @@ export class App {
   // Catálogo de equivalencias (se usa en inventario y al configurar producto)
   protected readonly equivalenciasResource = httpResource<Equivalencia[]>(
     () => {
-      const enInventario = this.view() === 'inventario' && this.inventarioSubView() === 'equivalencias';
+      const sub = this.inventarioSubView();
+      const enInventario = this.view() === 'inventario' && (sub === 'equivalencias' || sub === 'alta');
       const configurando = this.editandoProducto() !== null;
       return enInventario || configurando
         ? this.invUrl(`equivalencias/${this.companyId()!}`)
@@ -550,6 +551,72 @@ export class App {
       ));
       this.prodInvVenta.set(cfg);
     } catch { /* producto sin inventario */ }
+  }
+
+  // ── Alta / inicio de inventario para cualquier producto ─────────────────────
+  protected readonly altaBusqueda  = signal('');
+  protected readonly altaProducto  = signal<Producto | null>(null);
+  protected readonly altaPiezas    = signal<number | null>(null);
+  protected readonly guardandoAlta = signal(false);
+  protected readonly altaError     = signal('');
+
+  protected readonly altaBusquedaResource = httpResource<Producto[]>(
+    () => {
+      const term = this.altaBusqueda().trim();
+      if (this.view() !== 'inventario' || this.inventarioSubView() !== 'alta' || term.length < 2) return undefined;
+      return `${environment.urlChatBot}/restaurant-publico/productos/${this.companyId()!}/buscar?term=${encodeURIComponent(term)}`;
+    },
+    { defaultValue: [] },
+  );
+  protected setAltaBusqueda(e: Event): void { this.altaBusqueda.set((e.target as HTMLInputElement).value); }
+
+  protected async seleccionarAltaProducto(p: Producto): Promise<void> {
+    this.altaProducto.set(p);
+    this.altaBusqueda.set('');
+    this.altaPiezas.set(null);
+    this.altaError.set('');
+    await this.cargarConfigProducto(p.id);  // precarga cfg* si ya tenía configuración
+    this.cfgControla.set(true);             // al dar de alta siempre se controla
+  }
+
+  protected cancelarAlta(): void {
+    this.altaProducto.set(null);
+    this.altaPiezas.set(null);
+    this.altaError.set('');
+  }
+  protected setAltaPiezas(e: Event): void {
+    const v = parseFloat((e.target as HTMLInputElement).value);
+    this.altaPiezas.set(!isNaN(v) && v > 0 ? v : null);
+  }
+
+  protected async guardarAlta(): Promise<void> {
+    const prod = this.altaProducto();
+    if (!prod) return;
+    if (this.cfgVendeCopa() && this.cfgIdEquiv() === null) {
+      this.altaError.set('Selecciona la equivalencia (onzas por pieza).');
+      return;
+    }
+    this.guardandoAlta.set(true);
+    this.altaError.set('');
+    try {
+      await this.guardarConfigProducto(prod.id);   // crea/actualiza la config (controla = true)
+      const piezas = this.altaPiezas();
+      if (piezas && piezas > 0) {
+        await firstValueFrom(this.http.post<ResultadoMovimiento>(
+          this.invUrl('ingreso'),
+          { idCompany: this.companyId()!, idMaterial: prod.id, piezas },
+        ));
+      }
+      this.ingresoOk.set(`${prod.description}: inventario dado de alta${piezas ? ` (+${piezas} pza)` : ''}.`);
+      this.altaProducto.set(null);
+      this.altaPiezas.set(null);
+      this.inventarioSubView.set('existencias');
+      this.existenciasResource.reload();
+    } catch {
+      this.altaError.set('No se pudo dar de alta el inventario. Intenta de nuevo.');
+    } finally {
+      this.guardandoAlta.set(false);
+    }
   }
 
   // ── Pago ──────────────────────────────────────────────────────────────────

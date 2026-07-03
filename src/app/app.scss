@@ -2297,3 +2297,25 @@ footer {
   margin: 4px 0;
   input { width: 18px; height: 18px; }
 }
+
+.alta-pick {
+  cursor: pointer;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  &:hover { border-color: #147a4b; background: #f4faf6; }
+  .alta-arrow { color: #147a4b; font-weight: 700; }
+}
+.alta-form {
+  display: flex;
+  flex-direction: column;
+  margin-top: 8px;
+}
+.alta-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  strong { font-size: 16px; }
+}

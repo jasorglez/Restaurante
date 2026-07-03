@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '1.67 (03 Julio 2026) Control de inventarios: existencias en onzas, venta completa/copa, ingresos y movimientos',
+  version: '1.68 (03 Julio 2026) Inventario: alta/inicio de inventario para cualquier producto desde el módulo',
 }; 
