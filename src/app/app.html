@@ -1167,7 +1167,7 @@
 
             @if (altaError()) { <p class="qty-error" role="alert">{{ altaError() }}</p> }
 
-            <button class="qty-btn confirmar-btn" type="button" (click)="guardarAlta()" [disabled]="guardandoAlta()">
+            <button class="confirmar-btn alta-submit" type="button" (click)="guardarAlta()" [disabled]="guardandoAlta()">
               @if (guardandoAlta()) { Guardando… } @else { Dar de alta inventario }
             </button>
           </div>
