@@ -12,11 +12,14 @@ if (pdfFonts && (pdfFonts as any).pdfMake) {
 import { environment } from '../environments/environment';
 import { CajaInfo, CajaReporte, EgresoCaja, ResumenCorte, Turno, VentaPorTipo } from './models/caja';
 import { CuentaAbierta, Familia, ItemCuenta, Producto } from './models/familia';
+import { Equivalencia, Existencia, MovimientoInv, ProductoInventario, ResultadoMovimiento } from './models/inventario';
 import { Mesa } from './models/mesa';
 import { GrupoMesa, ReporteMesa } from './models/reporte';
 
-type RestaurantModule = 'MESAS' | 'CAJAS' | 'REPORTES';
-type View = 'menu' | 'mesas' | 'familias' | 'productos' | 'cuenta' | 'cajas' | 'reportes';
+type RestaurantModule = 'MESAS' | 'CAJAS' | 'REPORTES' | 'INVENTARIO';
+type View = 'menu' | 'mesas' | 'familias' | 'productos' | 'cuenta' | 'cajas' | 'reportes' | 'inventario';
+type Presentacion = 'COMPLETA' | 'COPA';
+type InventarioSubView = 'existencias' | 'movimientos' | 'equivalencias';
 type TipoPago = 'EFECTIVO' | 'TARJETA' | 'MIXTO';
 
 interface CompanyInfo { name: string; picture: string | null; picture2: string | null; }
@@ -332,6 +335,223 @@ export class App {
     this.reporteFecha.set((e.target as HTMLInputElement).value);
   }
 
+  // ── Inventario ─────────────────────────────────────────────────────────────
+  protected readonly inventarioSubView = signal<InventarioSubView>('existencias');
+  protected readonly existenciaUnidad  = signal<'piezas' | 'onzas'>('piezas');
+
+  private invUrl(path: string): string {
+    return `${environment.urlChatBot}/restaurant-publico/inventario/${path}`;
+  }
+
+  // Existencias
+  protected readonly existenciasResource = httpResource<Existencia[]>(
+    () => this.view() === 'inventario' && this.inventarioSubView() === 'existencias'
+      ? this.invUrl(`${this.companyId()!}/existencias`)
+      : undefined,
+    { defaultValue: [] },
+  );
+  protected readonly existencias        = this.existenciasResource.value;
+  protected readonly existenciasLoading = this.existenciasResource.isLoading;
+  protected readonly alertasStock = computed(() => this.existencias().filter(e => e.bajoMinimo));
+
+  // Movimientos (historial)
+  protected readonly movDesde = signal<string>(
+    new Date(Date.now() - 29 * 864e5).toISOString().split('T')[0],
+  );
+  protected readonly movHasta = signal<string>(new Date().toISOString().split('T')[0]);
+  protected readonly movimientosResource = httpResource<MovimientoInv[]>(
+    () => this.view() === 'inventario' && this.inventarioSubView() === 'movimientos'
+      ? this.invUrl(`${this.companyId()!}/movimientos?desde=${this.movDesde()}&hasta=${this.movHasta()}`)
+      : undefined,
+    { defaultValue: [] },
+  );
+  protected readonly movimientos        = this.movimientosResource.value;
+  protected readonly movimientosLoading = this.movimientosResource.isLoading;
+  protected setMovDesde(e: Event): void { this.movDesde.set((e.target as HTMLInputElement).value); }
+  protected setMovHasta(e: Event): void { this.movHasta.set((e.target as HTMLInputElement).value); }
+
+  // Catálogo de equivalencias (se usa en inventario y al configurar producto)
+  protected readonly equivalenciasResource = httpResource<Equivalencia[]>(
+    () => {
+      const enInventario = this.view() === 'inventario' && this.inventarioSubView() === 'equivalencias';
+      const configurando = this.editandoProducto() !== null;
+      return enInventario || configurando
+        ? this.invUrl(`equivalencias/${this.companyId()!}`)
+        : undefined;
+    },
+    { defaultValue: [] },
+  );
+  protected readonly equivalencias = this.equivalenciasResource.value;
+
+  protected readonly equivNombre = signal('');
+  protected readonly equivOnzas  = signal<number | null>(null);
+  protected readonly guardandoEquiv = signal(false);
+  protected readonly equivError = signal('');
+  protected setEquivNombre(e: Event): void { this.equivNombre.set((e.target as HTMLInputElement).value); }
+  protected setEquivOnzas(e: Event): void {
+    const v = parseFloat((e.target as HTMLInputElement).value);
+    this.equivOnzas.set(!isNaN(v) && v > 0 ? v : null);
+  }
+
+  protected async crearEquivalencia(): Promise<void> {
+    const nombre = this.equivNombre().trim();
+    const onzas  = this.equivOnzas();
+    if (!nombre) { this.equivError.set('El nombre es obligatorio.'); return; }
+    if (onzas === null) { this.equivError.set('Las onzas deben ser mayores a cero.'); return; }
+    this.guardandoEquiv.set(true);
+    this.equivError.set('');
+    try {
+      await firstValueFrom(this.http.post<Equivalencia>(
+        this.invUrl('equivalencias'),
+        { idCompany: this.companyId()!, nombre, onzas },
+      ));
+      this.equivNombre.set('');
+      this.equivOnzas.set(null);
+      this.equivalenciasResource.reload();
+    } catch {
+      this.equivError.set('No se pudo crear la equivalencia.');
+    } finally {
+      this.guardandoEquiv.set(false);
+    }
+  }
+
+  protected async eliminarEquivalencia(eq: Equivalencia): Promise<void> {
+    try {
+      await firstValueFrom(this.http.delete(
+        this.invUrl(`equivalencias/${eq.id}?idCompany=${this.companyId()!}`),
+      ));
+      this.equivalenciasResource.reload();
+    } catch { /* noop */ }
+  }
+
+  // Ingreso de existencias (siempre en piezas), inline por producto.
+  protected readonly ingresoActivoId  = signal<number | null>(null);
+  protected readonly ingresoPiezas    = signal<number | null>(null);
+  protected readonly registrandoIngreso = signal(false);
+  protected readonly ingresoError     = signal('');
+  protected readonly ingresoOk        = signal('');
+
+  protected iniciarIngreso(mat: Existencia): void {
+    this.ingresoActivoId.set(mat.idMaterial);
+    this.ingresoPiezas.set(null);
+    this.ingresoError.set('');
+    this.ingresoOk.set('');
+  }
+  protected cancelarIngreso(): void {
+    this.ingresoActivoId.set(null);
+    this.ingresoPiezas.set(null);
+    this.ingresoError.set('');
+  }
+  protected setIngresoPiezas(e: Event): void {
+    const v = parseFloat((e.target as HTMLInputElement).value);
+    this.ingresoPiezas.set(!isNaN(v) && v > 0 ? v : null);
+  }
+
+  protected async registrarIngreso(mat: Existencia): Promise<void> {
+    const piezas = this.ingresoPiezas();
+    if (piezas === null) { this.ingresoError.set('Indica las piezas a ingresar.'); return; }
+    this.registrandoIngreso.set(true);
+    this.ingresoError.set('');
+    try {
+      await firstValueFrom(this.http.post<ResultadoMovimiento>(
+        this.invUrl('ingreso'),
+        { idCompany: this.companyId()!, idMaterial: mat.idMaterial, piezas },
+      ));
+      this.ingresoActivoId.set(null);
+      this.ingresoPiezas.set(null);
+      this.ingresoOk.set(`Ingreso registrado: +${piezas} pieza(s) de ${mat.descripcion}.`);
+      this.existenciasResource.reload();
+    } catch {
+      this.ingresoError.set('No se pudo registrar el ingreso.');
+    } finally {
+      this.registrandoIngreso.set(false);
+    }
+  }
+
+  // ── Configuración de inventario del producto (en modal de editar) ───────────
+  protected readonly cfgControla   = signal(false);
+  protected readonly cfgVendeCopa  = signal(false);
+  protected readonly cfgIdEquiv    = signal<number | null>(null);
+  protected readonly cfgPrecioCopa = signal<number | null>(null);
+  protected readonly cfgStockMin   = signal<number | null>(null);
+
+  protected setCfgControla(e: Event): void { this.cfgControla.set((e.target as HTMLInputElement).checked); }
+  protected setCfgVendeCopa(e: Event): void { this.cfgVendeCopa.set((e.target as HTMLInputElement).checked); }
+  protected setCfgIdEquiv(e: Event): void {
+    const v = (e.target as HTMLSelectElement).value;
+    this.cfgIdEquiv.set(v ? +v : null);
+  }
+  protected setCfgPrecioCopa(e: Event): void {
+    const v = parseFloat((e.target as HTMLInputElement).value);
+    this.cfgPrecioCopa.set(!isNaN(v) && v >= 0 ? v : null);
+  }
+  protected setCfgStockMin(e: Event): void {
+    const v = parseInt((e.target as HTMLInputElement).value, 10);
+    this.cfgStockMin.set(!isNaN(v) && v >= 0 ? v : null);
+  }
+
+  private async cargarConfigProducto(idMaterial: number): Promise<void> {
+    this.cfgControla.set(false);
+    this.cfgVendeCopa.set(false);
+    this.cfgIdEquiv.set(null);
+    this.cfgPrecioCopa.set(null);
+    this.cfgStockMin.set(null);
+    try {
+      const cfg = await firstValueFrom(this.http.get<ProductoInventario | null>(
+        this.invUrl(`${this.companyId()!}/producto/${idMaterial}`),
+      ));
+      if (cfg) {
+        this.cfgControla.set(cfg.controlaInventario);
+        this.cfgVendeCopa.set(cfg.vendePorCopa);
+        this.cfgIdEquiv.set(cfg.idEquivalencia);
+        this.cfgPrecioCopa.set(cfg.precioCopa);
+        this.cfgStockMin.set(cfg.stockMinPiezas || null);
+      }
+    } catch { /* sin config previa */ }
+  }
+
+  private async guardarConfigProducto(idMaterial: number): Promise<void> {
+    await firstValueFrom(this.http.put(
+      this.invUrl('producto'),
+      {
+        idCompany:      this.companyId()!,
+        idMaterial,
+        controlaInventario: this.cfgControla(),
+        vendePorCopa:   this.cfgVendeCopa(),
+        idEquivalencia: this.cfgVendeCopa() ? this.cfgIdEquiv() : null,
+        onzasPorCopa:   1,
+        precioCopa:     this.cfgVendeCopa() ? this.cfgPrecioCopa() : null,
+        stockMinPiezas: this.cfgStockMin() ?? 0,
+      },
+    ));
+  }
+
+  // ── Venta: presentación completa / copa ─────────────────────────────────────
+  protected readonly prodInvVenta   = signal<ProductoInventario | null>(null);
+  protected readonly presentacionSel = signal<Presentacion>('COMPLETA');
+
+  protected readonly precioVentaActual = computed(() => {
+    const prod = this.selectedProducto();
+    if (!prod) return 0;
+    const cfg = this.prodInvVenta();
+    if (cfg?.vendePorCopa && this.presentacionSel() === 'COPA' && cfg.precioCopa != null)
+      return cfg.precioCopa;
+    return prod.price;
+  });
+
+  protected seleccionarPresentacion(p: Presentacion): void { this.presentacionSel.set(p); }
+
+  private async cargarConfigVenta(idMaterial: number): Promise<void> {
+    this.prodInvVenta.set(null);
+    this.presentacionSel.set('COMPLETA');
+    try {
+      const cfg = await firstValueFrom(this.http.get<ProductoInventario | null>(
+        this.invUrl(`${this.companyId()!}/producto/${idMaterial}`),
+      ));
+      this.prodInvVenta.set(cfg);
+    } catch { /* producto sin inventario */ }
+  }
+
   // ── Pago ──────────────────────────────────────────────────────────────────
   protected readonly showPayment = signal(false);
   protected readonly tipoPago = signal<TipoPago>('EFECTIVO');
@@ -503,6 +723,10 @@ export class App {
       this.reporteSubView.set('mesas');
       this.reporteFecha.set(new Date().toISOString().split('T')[0]);
       this.view.set('reportes');
+    }
+    if (module === 'INVENTARIO') {
+      this.inventarioSubView.set('existencias');
+      this.view.set('inventario');
     }
   }
 
@@ -1119,6 +1343,7 @@ export class App {
     this.editProdPrecio.set(prod.price ?? null);
     this.editProductoError.set('');
     this.editandoProducto.set(prod);
+    void this.cargarConfigProducto(prod.id);
   }
 
   protected setEditProdDescripcion(e: Event): void {
@@ -1149,6 +1374,9 @@ export class App {
           { idCompany: this.companyId()!, description: desc, ventaMN: precio },
         ),
       );
+      // Guardar configuración de inventario (no bloquea si falla).
+      try { await this.guardarConfigProducto(prod.id); }
+      catch { /* config opcional */ }
       this.editandoProducto.set(null);
       this.productosResource.reload();
     } catch {
@@ -1249,6 +1477,7 @@ export class App {
     this.selectedProducto.set(producto);
     this.prodNota.set('');
     this.addError.set('');
+    void this.cargarConfigVenta(producto.id);
   }
 
   protected cancelarProducto(): void {
@@ -1279,8 +1508,17 @@ export class App {
     const mesa = this.selectedMesa();
     if (!producto || !mesa?.idCuentaActual) return;
 
+    // Presentación y precio según configuración de inventario del producto.
+    const cfg = this.prodInvVenta();
+    let presentacion: Presentacion | null = null;
+    if (cfg?.controlaInventario) {
+      presentacion = cfg.vendePorCopa ? this.presentacionSel() : 'COMPLETA';
+    }
+    const precio = this.precioVentaActual();
+
     const nota = this.prodNota().trim();
-    const descripcion = nota ? `${producto.description} (${nota})` : producto.description;
+    const etiqueta = presentacion === 'COPA' ? `${producto.description} (Copa)` : producto.description;
+    const descripcion = nota ? `${etiqueta} (${nota})` : etiqueta;
 
     this.agregandoItem.set(true);
     this.addError.set('');
@@ -1288,7 +1526,7 @@ export class App {
       await firstValueFrom(
         this.http.post(
           `${environment.urlChatBot}/restaurant-publico/cuentas/${mesa.idCuentaActual}/items`,
-          { idMaterial: producto.id, descripcion, cantidad, precio: producto.price },
+          { idMaterial: producto.id, descripcion, cantidad, precio, presentacion },
         ),
       );
       this.selectedProducto.set(null);

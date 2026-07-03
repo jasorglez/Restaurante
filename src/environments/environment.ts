@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '1.66 (01 Julio 2026) Editar agrupador, menú responsivo en celular',
+  version: '1.67 (03 Julio 2026) Control de inventarios: existencias en onzas, venta completa/copa, ingresos y movimientos',
 }; 
