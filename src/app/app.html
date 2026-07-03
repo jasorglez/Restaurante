@@ -87,40 +87,48 @@
 
   <!-- ── MENÚ PRINCIPAL ─────────────────────────────────────────────────── -->
   @if (view() === 'menu') {
-    <section class="content" aria-labelledby="main-title">
-      <div class="intro">
-        <p class="eyebrow">MENÚ PRINCIPAL</p>
-        <h2 id="main-title">¿Qué deseas administrar?</h2>
-        <p>Selecciona una opción para continuar</p>
+    <section class="content menu-view" aria-labelledby="main-title">
+      <span class="menu-aura menu-aura-1" aria-hidden="true"></span>
+      <span class="menu-aura menu-aura-2" aria-hidden="true"></span>
+
+      <div class="menu-hero">
+        <span class="hero-badge">✦ BIENVENIDO</span>
+        <h2 id="main-title" class="hero-title">Punto&nbsp;Venta <span>Restaurante&nbsp;2.0</span></h2>
+        <p class="hero-sub">{{ companyName() }} · elige un módulo para comenzar</p>
       </div>
+
       <nav class="menu-grid" aria-label="Módulos del restaurante">
-        <button class="menu-card mesas" type="button" (click)="selectModule('MESAS')">
+        <button class="menu-card mesas" type="button" (click)="selectModule('MESAS')" style="--i:0">
+          <span class="card-glow" aria-hidden="true"></span>
           <span class="icon-wrap" aria-hidden="true">
             <svg viewBox="0 0 64 64"><path d="M14 26h36M20 26v22M44 26v22M10 48h12M42 48h12M18 16h28v10H18z"/></svg>
           </span>
           <span class="card-copy"><strong>MESAS</strong><small>Órdenes y consumo</small></span>
-          <span class="arrow" aria-hidden="true">→</span>
+          <span class="card-cta">Entrar <span class="arrow" aria-hidden="true">→</span></span>
         </button>
-        <button class="menu-card cajas" type="button" (click)="selectModule('CAJAS')">
+        <button class="menu-card cajas" type="button" (click)="selectModule('CAJAS')" style="--i:1">
+          <span class="card-glow" aria-hidden="true"></span>
           <span class="icon-wrap" aria-hidden="true">
             <svg viewBox="0 0 64 64"><path d="M13 20h38v29H13zM13 29h38M22 38h9M39 38h4M22 12h20v8"/></svg>
           </span>
           <span class="card-copy"><strong>CAJAS</strong><small>Turnos y corte</small></span>
-          <span class="arrow" aria-hidden="true">→</span>
+          <span class="card-cta">Entrar <span class="arrow" aria-hidden="true">→</span></span>
         </button>
-        <button class="menu-card reportes" type="button" (click)="selectModule('REPORTES')">
+        <button class="menu-card reportes" type="button" (click)="selectModule('REPORTES')" style="--i:2">
+          <span class="card-glow" aria-hidden="true"></span>
           <span class="icon-wrap" aria-hidden="true">
             <svg viewBox="0 0 64 64"><path d="M14 50V14h36M22 44V32M32 44V22M42 44V27M18 19l11 7 10-9 9 5"/></svg>
           </span>
           <span class="card-copy"><strong>REPORTES</strong><small>Ventas y resultados</small></span>
-          <span class="arrow" aria-hidden="true">→</span>
+          <span class="card-cta">Entrar <span class="arrow" aria-hidden="true">→</span></span>
         </button>
-        <button class="menu-card inventario" type="button" (click)="selectModule('INVENTARIO')">
+        <button class="menu-card inventario" type="button" (click)="selectModule('INVENTARIO')" style="--i:3">
+          <span class="card-glow" aria-hidden="true"></span>
           <span class="icon-wrap" aria-hidden="true">
             <svg viewBox="0 0 64 64"><path d="M12 20l20-8 20 8-20 8zM12 20v24l20 8 20-8V20M32 28v24"/></svg>
           </span>
           <span class="card-copy"><strong>INVENTARIO</strong><small>Existencias y movimientos</small></span>
-          <span class="arrow" aria-hidden="true">→</span>
+          <span class="card-cta">Entrar <span class="arrow" aria-hidden="true">→</span></span>
         </button>
       </nav>
       <div class="cambiar-empresa-wrap">

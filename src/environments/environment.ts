@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '1.71 (03 Julio 2026) Inventario: clic en Ingresos/Egresos del resumen abre modal con el detalle del producto',
+  version: '1.72 (03 Julio 2026) Menú Principal 2.0: hero "Punto Venta Restaurante 2.0", tarjetas glass con brillo y animación',
 }; 
