@@ -1721,6 +1721,27 @@
           [value]="editProdPrecioStr()" (input)="setEditProdPrecio($event)" [disabled]="guardandoProducto()">
       </div>
 
+      <!-- ── Mover a familia / subfamilia ── -->
+      <div class="cfg-inv">
+        <label class="turno-label">Familia</label>
+        <select class="turno-input" [value]="moverFamiliaId() ?? ''" (change)="setMoverFamilia($event)" [disabled]="guardandoProducto()">
+          <option value="">— Selecciona —</option>
+          @for (f of famModalResource.value(); track f.id) {
+            <option [value]="f.id" [selected]="moverFamiliaId() === f.id">{{ f.description }}</option>
+          }
+        </select>
+
+        @if (subfamModalResource.value().length > 0) {
+          <label class="turno-label" style="margin-top:8px">Subfamilia</label>
+          <select class="turno-input" [value]="moverSubfamiliaId() ?? ''" (change)="setMoverSubfamilia($event)" [disabled]="guardandoProducto()">
+            <option value="">— Sin subfamilia —</option>
+            @for (s of subfamModalResource.value(); track s.id) {
+              <option [value]="s.id" [selected]="moverSubfamiliaId() === s.id">{{ s.description }}</option>
+            }
+          </select>
+        }
+      </div>
+
       <!-- ── Inventario ── -->
       <div class="cfg-inv">
         <label class="cfg-check">

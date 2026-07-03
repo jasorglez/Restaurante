@@ -186,6 +186,34 @@ export class App {
   protected readonly guardandoProducto    = signal(false);
   protected readonly editProductoError    = signal('');
 
+  // Mover producto a otra familia / subfamilia
+  protected readonly moverFamiliaId    = signal<number | null>(null);
+  protected readonly moverSubfamiliaId = signal<number | null>(null);
+  protected readonly famModalResource = httpResource<Familia[]>(
+    () => this.editandoProducto() !== null
+      ? `${environment.urlChatBot}/restaurant-publico/familias/${this.companyId()!}`
+      : undefined,
+    { defaultValue: [] },
+  );
+  protected readonly subfamModalResource = httpResource<Familia[]>(
+    () => {
+      const fam = this.moverFamiliaId();
+      return this.editandoProducto() !== null && fam
+        ? `${environment.urlChatBot}/restaurant-publico/subfamilias/${this.companyId()!}/${fam}`
+        : undefined;
+    },
+    { defaultValue: [] },
+  );
+  protected setMoverFamilia(e: Event): void {
+    const v = (e.target as HTMLSelectElement).value;
+    this.moverFamiliaId.set(v ? +v : null);
+    this.moverSubfamiliaId.set(null);
+  }
+  protected setMoverSubfamilia(e: Event): void {
+    const v = (e.target as HTMLSelectElement).value;
+    this.moverSubfamiliaId.set(v ? +v : null);
+  }
+
   // ── Cajas / Turno ─────────────────────────────────────────────────────────
   protected readonly cajasResource = httpResource<CajaInfo[]>(
     () => this.view() === 'cajas'
@@ -1471,6 +1499,8 @@ export class App {
     this.editProdPrecioStr.set(prod.price != null ? String(prod.price) : '');
     this.editProdPrecio.set(prod.price ?? null);
     this.editProductoError.set('');
+    this.moverFamiliaId.set(this.selectedFamilia()?.id ?? null);
+    this.moverSubfamiliaId.set(this.selectedSubfamilia()?.id ?? null);
     this.editandoProducto.set(prod);
     void this.cargarConfigProducto(prod.id);
   }
@@ -1506,8 +1536,23 @@ export class App {
       // Guardar configuración de inventario (no bloquea si falla).
       try { await this.guardarConfigProducto(prod.id); }
       catch { /* config opcional */ }
+      // Mover a otra familia/subfamilia si cambió.
+      const famDestino = this.moverFamiliaId();
+      const subDestino = this.moverSubfamiliaId();
+      const cambioFamilia = famDestino !== null &&
+        (famDestino !== (this.selectedFamilia()?.id ?? null) ||
+         subDestino !== (this.selectedSubfamilia()?.id ?? null));
+      if (cambioFamilia) {
+        try {
+          await firstValueFrom(this.http.put(
+            `${environment.urlChatBot}/restaurant-publico/productos/${prod.id}/mover`,
+            { idCompany: this.companyId()!, idFamilia: famDestino, idSubfamilia: subDestino },
+          ));
+        } catch { /* si falla el movimiento, el resto ya se guardó */ }
+      }
       this.editandoProducto.set(null);
       this.productosResource.reload();
+      this.familiasResource.reload();
     } catch {
       this.editProductoError.set('No se pudo guardar. Intenta de nuevo.');
     } finally {
