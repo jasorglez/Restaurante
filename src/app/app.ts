@@ -272,7 +272,36 @@ export class App {
         this.turnoActivo.set(t);
       }
     });
+
+    // ── Instalación PWA ──────────────────────────────────────────────────────
+    const yaInstalada = window.matchMedia?.('(display-mode: standalone)').matches
+      || (navigator as any).standalone === true;
+    this.appStandalone.set(!!yaInstalada);
+    if (!yaInstalada) {
+      if ((window as any).__deferredInstallPrompt) this.puedeInstalar.set(true);
+      window.addEventListener('pwa-installable', () => this.puedeInstalar.set(true));
+      window.addEventListener('pwa-installed',   () => { this.puedeInstalar.set(false); this.appStandalone.set(true); });
+    }
   }
+
+  protected readonly appStandalone = signal(false);
+
+  // ── Instalación PWA ─────────────────────────────────────────────────────────
+  protected readonly puedeInstalar = signal(false);
+  protected async instalarApp(): Promise<void> {
+    const p = (window as any).__deferredInstallPrompt;
+    if (!p) {
+      // El navegador no ofreció el evento (ej. Samsung Internet o ya instalada):
+      // guiar al usuario al menú del navegador.
+      this.mostrarAyudaInstalar.set(true);
+      return;
+    }
+    p.prompt();
+    try { await p.userChoice; } catch { /* cancelado */ }
+    (window as any).__deferredInstallPrompt = null;
+    this.puedeInstalar.set(false);
+  }
+  protected readonly mostrarAyudaInstalar = signal(false);
 
   // ── Egresos ──────────────────────────────────────────────────────────────
   protected readonly egresoDesc = signal('');
