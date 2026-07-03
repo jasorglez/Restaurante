@@ -1200,8 +1200,16 @@
                 @for (r of resumenView(); track r.idMaterial) {
                   <tr>
                     <td>{{ r.descripcion }}</td>
-                    <td class="num pos">{{ r.ingresos.toFixed(1) }}</td>
-                    <td class="num neg">{{ r.egresos.toFixed(1) }}</td>
+                    <td class="num pos">
+                      @if (r.ingresos > 0) {
+                        <button type="button" class="cell-link" (click)="abrirDrill(r, 'INGRESO')">{{ r.ingresos.toFixed(1) }}</button>
+                      } @else { {{ r.ingresos.toFixed(1) }} }
+                    </td>
+                    <td class="num neg">
+                      @if (r.egresos > 0) {
+                        <button type="button" class="cell-link" (click)="abrirDrill(r, 'EGRESO')">{{ r.egresos.toFixed(1) }}</button>
+                      } @else { {{ r.egresos.toFixed(1) }} }
+                    </td>
                     <td class="num" [class.bajo-cero]="r.total < 0">{{ r.total.toFixed(1) }}</td>
                   </tr>
                 }
@@ -1750,6 +1758,45 @@
       <button class="qty-cancel" type="button" (click)="editandoProducto.set(null)" [disabled]="guardandoProducto()">
         Cancelar
       </button>
+    </div>
+  </div>
+}
+
+<!-- ── Modal: detalle de ingresos / egresos de un producto ─────────────────── -->
+@if (drillProducto()) {
+  <div class="qty-overlay" role="dialog" aria-modal="true" aria-label="Detalle de movimientos">
+    <div class="qty-panel drill-panel">
+      <div class="alta-head">
+        <strong>{{ drillTipo() === 'INGRESO' ? '⬆️ Ingresos' : '⬇️ Egresos' }} · {{ drillProducto()!.desc }}</strong>
+        <button type="button" class="inv-cancel" (click)="cerrarDrill()">✕</button>
+      </div>
+      <p class="inv-help">{{ movDesde() }} a {{ movHasta() }}</p>
+
+      @if (drillLoading()) {
+        <div class="state-panel" role="status"><span class="loader" aria-hidden="true"></span><strong>Cargando…</strong></div>
+      } @else if (drillMovs().length === 0) {
+        <div class="state-panel"><strong>Sin movimientos en el rango</strong></div>
+      } @else {
+        <ul class="inv-list mov drill-list">
+          @for (m of drillMovs(); track m.id) {
+            <li class="inv-item">
+              <div class="inv-mov-detalle">
+                <span [class.neg]="m.onzas < 0">{{ m.onzas > 0 ? '+' : '' }}{{ m.onzas.toFixed(1) }} oz</span>
+                @if (m.piezas) { <span>({{ m.piezas }} pza)</span> }
+                @if (m.presentacion === 'COPA') { <span>· Copa</span> }
+                @if (m.nombreMesa) { <span>· {{ m.nombreMesa }}</span> }
+                <span class="inv-fecha">{{ m.fecha | date:'dd/MM HH:mm' }}</span>
+              </div>
+            </li>
+          }
+        </ul>
+        <p class="drill-total">
+          Total {{ drillTipo() === 'INGRESO' ? 'ingresado' : 'egresado' }}: <strong>{{ drillTotalOnzas().toFixed(1) }} oz</strong>
+          ({{ drillMovs().length }} mov.)
+        </p>
+      }
+
+      <button class="qty-cancel" type="button" (click)="cerrarDrill()">Cerrar</button>
     </div>
   </div>
 }

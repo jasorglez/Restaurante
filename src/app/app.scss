@@ -2341,3 +2341,31 @@ footer {
   td.bajo-cero { color: #c0392b; font-weight: 700; }
   tfoot td { font-weight: 800; border-top: 2px solid #d9e2dd; border-bottom: none; }
 }
+
+.cell-link {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+.cell-link:hover { text-decoration: underline solid; }
+
+.drill-panel {
+  max-width: 480px;
+  width: 92vw;
+  max-height: 80vh;
+  overflow-y: auto;
+  text-align: left;
+}
+.drill-list { margin-top: 8px; }
+.drill-total {
+  margin: 12px 0 4px;
+  padding-top: 10px;
+  border-top: 2px solid #d9e2dd;
+  text-align: right;
+  strong { color: #147a4b; }
+}

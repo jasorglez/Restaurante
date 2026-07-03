@@ -387,6 +387,33 @@ export class App {
     };
   });
 
+  // Drill-down: detalle de ingresos/egresos de un producto (modal)
+  protected readonly drillProducto = signal<{ id: number; desc: string } | null>(null);
+  protected readonly drillTipo     = signal<'INGRESO' | 'EGRESO'>('INGRESO');
+  protected readonly drillResource = httpResource<MovimientoInv[]>(
+    () => {
+      const p = this.drillProducto();
+      return p
+        ? this.invUrl(`${this.companyId()!}/movimientos?idMaterial=${p.id}&desde=${this.movDesde()}&hasta=${this.movHasta()}`)
+        : undefined;
+    },
+    { defaultValue: [] },
+  );
+  protected readonly drillLoading = this.drillResource.isLoading;
+  protected readonly drillMovs = computed(() => {
+    const tipo = this.drillTipo();
+    return this.drillResource.value().filter(m =>
+      tipo === 'INGRESO' ? m.tipo === 'INGRESO' : m.onzas < 0);
+  });
+  protected readonly drillTotalOnzas = computed(() =>
+    this.drillMovs().reduce((s, m) => s + Math.abs(m.onzas), 0));
+
+  protected abrirDrill(r: { idMaterial: number; descripcion: string }, tipo: 'INGRESO' | 'EGRESO'): void {
+    this.drillTipo.set(tipo);
+    this.drillProducto.set({ id: r.idMaterial, desc: r.descripcion });
+  }
+  protected cerrarDrill(): void { this.drillProducto.set(null); }
+
   // Detalle línea por línea (pestaña "Detalle") con búsqueda por producto
   protected readonly movDetalleBusqueda = signal('');
   protected setMovBusqueda(e: Event): void { this.movDetalleBusqueda.set((e.target as HTMLInputElement).value); }
