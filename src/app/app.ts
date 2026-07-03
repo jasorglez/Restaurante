@@ -1718,6 +1718,7 @@ export class App {
     this.selectedSubfamilia.set(null);
     this.selectedProducto.set(null);
     this.addError.set('');
+    this.prodBusqueda.set('');   // evita que un filtro previo siga "vivo"
     this.selectedFamilia.set(familia);
     this.view.set('productos');
   }
@@ -1979,6 +1980,7 @@ export class App {
     this.selectedSubfamilia.set(null);
     this.selectedProducto.set(null);
     this.addError.set('');
+    this.prodBusqueda.set('');
   }
 
   protected backToMesas(): void {
@@ -1988,6 +1990,7 @@ export class App {
     this.selectedSubfamilia.set(null);
     this.selectedProducto.set(null);
     this.showPayment.set(false);
+    this.prodBusqueda.set('');
     this.mesasResource.reload();
   }
 
@@ -1998,6 +2001,7 @@ export class App {
     this.selectedSubfamilia.set(null);
     this.selectedProducto.set(null);
     this.showPayment.set(false);
+    this.prodBusqueda.set('');
     this.turnoActivo.set(null);
     this.turnoError.set('');
   }
