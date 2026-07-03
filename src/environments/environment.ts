@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '1.74 (03 Julio 2026) Iconos duotono más atractivos en el Menú Principal',
+  version: '1.75 (03 Julio 2026) Ajuste de inventario por conteo físico + activar/desactivar producto + dashboard del día',
 }; 

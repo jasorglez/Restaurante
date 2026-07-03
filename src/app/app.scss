@@ -2522,3 +2522,42 @@ footer {
   stroke-linejoin: round;
 }
 .menu-card:hover .icon-wrap svg .ico-bg { fill-opacity: 0.28; }
+
+/* Acciones de existencias (ingresar / ajustar) */
+.inv-acciones { display: flex; gap: 8px; flex-wrap: wrap; }
+.inv-add-btn.alt { border-style: solid; border-color: #b06c19; color: #b06c19; }
+
+/* Dashboard del día */
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin: 6px 0 14px;
+}
+.dash-kpi {
+  padding: 16px;
+  border: 1px solid #e6ecea;
+  border-radius: 16px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dash-kpi.big {
+  grid-column: 1 / -1;
+  background: linear-gradient(135deg, var(--brand), var(--brand-2));
+  border: none;
+  color: #fff;
+  .dash-label { color: rgb(255 255 255 / 85%); }
+  .dash-value { color: #fff; }
+}
+.dash-label { font-size: 0.8rem; font-weight: 700; color: #6b7c73; letter-spacing: 0.02em; }
+.dash-value { font-size: 1.6rem; font-weight: 800; color: #17241c; }
+.dash-highlight {
+  margin: 4px 0 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fff8e8;
+  color: #8a5a00;
+}
+.dash-sub { margin: 12px 0 6px; font-size: 1.05rem; }

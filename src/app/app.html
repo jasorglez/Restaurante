@@ -420,6 +420,16 @@
         }
       </div>
 
+      @if (!buscando() && !mostrarSubfamilias()) {
+        <div class="inv-unidad" style="margin:10px 0 4px">
+          <button type="button" [class.active]="!verInactivos()" (click)="verInactivos() ? toggleVerInactivos() : null">Activos</button>
+          <button type="button" [class.active]="verInactivos()" (click)="!verInactivos() ? toggleVerInactivos() : null">Inactivos</button>
+        </div>
+        @if (verInactivos()) {
+          <p class="inv-help" style="margin:2px 2px 8px">Productos desactivados — edítalos y marca “Producto activo” para reactivarlos.</p>
+        }
+      }
+
       @if (buscando()) {
         @if (busquedaResource.isLoading()) {
           <div class="state-panel" role="status">
@@ -903,7 +913,7 @@
           <h2 id="reporte-title">Reportes</h2>
         </div>
         <button class="refresh-button no-print" type="button"
-          (click)="reporteSubView() === 'mesas' ? reporteMesasResource.reload() : reporteTurnosResource.reload()"
+          (click)="reporteSubView() === 'mesas' ? reporteMesasResource.reload() : reporteSubView() === 'caja' ? reporteTurnosResource.reload() : resumenDiaResource.reload()"
           title="Actualizar">↺</button>
       </div>
 
@@ -912,15 +922,74 @@
         <input class="reporte-fecha-input" type="date"
           [value]="reporteFecha()" (change)="setReporteFecha($event)">
         <div class="reporte-tabs">
+          <button class="reporte-tab" [class.active]="reporteSubView() === 'resumen'"
+            type="button" (click)="reporteSubView.set('resumen')">📊 Resumen</button>
           <button class="reporte-tab" [class.active]="reporteSubView() === 'mesas'"
             type="button" (click)="reporteSubView.set('mesas')">🍽️ Mesas</button>
           <button class="reporte-tab" [class.active]="reporteSubView() === 'caja'"
             type="button" (click)="reporteSubView.set('caja')">🏧 Caja</button>
         </div>
-        <button class="nueva-mesa-btn no-print" type="button" (click)="imprimirReporte()">
-          🖨️ Imprimir
-        </button>
+        @if (reporteSubView() !== 'resumen') {
+          <button class="nueva-mesa-btn no-print" type="button" (click)="imprimirReporte()">
+            🖨️ Imprimir
+          </button>
+        } @else { <span></span> }
       </div>
+
+      <!-- ── Resumen del día (dashboard) ────────────────────────────────────── -->
+      @if (reporteSubView() === 'resumen') {
+        @if (resumenDiaLoading()) {
+          <div class="state-panel"><span class="loader"></span><strong>Cargando resumen…</strong></div>
+        } @else if (!resumenDia()) {
+          <div class="state-panel"><strong>Sin datos para esta fecha</strong></div>
+        } @else {
+          <div class="dash-grid">
+            <div class="dash-kpi big">
+              <span class="dash-label">Ventas del día</span>
+              <strong class="dash-value">{{ resumenDia()!.totalVentas | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+            </div>
+            <div class="dash-kpi">
+              <span class="dash-label">Cuentas</span>
+              <strong class="dash-value">{{ resumenDia()!.cuentasCerradas }}</strong>
+            </div>
+            <div class="dash-kpi">
+              <span class="dash-label">Ticket promedio</span>
+              <strong class="dash-value">{{ resumenDia()!.ticketPromedio | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+            </div>
+            <div class="dash-kpi">
+              <span class="dash-label">💵 Efectivo</span>
+              <strong class="dash-value">{{ resumenDia()!.ventasEfectivo | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+            </div>
+            <div class="dash-kpi">
+              <span class="dash-label">💳 Tarjeta</span>
+              <strong class="dash-value">{{ resumenDia()!.ventasTarjeta | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+            </div>
+            <div class="dash-kpi">
+              <span class="dash-label">Otros</span>
+              <strong class="dash-value">{{ resumenDia()!.ventasOtros | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+            </div>
+          </div>
+
+          @if (resumenDia()!.mesaMayorNombre) {
+            <p class="dash-highlight">🏆 Mesa con mayor consumo: <strong>{{ resumenDia()!.mesaMayorNombre }}</strong>
+              ({{ resumenDia()!.mesaMayorTotal | currency:'MXN':'symbol-narrow':'1.2-2' }})</p>
+          }
+
+          @if (resumenDia()!.topPlatillos.length > 0) {
+            <h3 class="dash-sub">Productos más vendidos</h3>
+            <ul class="inv-list">
+              @for (p of resumenDia()!.topPlatillos; track p.descripcion) {
+                <li class="inv-item">
+                  <div class="inv-item-main">
+                    <strong>{{ p.descripcion }}</strong>
+                    <span class="inv-exist">{{ p.cantidad }} u · {{ p.total | currency:'MXN':'symbol-narrow':'1.2-2' }}</span>
+                  </div>
+                </li>
+              }
+            </ul>
+          }
+        }
+      }
 
       <!-- ── Reporte Mesas ──────────────────────────────────────────────────── -->
       @if (reporteSubView() === 'mesas') {
@@ -1136,8 +1205,24 @@
                     <button type="button" class="inv-cancel" (click)="cancelarIngreso()" [disabled]="registrandoIngreso()">✕</button>
                   </div>
                   @if (ingresoError()) { <p class="qty-error" role="alert">{{ ingresoError() }}</p> }
+                } @else if (ajusteActivoId() === e.idMaterial) {
+                  <p class="inv-help" style="margin:2px 0">Existencia real (conteo físico):</p>
+                  <div class="inv-ingreso-form">
+                    <input type="number" min="0" inputmode="numeric" placeholder="Piezas reales"
+                      [value]="ajustePiezas() ?? ''" (input)="setAjustePiezas($event)" [disabled]="registrandoAjuste()">
+                    @if (e.vendePorCopa) {
+                      <input type="number" min="0" step="0.1" placeholder="+ onzas"
+                        [value]="ajusteOnzas() ?? ''" (input)="setAjusteOnzas($event)" [disabled]="registrandoAjuste()">
+                    }
+                    <button type="button" class="inv-save" (click)="registrarAjuste(e)" [disabled]="registrandoAjuste()">Fijar</button>
+                    <button type="button" class="inv-cancel" (click)="cancelarAjuste()" [disabled]="registrandoAjuste()">✕</button>
+                  </div>
+                  @if (ajusteError()) { <p class="qty-error" role="alert">{{ ajusteError() }}</p> }
                 } @else {
-                  <button type="button" class="inv-add-btn" (click)="iniciarIngreso(e)">+ Ingresar</button>
+                  <div class="inv-acciones">
+                    <button type="button" class="inv-add-btn" (click)="iniciarIngreso(e)">+ Ingresar</button>
+                    <button type="button" class="inv-add-btn alt" (click)="iniciarAjuste(e)">✎ Ajustar</button>
+                  </div>
                 }
               </li>
             }
@@ -1745,6 +1830,11 @@
         <input id="edit-prod-precio" class="turno-input" type="text" inputmode="decimal" placeholder="0.00"
           [value]="editProdPrecioStr()" (input)="setEditProdPrecio($event)" [disabled]="guardandoProducto()">
       </div>
+
+      <label class="cfg-check" style="margin:10px 2px 2px">
+        <input type="checkbox" [checked]="prodActivo()" (change)="setProdActivo($event)" [disabled]="guardandoProducto()">
+        <span>Producto activo (visible en el menú)</span>
+      </label>
 
       <!-- ── Mover a familia / subfamilia ── -->
       <div class="cfg-inv">

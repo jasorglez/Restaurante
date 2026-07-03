@@ -19,6 +19,24 @@ export interface ReporteMesa {
   items: ReporteMesaItem[];
 }
 
+export interface PlatilloTop {
+  descripcion: string;
+  cantidad: number;
+  total: number;
+}
+
+export interface ResumenDia {
+  cuentasCerradas: number;
+  totalVentas: number;
+  ticketPromedio: number;
+  ventasEfectivo: number;
+  ventasTarjeta: number;
+  ventasOtros: number;
+  topPlatillos: PlatilloTop[];
+  mesaMayorNombre: string | null;
+  mesaMayorTotal: number;
+}
+
 export interface GrupoMesa {
   nombreMesa: string;
   cuentas: ReporteMesa[];

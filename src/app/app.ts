@@ -14,7 +14,7 @@ import { CajaInfo, CajaReporte, EgresoCaja, ResumenCorte, Turno, VentaPorTipo } 
 import { CuentaAbierta, Familia, ItemCuenta, Producto } from './models/familia';
 import { Equivalencia, Existencia, MovimientoInv, ProductoInventario, ResultadoMovimiento, ResumenMov } from './models/inventario';
 import { Mesa } from './models/mesa';
-import { GrupoMesa, ReporteMesa } from './models/reporte';
+import { GrupoMesa, ReporteMesa, ResumenDia } from './models/reporte';
 
 type RestaurantModule = 'MESAS' | 'CAJAS' | 'REPORTES' | 'INVENTARIO';
 type View = 'menu' | 'mesas' | 'familias' | 'productos' | 'cuenta' | 'cajas' | 'reportes' | 'inventario';
@@ -214,6 +214,15 @@ export class App {
     this.moverSubfamiliaId.set(v ? +v : null);
   }
 
+  // Activar / desactivar producto
+  protected readonly verInactivos = signal(false);
+  protected readonly prodActivo   = signal(true);
+  protected toggleVerInactivos(): void {
+    this.verInactivos.update(v => !v);
+    this.productosResource.reload();
+  }
+  protected setProdActivo(e: Event): void { this.prodActivo.set((e.target as HTMLInputElement).checked); }
+
   // ── Cajas / Turno ─────────────────────────────────────────────────────────
   protected readonly cajasResource = httpResource<CajaInfo[]>(
     () => this.view() === 'cajas'
@@ -294,8 +303,17 @@ export class App {
   });
 
   // ── Reportes ──────────────────────────────────────────────────────────────
-  protected readonly reporteSubView = signal<'mesas' | 'caja'>('mesas');
+  protected readonly reporteSubView = signal<'mesas' | 'caja' | 'resumen'>('mesas');
   protected readonly reporteFecha   = signal<string>(new Date().toISOString().split('T')[0]);
+
+  // Dashboard del día
+  protected readonly resumenDiaResource = httpResource<ResumenDia>(
+    () => this.view() === 'reportes' && this.reporteSubView() === 'resumen'
+      ? `${environment.urlChatBot}/restaurant-publico/resumen-dia/${this.companyId()!}?fecha=${this.reporteFecha()}`
+      : undefined,
+  );
+  protected readonly resumenDia        = this.resumenDiaResource.value;
+  protected readonly resumenDiaLoading = this.resumenDiaResource.isLoading;
 
   protected readonly reporteMesasResource = httpResource<ReporteMesa[]>(
     () => {
@@ -559,6 +577,57 @@ export class App {
     }
   }
 
+  // Ajuste por conteo físico (inline por producto)
+  protected readonly ajusteActivoId    = signal<number | null>(null);
+  protected readonly ajustePiezas      = signal<number | null>(null);
+  protected readonly ajusteOnzas       = signal<number | null>(null);
+  protected readonly registrandoAjuste = signal(false);
+  protected readonly ajusteError       = signal('');
+
+  protected iniciarAjuste(mat: Existencia): void {
+    this.ajusteActivoId.set(mat.idMaterial);
+    this.ajustePiezas.set(mat.piezasEnteras);
+    this.ajusteOnzas.set(mat.onzasSobrantes || null);
+    this.ajusteError.set('');
+    this.ingresoOk.set('');
+  }
+  protected cancelarAjuste(): void {
+    this.ajusteActivoId.set(null);
+    this.ajustePiezas.set(null);
+    this.ajusteOnzas.set(null);
+    this.ajusteError.set('');
+  }
+  protected setAjustePiezas(e: Event): void {
+    const v = parseFloat((e.target as HTMLInputElement).value);
+    this.ajustePiezas.set(!isNaN(v) && v >= 0 ? v : null);
+  }
+  protected setAjusteOnzas(e: Event): void {
+    const v = parseFloat((e.target as HTMLInputElement).value);
+    this.ajusteOnzas.set(!isNaN(v) && v >= 0 ? v : null);
+  }
+
+  protected async registrarAjuste(mat: Existencia): Promise<void> {
+    const piezas = this.ajustePiezas() ?? 0;
+    const onzas  = this.ajusteOnzas() ?? 0;
+    this.registrandoAjuste.set(true);
+    this.ajusteError.set('');
+    try {
+      await firstValueFrom(this.http.post<ResultadoMovimiento>(
+        this.invUrl('ajuste'),
+        { idCompany: this.companyId()!, idMaterial: mat.idMaterial, piezas, onzasSobrantes: onzas },
+      ));
+      this.ajusteActivoId.set(null);
+      this.ajustePiezas.set(null);
+      this.ajusteOnzas.set(null);
+      this.ingresoOk.set(`Existencia ajustada: ${mat.descripcion} = ${piezas} pza${onzas ? ` + ${onzas} oz` : ''}.`);
+      this.existenciasResource.reload();
+    } catch {
+      this.ajusteError.set('No se pudo registrar el ajuste.');
+    } finally {
+      this.registrandoAjuste.set(false);
+    }
+  }
+
   // ── Configuración de inventario del producto (en modal de editar) ───────────
   protected readonly cfgControla   = signal(false);
   protected readonly cfgVendeCopa  = signal(false);
@@ -811,12 +880,13 @@ export class App {
       if (this.view() !== 'productos') return undefined;
       const fam = this.selectedFamilia();
       if (!fam || this.subfamiliasResource.isLoading()) return undefined;
+      const q = this.verInactivos() ? '?inactivos=true' : '';
       const sub = this.selectedSubfamilia();
       if (sub) {
-        return `${environment.urlChatBot}/restaurant-publico/productos/${this.companyId()!}/subfamilia/${sub.id}`;
+        return `${environment.urlChatBot}/restaurant-publico/productos/${this.companyId()!}/subfamilia/${sub.id}${q}`;
       }
       if (!this.mostrarSubfamilias()) {
-        return `${environment.urlChatBot}/restaurant-publico/productos/${this.companyId()!}/familia/${fam.id}`;
+        return `${environment.urlChatBot}/restaurant-publico/productos/${this.companyId()!}/familia/${fam.id}${q}`;
       }
       return undefined;
     },
@@ -1501,6 +1571,7 @@ export class App {
     this.editProductoError.set('');
     this.moverFamiliaId.set(this.selectedFamilia()?.id ?? null);
     this.moverSubfamiliaId.set(this.selectedSubfamilia()?.id ?? null);
+    this.prodActivo.set(!this.verInactivos());   // si estás viendo inactivos, el producto está inactivo
     this.editandoProducto.set(prod);
     void this.cargarConfigProducto(prod.id);
   }
@@ -1549,6 +1620,16 @@ export class App {
             { idCompany: this.companyId()!, idFamilia: famDestino, idSubfamilia: subDestino },
           ));
         } catch { /* si falla el movimiento, el resto ya se guardó */ }
+      }
+      // Activar / desactivar si cambió respecto al listado actual.
+      const activoActual = !this.verInactivos();
+      if (this.prodActivo() !== activoActual) {
+        try {
+          await firstValueFrom(this.http.put(
+            `${environment.urlChatBot}/restaurant-publico/productos/${prod.id}/activo`,
+            { idCompany: this.companyId()!, activo: this.prodActivo() },
+          ));
+        } catch { /* no bloquea */ }
       }
       this.editandoProducto.set(null);
       this.productosResource.reload();
