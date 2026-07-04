@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '1.85 (03 Julio 2026) Arqueo por denominación en el corte de caja (suma el efectivo contado)',
+  version: '1.86 (03 Julio 2026) Cancelaciones, cortesías y descuentos con PIN de supervisor y registro',
 }; 

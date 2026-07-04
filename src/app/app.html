@@ -1541,15 +1541,10 @@
               <span class="item-subtotal">
                 {{ item.subtotal | currency:'MXN':'symbol-narrow':'1.2-2' }}
               </span>
-              <button
-                class="item-del"
-                type="button"
-                (click)="eliminarItem(item)"
-                [disabled]="eliminandoId() !== null"
-                aria-label="Eliminar {{ item.descripcion }}"
-              >
-                @if (eliminandoId() === item.id) { … } @else { ✕ }
-              </button>
+              <button class="item-cortesia" type="button" (click)="pedirCortesia(item)"
+                title="Cortesía (gratis)" aria-label="Cortesía {{ item.descripcion }}">🎁</button>
+              <button class="item-del" type="button" (click)="pedirCancelar(item)"
+                aria-label="Cancelar {{ item.descripcion }}">✕</button>
             </div>
           }
         </div>
@@ -1591,9 +1586,20 @@
       <div class="qty-overlay" role="dialog" aria-modal="true" aria-label="Confirmar cobro">
         <div class="qty-panel pago-panel">
           <strong class="qty-name">Cobrar cuenta</strong>
-          <p class="qty-price total-precio">{{ totalCuenta() | currency:'MXN':'symbol-narrow':'1.2-2' }}</p>
+          @if (descuentoAplicado()) {
+            <p class="pago-subtotal">Subtotal {{ totalCuenta() | currency:'MXN':'symbol-narrow':'1.2-2' }}</p>
+            <p class="pago-descuento">
+              Descuento −{{ descuentoAplicado()!.monto | currency:'MXN':'symbol-narrow':'1.2-2' }}
+              <button type="button" class="desc-quitar" (click)="quitarDescuento()" [disabled]="cobrando()">quitar</button>
+            </p>
+          }
+          <p class="qty-price total-precio">{{ totalAPagar() | currency:'MXN':'symbol-narrow':'1.2-2' }}</p>
           @if (dividirEntre() > 1) {
             <p class="pago-dividido">Dividido entre {{ dividirEntre() }} · {{ montoPorPersona() | currency:'MXN':'symbol-narrow':'1.2-2' }} por persona</p>
+          }
+
+          @if (!descuentoAplicado()) {
+            <button type="button" class="desc-aplicar" (click)="pedirDescuento()" [disabled]="cobrando()">% Aplicar descuento</button>
           }
 
           <p class="pago-label">Forma de pago</p>
@@ -2152,6 +2158,59 @@
       }
 
       <button class="qty-cancel" type="button" (click)="cerrarMover()" [disabled]="moviendoMesa()">Cerrar</button>
+    </div>
+  </div>
+}
+
+<!-- ── Modal: autorización de supervisor (cancelar / cortesía / descuento) ──── -->
+@if (authAccion(); as acc) {
+  <div class="qty-overlay" role="dialog" aria-modal="true" aria-label="Autorización de supervisor">
+    <div class="qty-panel drill-panel">
+      <div class="alta-head">
+        <strong>
+          🔐
+          @switch (acc.tipo) {
+            @case ('cancelar') { Cancelar producto }
+            @case ('cortesia') { Cortesía }
+            @case ('descuento') { Aplicar descuento }
+          }
+        </strong>
+        <button type="button" class="inv-cancel" (click)="cerrarAuth()" [disabled]="authProcesando()">✕</button>
+      </div>
+
+      @if (acc.item) {
+        <p class="inv-help">{{ acc.item.descripcion }} · {{ acc.item.subtotal | currency:'MXN':'symbol-narrow':'1.2-2' }}</p>
+      }
+
+      @if (acc.tipo === 'descuento') {
+        <div class="pago-grid" style="margin:6px 0">
+          <button type="button" class="pago-btn" [class.active]="descModo() === 'porc'" (click)="setDescModo('porc')">%</button>
+          <button type="button" class="pago-btn" [class.active]="descModo() === 'monto'" (click)="setDescModo('monto')">$ Monto</button>
+        </div>
+        <input class="turno-input" type="number" min="0" step="0.01"
+          [placeholder]="descModo() === 'porc' ? 'Porcentaje (ej. 10)' : 'Monto (ej. 50)'"
+          [value]="descValor() ?? ''" (input)="setDescValor($event)" [disabled]="authProcesando()">
+        <p class="inv-help">Descuento: <strong>{{ calcDescuento() | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong></p>
+      }
+
+      <label class="turno-label" style="margin-top:6px">Motivo</label>
+      <input class="turno-input" type="text" placeholder="Motivo (opcional)"
+        [value]="authMotivo()" (input)="setAuthMotivo($event)" [disabled]="authProcesando()">
+
+      <label class="turno-label" style="margin-top:8px">Autoriza (nombre)</label>
+      <input class="turno-input" type="text" placeholder="Nombre del supervisor"
+        [value]="authPor()" (input)="setAuthPor($event)" [disabled]="authProcesando()">
+
+      <label class="turno-label" style="margin-top:8px">PIN de supervisor</label>
+      <input class="turno-input" type="password" autocomplete="off" placeholder="PIN"
+        [value]="authPin()" (input)="setAuthPin($event)" (keyup.enter)="confirmarAuth()" [disabled]="authProcesando()">
+
+      @if (authError()) { <p class="qty-error" role="alert">{{ authError() }}</p> }
+
+      <button class="confirmar-btn alta-submit" type="button" (click)="confirmarAuth()" [disabled]="authProcesando()">
+        @if (authProcesando()) { Procesando… } @else { Autorizar }
+      </button>
+      <button class="qty-cancel" type="button" (click)="cerrarAuth()" [disabled]="authProcesando()">Cancelar</button>
     </div>
   </div>
 }

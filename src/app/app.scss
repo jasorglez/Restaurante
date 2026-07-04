@@ -2795,3 +2795,45 @@ footer {
   font-size: 1rem;
 }
 .arqueo-sub { text-align: right; color: #6b7c73; font-variant-numeric: tabular-nums; }
+
+/* ── Cancelación / cortesía / descuento ──────────────────────────────────── */
+.item-cortesia {
+  border: none;
+  background: none;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 4px;
+  opacity: 0.75;
+}
+.item-cortesia:hover { opacity: 1; }
+
+.pago-subtotal { margin: 2px 0 0; color: #6b7c73; font-size: 0.9rem; }
+.pago-descuento {
+  margin: 2px 0 0;
+  color: #c0392b;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+}
+.desc-quitar {
+  border: none;
+  background: none;
+  color: #315da8;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+.desc-aplicar {
+  width: 100%;
+  padding: 10px;
+  margin: 4px 0 8px;
+  border: 1.5px dashed #315da8;
+  border-radius: 10px;
+  background: #eef3fc;
+  color: #2b4d86;
+  font-weight: 700;
+  cursor: pointer;
+}
+.desc-aplicar:hover:not(:disabled) { background: #e2ecfa; }

@@ -89,6 +89,8 @@ export class App {
   // Clave requerida para poder cambiar de empresa (evita que un usuario
   // normal salga de su propia empresa).
   private static readonly CLAVE_CAMBIO_EMPRESA = 'QAdmin9317';
+  // PIN de supervisor para cancelaciones, descuentos y cortesías.
+  private static readonly CLAVE_SUPERVISOR = 'Super2026';
   protected readonly pedirClave  = signal(false);
   protected readonly claveInput  = signal('');
   protected readonly claveError  = signal('');
@@ -842,7 +844,7 @@ export class App {
   protected readonly cobroError = signal('');
 
   protected readonly cambio = computed(() => {
-    const total = this.totalCuenta();
+    const total = this.totalAPagar();
     const tipo = this.tipoPago();
     if (tipo === 'TARJETA') return 0;
     const efectivo = this.montoPagado() ?? 0;
@@ -854,7 +856,7 @@ export class App {
   // El pago cubre la cuenta: efectivo (o efectivo+tarjeta en mixto) >= total.
   // Tarjeta exacta siempre alcanza. Evita confirmar con el monto vacío/insuficiente.
   protected readonly pagoSuficiente = computed(() => {
-    const total = this.totalCuenta();
+    const total = this.totalAPagar();
     const tipo = this.tipoPago();
     if (tipo === 'TARJETA') return true;
     const efectivo = this.montoPagado() ?? 0;
@@ -1073,6 +1075,12 @@ export class App {
   protected readonly items = this.itemsResource.value;
   protected readonly totalCuenta = computed(() =>
     this.items().reduce((sum, i) => sum + i.subtotal, 0),
+  );
+
+  // Descuento aplicado (autorizado por supervisor) y total a pagar.
+  protected readonly descuentoAplicado = signal<{ monto: number; motivo: string; por: string } | null>(null);
+  protected readonly totalAPagar = computed(() =>
+    Math.max(0, this.totalCuenta() - (this.descuentoAplicado()?.monto ?? 0)),
   );
 
   // ── Dividir cuenta (partes iguales) ────────────────────────────────────────
@@ -2010,6 +2018,94 @@ export class App {
     }
   }
 
+  // ── Autorización de supervisor (cancelación / cortesía / descuento) ─────────
+  protected readonly authAccion = signal<{ tipo: 'cancelar' | 'cortesia' | 'descuento'; item?: ItemCuenta } | null>(null);
+  protected readonly authMotivo = signal('');
+  protected readonly authPor    = signal('');
+  protected readonly authPin     = signal('');
+  protected readonly authError   = signal('');
+  protected readonly authProcesando = signal(false);
+  protected readonly descModo  = signal<'porc' | 'monto'>('porc');
+  protected readonly descValor = signal<number | null>(null);
+
+  protected setAuthMotivo(e: Event): void { this.authMotivo.set((e.target as HTMLInputElement).value); }
+  protected setAuthPor(e: Event): void { this.authPor.set((e.target as HTMLInputElement).value); }
+  protected setAuthPin(e: Event): void { this.authPin.set((e.target as HTMLInputElement).value); }
+  protected setDescModo(m: 'porc' | 'monto'): void { this.descModo.set(m); }
+  protected setDescValor(e: Event): void {
+    const v = parseFloat((e.target as HTMLInputElement).value);
+    this.descValor.set(!isNaN(v) && v >= 0 ? v : null);
+  }
+
+  private resetAuth(): void {
+    this.authMotivo.set('');
+    this.authPor.set('');
+    this.authPin.set('');
+    this.authError.set('');
+  }
+  protected pedirCancelar(item: ItemCuenta): void { this.resetAuth(); this.authAccion.set({ tipo: 'cancelar', item }); }
+  protected pedirCortesia(item: ItemCuenta): void { this.resetAuth(); this.authAccion.set({ tipo: 'cortesia', item }); }
+  protected pedirDescuento(): void {
+    this.resetAuth();
+    this.descModo.set('porc');
+    this.descValor.set(null);
+    this.authAccion.set({ tipo: 'descuento' });
+  }
+  protected cerrarAuth(): void { this.authAccion.set(null); }
+
+  protected calcDescuento(): number {
+    const v = this.descValor() ?? 0;
+    if (v <= 0) return 0;
+    const total = this.totalCuenta();
+    const monto = this.descModo() === 'porc' ? (total * v) / 100 : Math.min(v, total);
+    return Math.round(monto * 100) / 100;
+  }
+
+  protected async confirmarAuth(): Promise<void> {
+    const acc = this.authAccion();
+    if (!acc) return;
+    if (this.authPin() !== App.CLAVE_SUPERVISOR) { this.authError.set('PIN de supervisor incorrecto.'); return; }
+    if (!this.authPor().trim()) { this.authError.set('Indica quién autoriza.'); return; }
+
+    const mesa = this.selectedMesa();
+    const idCuenta = mesa?.idCuentaActual;
+    const base = `${environment.urlChatBot}/restaurant-publico/cuentas/${idCuenta}`;
+    const motivo = this.authMotivo().trim();
+    const por = this.authPor().trim();
+
+    this.authProcesando.set(true);
+    this.authError.set('');
+    try {
+      if (acc.tipo === 'descuento') {
+        const monto = this.calcDescuento();
+        if (monto <= 0) { this.authError.set('Indica un descuento válido.'); return; }
+        this.descuentoAplicado.set({ monto, motivo, por });
+        this.authAccion.set(null);
+      } else if (acc.tipo === 'cortesia' && acc.item && idCuenta) {
+        await firstValueFrom(this.http.post(`${base}/items/${acc.item.id}/cortesia`, {
+          idCompany: this.companyId()!, tipo: 'CORTESIA', descripcion: acc.item.descripcion, motivo, autorizadoPor: por,
+        }));
+        this.itemsResource.reload();
+        this.authAccion.set(null);
+      } else if (acc.tipo === 'cancelar' && acc.item && idCuenta) {
+        await firstValueFrom(this.http.delete(`${base}/items/${acc.item.id}`,
+          { body: { cantidad: acc.item.cantidad, precio: acc.item.precioUnitario } }));
+        await firstValueFrom(this.http.post(`${base}/autorizacion`, {
+          idCompany: this.companyId()!, tipo: 'CANCELACION', descripcion: acc.item.descripcion,
+          monto: acc.item.subtotal, motivo, autorizadoPor: por,
+        }));
+        this.itemsResource.reload();
+        this.authAccion.set(null);
+      }
+    } catch {
+      this.authError.set('No se pudo completar la acción.');
+    } finally {
+      this.authProcesando.set(false);
+    }
+  }
+
+  protected quitarDescuento(): void { this.descuentoAplicado.set(null); }
+
   // ── Pago ──────────────────────────────────────────────────────────────────
   protected setTipoPago(tipo: TipoPago): void {
     this.tipoPago.set(tipo);
@@ -2068,7 +2164,8 @@ export class App {
 
     const tipo = this.tipoPago();
     const snapshotItems = [...this.items()];
-    const snapshotTotal = this.totalCuenta();
+    const desc = this.descuentoAplicado();
+    const snapshotTotal = this.totalAPagar();
     const snapshotCambio = this.cambio();
     const efectivoPagado = tipo === 'TARJETA' ? snapshotTotal : (this.montoPagado() ?? 0);
     const tarjetaPagada = tipo === 'MIXTO' ? (this.montoTarjeta() ?? 0) : 0;
@@ -2079,7 +2176,13 @@ export class App {
       await firstValueFrom(
         this.http.post(
           `${environment.urlChatBot}/restaurant-publico/cuentas/${mesa.idCuentaActual}/cobrar`,
-          { idCompany: this.companyId()!, tipoPago: tipo },
+          {
+            idCompany: this.companyId()!,
+            tipoPago: tipo,
+            descuento: desc?.monto ?? 0,
+            descuentoMotivo: desc?.motivo ?? null,
+            descuentoAutorizadoPor: desc?.por ?? null,
+          },
         ),
       );
 
@@ -2179,6 +2282,7 @@ export class App {
     this.selectedProducto.set(null);
     this.showPayment.set(false);
     this.prodBusqueda.set('');
+    this.descuentoAplicado.set(null);
     this.mesasResource.reload();
   }
 
