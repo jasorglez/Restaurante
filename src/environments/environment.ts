@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '1.83 (03 Julio 2026) Estados de mesa (libre/ocupada/por cobrar/sucia) con colores + cronómetro de mesa',
+  version: '1.84 (03 Julio 2026) Transferir cuenta entre mesas y unir mesas (fusionar cuentas) - Fase 2 operación en piso',
 }; 

@@ -928,6 +928,59 @@ export class App {
     } catch { /* reintenta al refrescar */ }
   }
 
+  // ── Transferir / unir mesas (Fase 2) ────────────────────────────────────────
+  protected readonly moverMesa    = signal<Mesa | null>(null);
+  protected readonly moverError   = signal('');
+  protected readonly moviendoMesa = signal(false);
+
+  protected readonly mesasLibresDestino = computed(
+    () => this.mesas().filter(m => !m.tieneCuentaAbierta && m.id !== this.moverMesa()?.id),
+  );
+  protected readonly mesasOcupadasDestino = computed(
+    () => this.mesas().filter(m => m.tieneCuentaAbierta && m.id !== this.moverMesa()?.id),
+  );
+
+  protected abrirMoverMesa(mesa: Mesa, e: Event): void {
+    e.stopPropagation();
+    this.moverError.set('');
+    this.moverMesa.set(mesa);
+  }
+  protected cerrarMover(): void { this.moverMesa.set(null); }
+
+  protected async transferirA(destino: Mesa): Promise<void> {
+    const src = this.moverMesa();
+    if (!src?.idCuentaActual) return;
+    this.moviendoMesa.set(true);
+    this.moverError.set('');
+    try {
+      await firstValueFrom(this.http.post(
+        `${environment.urlChatBot}/restaurant-publico/cuentas/${src.idCuentaActual}/transferir`,
+        { idMesaDestino: destino.id },
+      ));
+      this.moverMesa.set(null);
+      this.mesasResource.reload();
+    } catch (err: any) {
+      this.moverError.set(err?.error?.error ?? 'No se pudo transferir.');
+    } finally { this.moviendoMesa.set(false); }
+  }
+
+  protected async unirCon(destino: Mesa): Promise<void> {
+    const src = this.moverMesa();
+    if (!src?.idCuentaActual || !destino.idCuentaActual) return;
+    this.moviendoMesa.set(true);
+    this.moverError.set('');
+    try {
+      await firstValueFrom(this.http.post(
+        `${environment.urlChatBot}/restaurant-publico/cuentas/${src.idCuentaActual}/fusionar`,
+        { idCuentaDestino: destino.idCuentaActual },
+      ));
+      this.moverMesa.set(null);
+      this.mesasResource.reload();
+    } catch (err: any) {
+      this.moverError.set(err?.error?.error ?? 'No se pudo unir las mesas.');
+    } finally { this.moviendoMesa.set(false); }
+  }
+
   // ── Familias ──────────────────────────────────────────────────────────────
   protected readonly familiasResource = httpResource<Familia[]>(
     () => this.view() === 'familias'

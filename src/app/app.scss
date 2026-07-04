@@ -2746,3 +2746,29 @@ footer {
 .mesa-action.pc  { border-color: #315da8; }
 .mesa-action.lib { border-color: #c0392b; }
 .mesa-action:hover { background: #f4f7f5; }
+
+/* ── Modal transferir / unir mesa ────────────────────────────────────────── */
+.mesa-action.mov { border-color: #147a4b; }
+.mover-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 8px;
+  margin: 6px 0;
+}
+.mover-opt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 12px 8px;
+  border: 1.5px solid #d9e2dd;
+  border-radius: 12px;
+  background: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  small { font-weight: 500; color: #6b7c73; }
+}
+.mover-opt:hover:not(:disabled) { border-color: #147a4b; background: #eef7f1; }
+.mover-opt.occ { border-color: #f0c795; background: #fff8ee; }
+.mover-opt.occ:hover:not(:disabled) { border-color: #e88424; }
+.mover-opt:disabled { opacity: 0.6; cursor: wait; }

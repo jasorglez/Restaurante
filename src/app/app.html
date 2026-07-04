@@ -285,6 +285,10 @@
                 <button class="mesa-action lib" type="button" title="Liberar (limpia)"
                   (click)="liberarMesa(mesa, $event)">🧹</button>
               }
+              @if (mesa.tieneCuentaAbierta) {
+                <button class="mesa-action mov" type="button" title="Transferir / unir mesa"
+                  (click)="abrirMoverMesa(mesa, $event)">⇄</button>
+              }
             </div>
             </div>
           }
@@ -2100,6 +2104,46 @@
       <button class="qty-cancel" type="button" (click)="cancelarProducto()" [disabled]="agregandoItem()">
         Cancelar
       </button>
+    </div>
+  </div>
+}
+
+<!-- ── Modal: transferir / unir mesa ───────────────────────────────────────── -->
+@if (moverMesa()) {
+  <div class="qty-overlay" role="dialog" aria-modal="true" aria-label="Mover mesa">
+    <div class="qty-panel drill-panel">
+      <div class="alta-head">
+        <strong>⇄ Mover {{ moverMesa()!.nombre }}</strong>
+        <button type="button" class="inv-cancel" (click)="cerrarMover()">✕</button>
+      </div>
+      @if (moverError()) { <p class="qty-error" role="alert">{{ moverError() }}</p> }
+
+      <p class="inv-help" style="margin-top:6px"><strong>Transferir</strong> a una mesa libre:</p>
+      @if (mesasLibresDestino().length === 0) {
+        <p class="inv-help">No hay mesas libres.</p>
+      } @else {
+        <div class="mover-grid">
+          @for (m of mesasLibresDestino(); track m.id) {
+            <button class="mover-opt" type="button" (click)="transferirA(m)" [disabled]="moviendoMesa()">{{ m.nombre }}</button>
+          }
+        </div>
+      }
+
+      <p class="inv-help" style="margin-top:14px"><strong>Unir</strong> con una mesa ocupada (junta las cuentas):</p>
+      @if (mesasOcupadasDestino().length === 0) {
+        <p class="inv-help">No hay otras mesas ocupadas.</p>
+      } @else {
+        <div class="mover-grid">
+          @for (m of mesasOcupadasDestino(); track m.id) {
+            <button class="mover-opt occ" type="button" (click)="unirCon(m)" [disabled]="moviendoMesa()">
+              {{ m.nombre }}
+              <small>{{ (m.totalActual ?? 0) | currency:'MXN':'symbol-narrow':'1.2-2' }}</small>
+            </button>
+          }
+        </div>
+      }
+
+      <button class="qty-cancel" type="button" (click)="cerrarMover()" [disabled]="moviendoMesa()">Cerrar</button>
     </div>
   </div>
 }
