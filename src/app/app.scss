@@ -2837,3 +2837,6 @@ footer {
   cursor: pointer;
 }
 .desc-aplicar:hover:not(:disabled) { background: #e2ecfa; }
+
+/* Módulo Configuración */
+.config { --accent: #5b6b7a; --soft: #eef1f4; }

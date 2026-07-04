@@ -12,13 +12,14 @@ if (pdfFonts && (pdfFonts as any).pdfMake) {
 import { environment } from '../environments/environment';
 import { CajaInfo, CajaReporte, EgresoCaja, ResumenCorte, Turno, VentaPorTipo } from './models/caja';
 import { OrdenCocina } from './models/cocina';
+import { Impresora } from './models/impresora';
 import { CuentaAbierta, Familia, ItemCuenta, Producto } from './models/familia';
 import { Equivalencia, Existencia, MovimientoInv, ProductoInventario, ResultadoMovimiento, ResumenMov } from './models/inventario';
 import { Mesa } from './models/mesa';
 import { GrupoMesa, ReporteMesa, ResumenDia } from './models/reporte';
 
-type RestaurantModule = 'MESAS' | 'CAJAS' | 'REPORTES' | 'INVENTARIO' | 'COCINA';
-type View = 'menu' | 'mesas' | 'familias' | 'productos' | 'cuenta' | 'cajas' | 'reportes' | 'inventario' | 'cocina';
+type RestaurantModule = 'MESAS' | 'CAJAS' | 'REPORTES' | 'INVENTARIO' | 'COCINA' | 'CONFIG';
+type View = 'menu' | 'mesas' | 'familias' | 'productos' | 'cuenta' | 'cajas' | 'reportes' | 'inventario' | 'cocina' | 'config';
 type Presentacion = 'COMPLETA' | 'COPA';
 type InventarioSubView = 'existencias' | 'alta' | 'movimientos' | 'detalle' | 'equivalencias';
 type TipoPago = 'EFECTIVO' | 'TARJETA' | 'MIXTO';
@@ -1124,6 +1125,101 @@ export class App {
     if (module === 'COCINA') {
       this.view.set('cocina');
       this.cocinaTick.update(t => t + 1);   // primera carga inmediata
+    }
+    if (module === 'CONFIG') {
+      this.showImpForm.set(false);
+      this.view.set('config');
+    }
+  }
+
+  // ── Configuración · Impresoras ──────────────────────────────────────────────
+  protected readonly impresorasResource = httpResource<Impresora[]>(
+    () => this.view() === 'config'
+      ? `${environment.urlAdministration}/Restaurant/impresoras/${this.companyId()!}`
+      : undefined,
+    { defaultValue: [] },
+  );
+  protected readonly impresoras = this.impresorasResource.value;
+  protected readonly impresorasLoading = this.impresorasResource.isLoading;
+
+  protected readonly showImpForm = signal(false);
+  protected readonly impEditId   = signal<number | null>(null);
+  protected readonly impNombre   = signal('');
+  protected readonly impIp       = signal('');
+  protected readonly impPuerto   = signal<number | null>(9100);
+  protected readonly guardandoImp = signal(false);
+  protected readonly impError    = signal('');
+  protected readonly probandoImp = signal<number | null>(null);
+  protected readonly impTestMsg  = signal<{ id: number; ok: boolean; msg: string } | null>(null);
+
+  protected setImpNombre(e: Event): void { this.impNombre.set((e.target as HTMLInputElement).value); }
+  protected setImpIp(e: Event): void { this.impIp.set((e.target as HTMLInputElement).value); }
+  protected setImpPuerto(e: Event): void {
+    const v = parseInt((e.target as HTMLInputElement).value, 10);
+    this.impPuerto.set(!isNaN(v) && v > 0 ? v : null);
+  }
+
+  protected nuevaImpresora(): void {
+    this.impEditId.set(null);
+    this.impNombre.set('');
+    this.impIp.set('');
+    this.impPuerto.set(9100);
+    this.impError.set('');
+    this.showImpForm.set(true);
+  }
+  protected editarImpresora(i: Impresora): void {
+    this.impEditId.set(i.id);
+    this.impNombre.set(i.nombre);
+    this.impIp.set(i.ipAddress);
+    this.impPuerto.set(i.puerto);
+    this.impError.set('');
+    this.showImpForm.set(true);
+  }
+  protected cerrarImpForm(): void { this.showImpForm.set(false); }
+
+  protected async guardarImpresora(): Promise<void> {
+    const nombre = this.impNombre().trim();
+    const ip = this.impIp().trim();
+    if (!nombre) { this.impError.set('El nombre es obligatorio.'); return; }
+    if (!ip) { this.impError.set('La dirección IP es obligatoria.'); return; }
+
+    this.guardandoImp.set(true);
+    this.impError.set('');
+    const id = this.impEditId();
+    const body = { id: id ?? 0, idCompany: this.companyId()!, nombre, ipAddress: ip, puerto: this.impPuerto() ?? 9100, activo: true };
+    const url = `${environment.urlAdministration}/Restaurant/impresoras`;
+    try {
+      if (id === null) await firstValueFrom(this.http.post(url, body));
+      else await firstValueFrom(this.http.put(`${url}/${id}`, body));
+      this.showImpForm.set(false);
+      this.impresorasResource.reload();
+    } catch {
+      this.impError.set('No se pudo guardar la impresora.');
+    } finally {
+      this.guardandoImp.set(false);
+    }
+  }
+
+  protected async eliminarImpresora(i: Impresora): Promise<void> {
+    try {
+      await firstValueFrom(this.http.delete(`${environment.urlAdministration}/Restaurant/impresoras/${i.id}`));
+      this.impresorasResource.reload();
+    } catch { /* noop */ }
+  }
+
+  protected async probarImpresora(i: Impresora): Promise<void> {
+    this.probandoImp.set(i.id);
+    this.impTestMsg.set(null);
+    try {
+      await firstValueFrom(this.http.post(
+        `${environment.urlChatBot}/restaurant-publico/impresoras/test`,
+        { ip: i.ipAddress, puerto: i.puerto, nombre: i.nombre },
+      ));
+      this.impTestMsg.set({ id: i.id, ok: true, msg: 'Ticket de prueba enviado ✓' });
+    } catch (err: any) {
+      this.impTestMsg.set({ id: i.id, ok: false, msg: err?.error?.error ?? 'No se pudo conectar con la impresora.' });
+    } finally {
+      this.probandoImp.set(null);
     }
   }
 

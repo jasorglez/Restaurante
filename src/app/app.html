@@ -169,6 +169,20 @@
           <span class="card-copy"><strong>COCINA</strong><small>Órdenes en tiempo real</small></span>
           <span class="card-cta">Entrar <span class="arrow" aria-hidden="true">→</span></span>
         </button>
+        <button class="menu-card config" type="button" (click)="selectModule('CONFIG')" style="--i:5">
+          <span class="card-glow" aria-hidden="true"></span>
+          <span class="icon-wrap" aria-hidden="true">
+            <svg viewBox="0 0 64 64">
+              <path class="ico-bg" d="M12 19h40v7H12zM12 38h40v7H12z"/>
+              <line class="ico-fg" x1="12" y1="22.5" x2="52" y2="22.5"/>
+              <line class="ico-fg" x1="12" y1="41.5" x2="52" y2="41.5"/>
+              <circle class="ico-fg" cx="24" cy="22.5" r="5"/>
+              <circle class="ico-fg" cx="41" cy="41.5" r="5"/>
+            </svg>
+          </span>
+          <span class="card-copy"><strong>CONFIG</strong><small>Impresoras y ajustes</small></span>
+          <span class="card-cta">Entrar <span class="arrow" aria-hidden="true">→</span></span>
+        </button>
       </nav>
       <div class="cambiar-empresa-wrap">
         @if (!appStandalone()) {
@@ -1510,6 +1524,74 @@
             </div>
           }
         </div>
+      }
+    </section>
+
+  <!-- ── CONFIGURACIÓN (SETUP) ──────────────────────────────────────────── -->
+  } @else if (view() === 'config') {
+    <section class="tables-view" aria-labelledby="config-title">
+      <div class="tables-toolbar">
+        <button class="back-button" type="button" (click)="backToMenu()">
+          <span aria-hidden="true">←</span> Menú
+        </button>
+        <div class="tables-heading">
+          <p class="eyebrow">PUNTO DE VENTA</p>
+          <h2 id="config-title">Configuración</h2>
+        </div>
+        <button class="refresh-button" type="button" title="Actualizar" (click)="impresorasResource.reload()">↻</button>
+      </div>
+
+      <h3 class="dash-sub">🖨️ Impresoras de red (ESC/POS)</h3>
+      <p class="inv-help">El servidor envía los tickets a la IP:puerto de cada mini-printer. Usa “Probar” para verificar la conexión.</p>
+
+      @if (impresorasLoading()) {
+        <div class="state-panel" role="status"><span class="loader" aria-hidden="true"></span><strong>Cargando…</strong></div>
+      } @else {
+        <ul class="inv-list">
+          @for (imp of impresoras(); track imp.id) {
+            <li class="inv-item" [class.bajo]="!imp.activo">
+              <div class="inv-item-main">
+                <strong>{{ imp.nombre }}</strong>
+                <span class="inv-exist">{{ imp.ipAddress }}:{{ imp.puerto }}</span>
+                @if (!imp.activo) { <span class="inv-badge">inactiva</span> }
+              </div>
+              @if (impTestMsg()?.id === imp.id) {
+                <p [class]="impTestMsg()!.ok ? 'inv-ok' : 'qty-error'" style="margin:2px 0">{{ impTestMsg()!.msg }}</p>
+              }
+              <div class="inv-acciones">
+                <button type="button" class="inv-add-btn" (click)="probarImpresora(imp)" [disabled]="probandoImp() === imp.id">
+                  @if (probandoImp() === imp.id) { Probando… } @else { 🖨️ Probar }
+                </button>
+                <button type="button" class="inv-add-btn alt" (click)="editarImpresora(imp)">✎ Editar</button>
+                <button type="button" class="inv-cancel" title="Eliminar" (click)="eliminarImpresora(imp)">🗑️</button>
+              </div>
+            </li>
+          } @empty {
+            <div class="state-panel"><strong>Sin impresoras configuradas</strong></div>
+          }
+        </ul>
+
+        @if (!showImpForm()) {
+          <button type="button" class="desc-aplicar" style="border-style:solid" (click)="nuevaImpresora()">＋ Agregar impresora</button>
+        } @else {
+          <div class="cfg-inv" style="margin-top:12px">
+            <strong>{{ impEditId() === null ? 'Nueva impresora' : 'Editar impresora' }}</strong>
+            <label class="turno-label" style="margin-top:8px">Nombre</label>
+            <input class="turno-input" type="text" placeholder="Ej. Cocina, Caja, Barra"
+              [value]="impNombre()" (input)="setImpNombre($event)" [disabled]="guardandoImp()">
+            <label class="turno-label" style="margin-top:8px">Dirección IP</label>
+            <input class="turno-input" type="text" inputmode="decimal" placeholder="192.168.1.50"
+              [value]="impIp()" (input)="setImpIp($event)" [disabled]="guardandoImp()">
+            <label class="turno-label" style="margin-top:8px">Puerto</label>
+            <input class="turno-input" type="number" min="1" placeholder="9100"
+              [value]="impPuerto() ?? ''" (input)="setImpPuerto($event)" [disabled]="guardandoImp()">
+            @if (impError()) { <p class="qty-error" role="alert">{{ impError() }}</p> }
+            <button class="confirmar-btn alta-submit" type="button" (click)="guardarImpresora()" [disabled]="guardandoImp()">
+              @if (guardandoImp()) { Guardando… } @else { Guardar }
+            </button>
+            <button class="qty-cancel" type="button" (click)="cerrarImpForm()" [disabled]="guardandoImp()">Cancelar</button>
+          </div>
+        }
       }
     </section>
 
