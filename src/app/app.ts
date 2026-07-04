@@ -11,13 +11,14 @@ if (pdfFonts && (pdfFonts as any).pdfMake) {
 
 import { environment } from '../environments/environment';
 import { CajaInfo, CajaReporte, EgresoCaja, ResumenCorte, Turno, VentaPorTipo } from './models/caja';
+import { OrdenCocina } from './models/cocina';
 import { CuentaAbierta, Familia, ItemCuenta, Producto } from './models/familia';
 import { Equivalencia, Existencia, MovimientoInv, ProductoInventario, ResultadoMovimiento, ResumenMov } from './models/inventario';
 import { Mesa } from './models/mesa';
 import { GrupoMesa, ReporteMesa, ResumenDia } from './models/reporte';
 
-type RestaurantModule = 'MESAS' | 'CAJAS' | 'REPORTES' | 'INVENTARIO';
-type View = 'menu' | 'mesas' | 'familias' | 'productos' | 'cuenta' | 'cajas' | 'reportes' | 'inventario';
+type RestaurantModule = 'MESAS' | 'CAJAS' | 'REPORTES' | 'INVENTARIO' | 'COCINA';
+type View = 'menu' | 'mesas' | 'familias' | 'productos' | 'cuenta' | 'cajas' | 'reportes' | 'inventario' | 'cocina';
 type Presentacion = 'COMPLETA' | 'COPA';
 type InventarioSubView = 'existencias' | 'alta' | 'movimientos' | 'detalle' | 'equivalencias';
 type TipoPago = 'EFECTIVO' | 'TARJETA' | 'MIXTO';
@@ -274,6 +275,11 @@ export class App {
     });
 
     // ── Instalación PWA ──────────────────────────────────────────────────────
+    // Auto-refresco del tablero de cocina cada 15 s mientras esté visible.
+    setInterval(() => {
+      if (this.view() === 'cocina') this.cocinaTick.update(t => t + 1);
+    }, 15000);
+
     const yaInstalada = window.matchMedia?.('(display-mode: standalone)').matches
       || (navigator as any).standalone === true;
     this.appStandalone.set(!!yaInstalada);
@@ -984,6 +990,39 @@ export class App {
       this.inventarioSubView.set('existencias');
       this.view.set('inventario');
     }
+    if (module === 'COCINA') {
+      this.view.set('cocina');
+      this.cocinaTick.update(t => t + 1);   // primera carga inmediata
+    }
+  }
+
+  // ── Cocina (KDS) ────────────────────────────────────────────────────────────
+  protected readonly cocinaTick = signal(0);
+  protected readonly cocinaResource = httpResource<OrdenCocina[]>(
+    () => {
+      this.cocinaTick();   // dependencia para el auto-refresco
+      return this.view() === 'cocina'
+        ? `${environment.urlChatBot}/restaurant-publico/cocina/${this.companyId()!}`
+        : undefined;
+    },
+    { defaultValue: [] },
+  );
+  protected readonly cocinaLoading = this.cocinaResource.isLoading;
+  protected readonly marcandoListo = signal<number | null>(null);
+
+  protected semaforoOrden(min: number): 'ok' | 'warn' | 'late' {
+    return min < 7 ? 'ok' : min < 15 ? 'warn' : 'late';
+  }
+
+  protected async marcarOrdenLista(o: OrdenCocina): Promise<void> {
+    this.marcandoListo.set(o.idCuenta);
+    try {
+      await firstValueFrom(this.http.post(
+        `${environment.urlChatBot}/restaurant-publico/cocina/${o.idCuenta}/listo`, {},
+      ));
+      this.cocinaResource.reload();
+    } catch { /* reintenta en el siguiente refresco */ }
+    finally { this.marcandoListo.set(null); }
   }
 
   protected setCajaNombre(e: Event): void {
