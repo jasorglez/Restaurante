@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '1.86 (03 Julio 2026) Cancelaciones, cortesías y descuentos con PIN de supervisor y registro',
+  version: '1.87 (04 Julio 2026) Egreso no puede exceder el efectivo disponible en caja (valida backend + muestra disponible)',
 }; 

@@ -327,10 +327,20 @@ export class App {
   protected readonly resumenCorteResource = httpResource<ResumenCorte>(
     () => {
       const t = this.turnoActivo();
-      if (!t || this.cajasSubView() !== 'corte') return undefined;
+      const sv = this.cajasSubView();
+      if (!t || (sv !== 'corte' && sv !== 'egresos')) return undefined;
       return `${environment.urlAdministration}/Restaurant/turnos/${t.id}/resumen`;
     },
   );
+  // Efectivo disponible en caja (fondo + ventas efectivo − egresos).
+  protected readonly efectivoDisponible = computed(
+    () => this.resumenCorteResource.value()?.totales.efectivoEsperado ?? null,
+  );
+  protected readonly egresoExcede = computed(() => {
+    const disp = this.efectivoDisponible();
+    const monto = this.egresoMonto();
+    return disp != null && monto != null && monto > disp;
+  });
   protected readonly efectivoContado = signal<number | null>(null);
   private efectivoContadoEl: HTMLInputElement | null = null;
 
@@ -1227,8 +1237,9 @@ export class App {
       this.egresosLista.update(list => [egreso, ...list]);
       this.egresoDesc.set('');
       this.egresoMonto.set(null);
-    } catch {
-      this.egresoError.set('No se pudo registrar el egreso.');
+      this.resumenCorteResource.reload();   // actualiza el disponible
+    } catch (err: any) {
+      this.egresoError.set(err?.error?.error ?? 'No se pudo registrar el egreso.');
     } finally {
       this.registrandoEgreso.set(false);
     }

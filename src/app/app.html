@@ -735,6 +735,12 @@
         </div>
 
         <div class="turno-form">
+          @if (efectivoDisponible() !== null) {
+            <div class="corte-row esperado-row" style="margin-bottom:10px">
+              <span>Efectivo disponible en caja</span>
+              <strong>{{ efectivoDisponible() | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+            </div>
+          }
           <div class="turno-fields">
             <label class="turno-label" for="egreso-desc">Descripción</label>
             <input id="egreso-desc" class="turno-input" type="text"
@@ -751,11 +757,15 @@
             </div>
           </div>
 
-          @if (egresoError()) { <p class="action-error" role="alert">{{ egresoError() }}</p> }
+          @if (egresoExcede()) {
+            <p class="action-error" role="alert">El egreso excede el efectivo disponible en caja.</p>
+          } @else if (egresoError()) {
+            <p class="action-error" role="alert">{{ egresoError() }}</p>
+          }
 
           <button class="cobrar-btn turno-iniciar-btn" type="button"
             (click)="registrarEgreso()"
-            [disabled]="registrandoEgreso() || !egresoMonto()">
+            [disabled]="registrandoEgreso() || !egresoMonto() || egresoExcede()">
             @if (registrandoEgreso()) { Registrando… } @else { Registrar egreso }
           </button>
         </div>
