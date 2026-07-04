@@ -346,7 +346,37 @@
         </button>
       </div>
 
-      @if (familiasLoading()) {
+      <!-- Buscador global de productos (desde el menú, sin entrar a un agrupador) -->
+      <div class="buscar-row">
+        <span class="buscar-icon" aria-hidden="true">🔍</span>
+        <input class="buscar-input" type="search" inputmode="search"
+          placeholder="Buscar producto en todo el menú…"
+          [value]="prodBusqueda()" (input)="setProdBusqueda($event)">
+        @if (prodBusqueda()) {
+          <button class="buscar-clear" type="button" (click)="limpiarBusqueda()" aria-label="Limpiar búsqueda">✕</button>
+        }
+      </div>
+
+      @if (buscando()) {
+        @if (busquedaResource.isLoading()) {
+          <div class="state-panel" role="status"><span class="loader" aria-hidden="true"></span><strong>Buscando…</strong></div>
+        } @else {
+          <div class="products-grid">
+            @for (prod of busquedaResource.value(); track prod.id) {
+              <div class="product-card-wrap">
+                <button class="product-button" type="button" (click)="selectProducto(prod)">
+                  <strong>{{ prod.description }}</strong>
+                  <span class="product-price">{{ prod.price | currency:'MXN':'symbol-narrow':'1.2-2' }}</span>
+                </button>
+                <button class="edit-mesa-btn" type="button" title="Editar producto"
+                  (click)="abrirEditProducto(prod, $event)">✏️</button>
+              </div>
+            } @empty {
+              <div class="state-panel"><strong>Sin resultados para “{{ prodBusqueda() }}”.</strong></div>
+            }
+          </div>
+        }
+      } @else if (familiasLoading()) {
         <div class="state-panel" role="status">
           <span class="loader" aria-hidden="true"></span>
           <strong>Cargando familias…</strong>
@@ -516,57 +546,6 @@
         </div>
       }
     </section>
-
-    <!-- Panel selector de cantidad -->
-    @if (selectedProducto()) {
-      <div class="qty-overlay" role="dialog" aria-modal="true" aria-label="Seleccionar cantidad">
-        <div class="qty-panel">
-          <strong class="qty-name">{{ selectedProducto()!.description }}</strong>
-          <p class="qty-price">{{ precioVentaActual() | currency:'MXN':'symbol-narrow':'1.2-2' }} / u</p>
-
-          @if (prodInvVenta()?.vendePorCopa) {
-            <div class="presentacion-toggle" role="group" aria-label="Forma de venta">
-              <button type="button" class="pres-btn" [class.active]="presentacionSel() === 'COMPLETA'"
-                (click)="seleccionarPresentacion('COMPLETA')" [disabled]="agregandoItem()">
-                🍾 Botella completa
-                <small>{{ selectedProducto()!.price | currency:'MXN':'symbol-narrow':'1.2-2' }}</small>
-              </button>
-              <button type="button" class="pres-btn" [class.active]="presentacionSel() === 'COPA'"
-                (click)="seleccionarPresentacion('COPA')" [disabled]="agregandoItem()">
-                🥃 Copa
-                <small>{{ (prodInvVenta()!.precioCopa ?? 0) | currency:'MXN':'symbol-narrow':'1.2-2' }}</small>
-              </button>
-            </div>
-          }
-
-          <div class="nota-section">
-            <div class="nota-chips">
-              @for (chip of notasRapidas; track chip) {
-                <button type="button" class="nota-chip" [class.active]="notaChipActiva(chip)"
-                  (click)="toggleNotaChip(chip)" [disabled]="agregandoItem()">{{ chip }}</button>
-              }
-            </div>
-            <input class="nota-input" type="text" placeholder="Nota para cocina (ej. término medio)"
-              [value]="prodNota()" (input)="setProdNota($event)" [disabled]="agregandoItem()">
-          </div>
-
-          @if (addError()) {
-            <p class="qty-error" role="alert">{{ addError() }}</p>
-          }
-          <p class="qty-cant-label">¿Cuántos?</p>
-          <div class="qty-grid">
-            @for (n of [1, 2, 3, 4, 5]; track n) {
-              <button class="qty-btn" type="button" (click)="agregarProducto(n)" [disabled]="agregandoItem()">
-                {{ n }}
-              </button>
-            }
-          </div>
-          <button class="qty-cancel" type="button" (click)="cancelarProducto()" [disabled]="agregandoItem()">
-            Cancelar
-          </button>
-        </div>
-      </div>
-    }
 
   <!-- ── CAJAS / TURNO ────────────────────────────────────────────────────── -->
   } @else if (view() === 'cajas') {
@@ -1966,6 +1945,57 @@
       </ul>
       <p class="inv-help">Aparecerá el ícono 🍽️ y abrirá en pantalla completa.</p>
       <button class="qty-cancel" type="button" (click)="mostrarAyudaInstalar.set(false)">Entendido</button>
+    </div>
+  </div>
+}
+
+<!-- ── Panel selector de cantidad (global: sirve desde Familias y Productos) ── -->
+@if (selectedProducto()) {
+  <div class="qty-overlay" role="dialog" aria-modal="true" aria-label="Seleccionar cantidad">
+    <div class="qty-panel">
+      <strong class="qty-name">{{ selectedProducto()!.description }}</strong>
+      <p class="qty-price">{{ precioVentaActual() | currency:'MXN':'symbol-narrow':'1.2-2' }} / u</p>
+
+      @if (prodInvVenta()?.vendePorCopa) {
+        <div class="presentacion-toggle" role="group" aria-label="Forma de venta">
+          <button type="button" class="pres-btn" [class.active]="presentacionSel() === 'COMPLETA'"
+            (click)="seleccionarPresentacion('COMPLETA')" [disabled]="agregandoItem()">
+            🍾 Botella completa
+            <small>{{ selectedProducto()!.price | currency:'MXN':'symbol-narrow':'1.2-2' }}</small>
+          </button>
+          <button type="button" class="pres-btn" [class.active]="presentacionSel() === 'COPA'"
+            (click)="seleccionarPresentacion('COPA')" [disabled]="agregandoItem()">
+            🥃 Copa
+            <small>{{ (prodInvVenta()!.precioCopa ?? 0) | currency:'MXN':'symbol-narrow':'1.2-2' }}</small>
+          </button>
+        </div>
+      }
+
+      <div class="nota-section">
+        <div class="nota-chips">
+          @for (chip of notasRapidas; track chip) {
+            <button type="button" class="nota-chip" [class.active]="notaChipActiva(chip)"
+              (click)="toggleNotaChip(chip)" [disabled]="agregandoItem()">{{ chip }}</button>
+          }
+        </div>
+        <input class="nota-input" type="text" placeholder="Nota para cocina (ej. término medio)"
+          [value]="prodNota()" (input)="setProdNota($event)" [disabled]="agregandoItem()">
+      </div>
+
+      @if (addError()) {
+        <p class="qty-error" role="alert">{{ addError() }}</p>
+      }
+      <p class="qty-cant-label">¿Cuántos?</p>
+      <div class="qty-grid">
+        @for (n of [1, 2, 3, 4, 5]; track n) {
+          <button class="qty-btn" type="button" (click)="agregarProducto(n)" [disabled]="agregandoItem()">
+            {{ n }}
+          </button>
+        }
+      </div>
+      <button class="qty-cancel" type="button" (click)="cancelarProducto()" [disabled]="agregandoItem()">
+        Cancelar
+      </button>
     </div>
   </div>
 }

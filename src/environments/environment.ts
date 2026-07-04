@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '1.78 (03 Julio 2026) Botón "Instalar app" en el menú (con guía manual si el navegador no ofrece el instalador)',
+  version: '1.79 (03 Julio 2026) Buscador de productos desde el menú (familias) sin entrar a un agrupador',
 }; 

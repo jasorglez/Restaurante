@@ -932,7 +932,7 @@ export class App {
   protected readonly buscando = computed(() => this.prodBusqueda().trim().length >= 2);
   protected readonly busquedaResource = httpResource<Producto[]>(
     () => {
-      if (this.view() !== 'productos') return undefined;
+      if (this.view() !== 'productos' && this.view() !== 'familias') return undefined;
       const term = this.prodBusqueda().trim();
       if (term.length < 2) return undefined;
       return `${environment.urlChatBot}/restaurant-publico/productos/${this.companyId()!}/buscar?term=${encodeURIComponent(term)}`;
