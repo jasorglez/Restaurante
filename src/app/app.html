@@ -360,6 +360,13 @@
         </button>
       </div>
 
+      <!-- Atajos de navegación -->
+      <nav class="breadcrumb" aria-label="Navegación">
+        <button class="crumb" type="button" (click)="backToMesas()">🍽️ Mesas</button>
+        <span class="crumb-sep" aria-hidden="true">›</span>
+        <span class="crumb current">Menú</span>
+      </nav>
+
       <!-- Buscador global de productos (desde el menú, sin entrar a un agrupador) -->
       <div class="buscar-row">
         <span class="buscar-icon" aria-hidden="true">🔍</span>
@@ -457,6 +464,23 @@
           @if (items().length) { <span class="cuenta-badge">{{ items().length }}</span> }
         </button>
       </div>
+
+      <!-- Atajos de navegación -->
+      <nav class="breadcrumb" aria-label="Navegación">
+        <button class="crumb" type="button" (click)="backToMesas()">🍽️ Mesas</button>
+        <span class="crumb-sep" aria-hidden="true">›</span>
+        <button class="crumb" type="button" (click)="backToFamilias()">Menú</button>
+        @if (selectedFamilia()) {
+          <span class="crumb-sep" aria-hidden="true">›</span>
+          @if (selectedSubfamilia()) {
+            <button class="crumb" type="button" (click)="selectFamilia(selectedFamilia()!)">{{ selectedFamilia()!.description }}</button>
+            <span class="crumb-sep" aria-hidden="true">›</span>
+            <span class="crumb current">{{ selectedSubfamilia()!.description }}</span>
+          } @else {
+            <span class="crumb current">{{ selectedFamilia()!.description }}</span>
+          }
+        }
+      </nav>
 
       <!-- Buscador global de productos -->
       <div class="buscar-row">

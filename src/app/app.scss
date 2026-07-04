@@ -2654,3 +2654,32 @@ footer {
 }
 .kds-listo:hover:not(:disabled) { background: #0f5e38; }
 .kds-listo:disabled { opacity: 0.6; cursor: wait; }
+
+/* ── Breadcrumb / atajos de navegación ───────────────────────────────────── */
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 12px;
+}
+.crumb {
+  border: 1px solid #d9e2dd;
+  background: #fff;
+  color: #33463a;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 7px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.crumb:hover { border-color: #147a4b; background: #eef7f1; color: #147a4b; }
+.crumb.current {
+  background: #147a4b;
+  border-color: #147a4b;
+  color: #fff;
+  cursor: default;
+}
+.crumb-sep { color: #9aa7a0; font-weight: 800; }

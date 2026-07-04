@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '1.81 (03 Julio 2026) Cocina (KDS): tablero de órdenes en vivo con semáforo de tiempos y botón Listo',
+  version: '1.82 (03 Julio 2026) Breadcrumbs de navegación (Mesas › Menú › Familia) para saltar directo sin varios "atrás"',
 }; 
