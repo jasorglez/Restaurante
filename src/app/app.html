@@ -857,12 +857,20 @@
               </div>
             </div>
 
-            <p class="corte-section-title">Conteo físico</p>
-            <div class="monto-row turno-monto">
-              <span class="monto-currency">$</span>
-              <input class="monto-input" type="text" inputmode="decimal" placeholder="0.00"
-                (input)="setEfectivoContado($event)"
-                [disabled]="cerrandoTurno()">
+            <p class="corte-section-title">Conteo físico · arqueo por denominación</p>
+            <div class="arqueo">
+              @for (d of denominaciones; track d) {
+                <div class="arqueo-row">
+                  <span class="arqueo-denom">{{ d >= 1 ? ('$' + d) : '50¢' }}</span>
+                  <input class="arqueo-qty" type="number" min="0" inputmode="numeric" placeholder="0"
+                    [value]="arqueo()[d] ?? ''" (input)="setArqueo(d, $event)" [disabled]="cerrandoTurno()">
+                  <span class="arqueo-sub">{{ (d * (arqueo()[d] ?? 0)) | currency:'MXN':'symbol-narrow':'1.2-2' }}</span>
+                </div>
+              }
+            </div>
+            <div class="corte-row esperado-row">
+              <span>Total contado</span>
+              <strong>{{ (efectivoContado() ?? 0) | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
             </div>
 
             @if (efectivoContado() !== null) {

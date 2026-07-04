@@ -2772,3 +2772,26 @@ footer {
 .mover-opt.occ { border-color: #f0c795; background: #fff8ee; }
 .mover-opt.occ:hover:not(:disabled) { border-color: #e88424; }
 .mover-opt:disabled { opacity: 0.6; cursor: wait; }
+
+/* ── Arqueo por denominación ─────────────────────────────────────────────── */
+.arqueo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 6px 0 10px;
+}
+.arqueo-row {
+  display: grid;
+  grid-template-columns: 64px 1fr 90px;
+  align-items: center;
+  gap: 10px;
+}
+.arqueo-denom { font-weight: 800; color: #33463a; }
+.arqueo-qty {
+  padding: 8px 10px;
+  border: 1px solid #d9e2dd;
+  border-radius: 8px;
+  text-align: right;
+  font-size: 1rem;
+}
+.arqueo-sub { text-align: right; color: #6b7c73; font-variant-numeric: tabular-nums; }

@@ -331,6 +331,19 @@ export class App {
   );
   protected readonly efectivoContado = signal<number | null>(null);
   private efectivoContadoEl: HTMLInputElement | null = null;
+
+  // Arqueo por denominación (MXN). Suma → efectivo contado.
+  protected readonly denominaciones = [1000, 500, 200, 100, 50, 20, 10, 5, 2, 1, 0.5];
+  protected readonly arqueo = signal<Record<number, number | null>>({});
+  protected setArqueo(denom: number, e: Event): void {
+    const v = parseInt((e.target as HTMLInputElement).value, 10);
+    const qty = !isNaN(v) && v >= 0 ? v : null;
+    this.arqueo.update(a => ({ ...a, [denom]: qty }));
+    const mapa = this.arqueo();
+    const hayAlguno = this.denominaciones.some(d => mapa[d] != null);
+    const total = this.denominaciones.reduce((s, d) => s + d * (mapa[d] ?? 0), 0);
+    this.efectivoContado.set(hayAlguno ? Math.round(total * 100) / 100 : null);
+  }
   protected readonly cerrandoTurno = signal(false);
   protected readonly cerrarError = signal('');
   protected readonly corteResultado = signal<Turno | null>(null);
@@ -1217,6 +1230,7 @@ export class App {
   protected abrirCorte(): void {
     this.efectivoContado.set(null);
     this.efectivoContadoEl = null;
+    this.arqueo.set({});
     this.cerrarError.set('');
     this.corteResultado.set(null);
     this.cajasSubView.set('corte');
