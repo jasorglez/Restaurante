@@ -7,4 +7,7 @@ export interface Mesa {
   idCuentaActual: number | null;
   totalActual: number | null;
   numItems: number;
+  estado?: string;          // libre | ocupada | por_cobrar | sucia
+  minutosAbierta?: number;
+  sucia?: boolean;
 }

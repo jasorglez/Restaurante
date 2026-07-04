@@ -200,8 +200,10 @@
 
       @if (!loading() && !error()) {
         <div class="table-summary">
-          <span><i class="legend-dot free"></i>{{ mesas().length - mesasOcupadas() }} libres</span>
-          <span><i class="legend-dot busy"></i>{{ mesasOcupadas() }} ocupadas</span>
+          <span><i class="legend-dot free"></i>{{ mesas().length - mesasOcupadas() - mesasSucias() }} libres</span>
+          <span><i class="legend-dot busy"></i>{{ mesasOcupadas() - mesasPorCobrar() }} ocupadas</span>
+          <span><i class="legend-dot pc"></i>{{ mesasPorCobrar() }} por cobrar</span>
+          <span><i class="legend-dot dirty"></i>{{ mesasSucias() }} sucias</span>
           <strong>{{ mesas().length }} mesas</strong>
         </div>
       }
@@ -226,7 +228,9 @@
             <div class="table-card-wrap">
             <button
               class="table-button"
-              [class.busy]="mesa.tieneCuentaAbierta"
+              [class.busy]="estadoMesa(mesa) === 'ocupada'"
+              [class.por-cobrar]="estadoMesa(mesa) === 'por_cobrar'"
+              [class.sucia]="estadoMesa(mesa) === 'sucia'"
               [class.selected]="selectedMesa()?.id === mesa.id"
               type="button"
               (click)="selectMesa(mesa)"
@@ -252,17 +256,36 @@
                 }
               </span>
               <strong>{{ mesa.nombre }}</strong>
-              <span class="table-state">{{ mesa.tieneCuentaAbierta ? 'OCUPADA' : 'LIBRE' }}</span>
+              <span class="table-state">{{ etiquetaEstado(estadoMesa(mesa)) }}</span>
               @if (mesa.tieneCuentaAbierta) {
                 <span class="table-detail">
                   {{ mesa.numItems }} productos · {{ (mesa.totalActual ?? 0) | currency:'MXN':'symbol-narrow':'1.2-2' }}
                 </span>
+                @if (mesa.minutosAbierta != null) {
+                  <span class="table-timer" [class.warn]="mesa.minutosAbierta >= 45" [class.late]="mesa.minutosAbierta >= 90">
+                    ⏱ {{ mesa.minutosAbierta }} min
+                  </span>
+                }
+              } @else if (estadoMesa(mesa) === 'sucia') {
+                <span class="table-detail">Por limpiar</span>
               } @else {
                 <span class="table-detail">Capacidad: {{ mesa.capacidad ?? '—' }}</span>
               }
             </button>
-            <button class="edit-mesa-btn" type="button" title="Editar mesa"
-              (click)="abrirEditMesa(mesa, $event)">✏️</button>
+            <div class="mesa-actions">
+              <button class="edit-mesa-btn" type="button" title="Editar mesa"
+                (click)="abrirEditMesa(mesa, $event)">✏️</button>
+              @if (estadoMesa(mesa) === 'ocupada') {
+                <button class="mesa-action pc" type="button" title="Marcar por cobrar"
+                  (click)="marcarPorCobrar(mesa, true, $event)">💲</button>
+              } @else if (estadoMesa(mesa) === 'por_cobrar') {
+                <button class="mesa-action" type="button" title="Quitar por cobrar"
+                  (click)="marcarPorCobrar(mesa, false, $event)">↩</button>
+              } @else if (estadoMesa(mesa) === 'sucia') {
+                <button class="mesa-action lib" type="button" title="Liberar (limpia)"
+                  (click)="liberarMesa(mesa, $event)">🧹</button>
+              }
+            </div>
             </div>
           }
           <!-- Tarjeta agregar nueva mesa -->

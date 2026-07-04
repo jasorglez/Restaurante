@@ -280,6 +280,11 @@ export class App {
       if (this.view() === 'cocina') this.cocinaTick.update(t => t + 1);
     }, 15000);
 
+    // Auto-refresco de mesas (estados + cronómetro) cada 30 s mientras esté visible.
+    setInterval(() => {
+      if (this.view() === 'mesas') this.mesasTick.update(t => t + 1);
+    }, 30000);
+
     const yaInstalada = window.matchMedia?.('(display-mode: standalone)').matches
       || (navigator as any).standalone === true;
     this.appStandalone.set(!!yaInstalada);
@@ -864,10 +869,14 @@ export class App {
   protected readonly appVersion = environment.version;
 
   // ── Mesas ─────────────────────────────────────────────────────────────────
+  protected readonly mesasTick = signal(0);
   protected readonly mesasResource = httpResource<Mesa[]>(
-    () => this.view() === 'mesas'
-      ? `${environment.urlAdministration}/Restaurant/mesas/${this.companyId()!}`
-      : undefined,
+    () => {
+      this.mesasTick();   // auto-refresco de estados/cronómetros
+      return this.view() === 'mesas'
+        ? `${environment.urlAdministration}/Restaurant/mesas/${this.companyId()!}`
+        : undefined;
+    },
     { defaultValue: [] },
   );
   protected readonly mesas = this.mesasResource.value;
@@ -880,6 +889,44 @@ export class App {
   protected readonly mesasOcupadas = computed(
     () => this.mesas().filter(m => m.tieneCuentaAbierta).length,
   );
+  protected readonly mesasPorCobrar = computed(
+    () => this.mesas().filter(m => this.estadoMesa(m) === 'por_cobrar').length,
+  );
+  protected readonly mesasSucias = computed(
+    () => this.mesas().filter(m => this.estadoMesa(m) === 'sucia').length,
+  );
+
+  // Estado efectivo (con fallback si el backend aún no lo envía).
+  protected estadoMesa(m: Mesa): string {
+    return m.estado ?? (m.tieneCuentaAbierta ? 'ocupada' : 'libre');
+  }
+  protected etiquetaEstado(e: string): string {
+    return e === 'por_cobrar' ? 'POR COBRAR'
+      : e === 'sucia' ? 'SUCIA'
+      : e === 'ocupada' ? 'OCUPADA' : 'LIBRE';
+  }
+
+  protected async marcarPorCobrar(mesa: Mesa, valor: boolean, e: Event): Promise<void> {
+    e.stopPropagation();
+    if (!mesa.idCuentaActual) return;
+    try {
+      await firstValueFrom(this.http.post(
+        `${environment.urlChatBot}/restaurant-publico/cuentas/${mesa.idCuentaActual}/por-cobrar`,
+        { valor },
+      ));
+      this.mesasResource.reload();
+    } catch { /* reintenta al refrescar */ }
+  }
+
+  protected async liberarMesa(mesa: Mesa, e: Event): Promise<void> {
+    e.stopPropagation();
+    try {
+      await firstValueFrom(this.http.post(
+        `${environment.urlChatBot}/restaurant-publico/mesas/${mesa.id}/liberar`, {},
+      ));
+      this.mesasResource.reload();
+    } catch { /* reintenta al refrescar */ }
+  }
 
   // ── Familias ──────────────────────────────────────────────────────────────
   protected readonly familiasResource = httpResource<Familia[]>(

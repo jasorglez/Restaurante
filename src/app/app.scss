@@ -2683,3 +2683,66 @@ footer {
   cursor: default;
 }
 .crumb-sep { color: #9aa7a0; font-weight: 800; }
+
+/* ── Estados de mesa (Fase 1) ────────────────────────────────────────────── */
+.legend-dot.pc    { background: #315da8; }
+.legend-dot.dirty { background: #c0392b; }
+
+.table-button.por-cobrar {
+  border-color: #9db8e6;
+  color: #2b4d86;
+  background: linear-gradient(155deg, #fff 30%, #eef3fc);
+}
+.table-button.por-cobrar:hover,
+.table-button.por-cobrar.selected { border-color: #315da8; }
+
+.table-button.sucia {
+  border-color: #e6b3ad;
+  color: #8a2f26;
+  background: linear-gradient(155deg, #fff 30%, #fdeeec);
+}
+.table-button.sucia:hover,
+.table-button.sucia.selected { border-color: #c0392b; }
+
+.table-timer {
+  margin-top: 4px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #eef1f0;
+  color: #47554d;
+}
+.table-timer.warn { background: #fdecc8; color: #8a5a00; }
+.table-timer.late { background: #fdecec; color: #c0392b; }
+
+.mesa-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 2;
+}
+.mesa-actions .edit-mesa-btn {
+  position: static;
+  top: auto;
+  right: auto;
+  opacity: 1;
+}
+.mesa-action {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid #d8e0da;
+  background: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 10%);
+}
+.mesa-action.pc  { border-color: #315da8; }
+.mesa-action.lib { border-color: #c0392b; }
+.mesa-action:hover { background: #f4f7f5; }
