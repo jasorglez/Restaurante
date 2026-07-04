@@ -1892,6 +1892,12 @@ export class App {
     this.montoTarjetaEl = null;
     this.cobroError.set('');
     this.showPayment.set(true);
+    // Enfoca el campo de pago al abrir (evita tener que darle click).
+    setTimeout(() => {
+      const el = document.getElementById('monto-pagado-input') as HTMLInputElement | null;
+      el?.focus();
+      el?.select();
+    }, 60);
   }
 
   protected cancelarPago(): void {
