@@ -2364,3 +2364,32 @@
     </div>
   </div>
 }
+
+<!-- ── Modal: al abrir la mesa, ¿junta o separada? ─────────────────────────── -->
+@if (preguntaMesa()) {
+  <div class="qty-overlay" role="dialog" aria-modal="true" aria-label="Tipo de cuenta">
+    <div class="qty-panel">
+      @if (preguntaPaso() === 'modo') {
+        <strong class="qty-name">¿Cómo es la cuenta?</strong>
+        <p class="inv-help" style="text-align:center">{{ selectedMesa()?.nombre }}</p>
+        <button class="confirmar-btn alta-submit" type="button" (click)="responderJunta()">
+          🧾 Junta <small style="display:block;font-weight:500">Una sola cuenta para toda la mesa</small>
+        </button>
+        <button class="confirmar-btn alta-submit" type="button" (click)="responderSeparada()" style="background:#315da8">
+          👥 Separada <small style="display:block;font-weight:500">Cada quien paga lo suyo</small>
+        </button>
+      } @else {
+        <strong class="qty-name">¿Cuántas personas?</strong>
+        <div class="dividir-stepper" style="justify-content:center;margin:16px 0">
+          <button type="button" (click)="menosPrePersonas()" [disabled]="prePersonas() <= 2" aria-label="Menos">−</button>
+          <strong style="font-size:2rem;min-width:60px;text-align:center">{{ prePersonas() }}</strong>
+          <button type="button" (click)="masPrePersonas()" [disabled]="prePersonas() >= 12" aria-label="Más">+</button>
+        </div>
+        <button class="confirmar-btn alta-submit" type="button" (click)="confirmarSeparada()">
+          Comenzar orden por persona
+        </button>
+        <button class="qty-cancel" type="button" (click)="preguntaPaso.set('modo')">← Atrás</button>
+      }
+    </div>
+  </div>
+}

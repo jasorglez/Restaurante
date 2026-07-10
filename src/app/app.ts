@@ -1100,6 +1100,24 @@ export class App {
   }
   protected readonly numComensales = signal(1);
   protected readonly comensalSel   = signal(1);   // a quién se le carga el producto que se agrega
+
+  // Prompt al abrir la mesa: ¿junta o separada? y ¿cuántas personas?
+  protected readonly preguntaMesa = signal(false);
+  protected readonly preguntaPaso = signal<'modo' | 'personas'>('modo');
+  protected readonly prePersonas  = signal(2);
+  protected masPrePersonas(): void { this.prePersonas.update(n => Math.min(12, n + 1)); }
+  protected menosPrePersonas(): void { this.prePersonas.update(n => Math.max(2, n - 1)); }
+  protected responderJunta(): void {
+    this.setCuentaSeparada(false);
+    this.preguntaMesa.set(false);
+  }
+  protected responderSeparada(): void { this.preguntaPaso.set('personas'); }
+  protected confirmarSeparada(): void {
+    this.cuentaSeparada.set(true);
+    this.numComensales.set(this.prePersonas());
+    this.comensalSel.set(1);
+    this.preguntaMesa.set(false);
+  }
   protected readonly cobroComensal = signal<number | null>(null);  // comensal que se está cobrando
   protected setComensalSel(n: number): void { this.comensalSel.set(n); }
   protected masPersonas(): void { this.numComensales.update(n => Math.min(12, n + 1)); }
@@ -2040,6 +2058,10 @@ export class App {
         totalActual: cuenta.total,
       });
       this.view.set('familias');
+      // Mesa nueva → preguntar si la cuenta es junta o separada.
+      this.preguntaPaso.set('modo');
+      this.prePersonas.set(2);
+      this.preguntaMesa.set(true);
     } catch {
       this.mesaActionError.set('No fue posible abrir la cuenta de esta mesa.');
     } finally {
