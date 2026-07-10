@@ -408,6 +408,12 @@
         <span class="crumb current">Menú</span>
       </nav>
 
+      <div class="cuenta-modo">
+        <span class="cuenta-modo-lbl">Cuenta:</span>
+        <button type="button" [class.active]="!cuentaSeparada()" (click)="setCuentaSeparada(false)">🧾 Junta</button>
+        <button type="button" [class.active]="cuentaSeparada()" (click)="setCuentaSeparada(true)">👥 Separada</button>
+      </div>
+
       <!-- Buscador global de productos (desde el menú, sin entrar a un agrupador) -->
       <div class="buscar-row">
         <span class="buscar-icon" aria-hidden="true">🔍</span>
@@ -522,6 +528,12 @@
           }
         }
       </nav>
+
+      <div class="cuenta-modo">
+        <span class="cuenta-modo-lbl">Cuenta:</span>
+        <button type="button" [class.active]="!cuentaSeparada()" (click)="setCuentaSeparada(false)">🧾 Junta</button>
+        <button type="button" [class.active]="cuentaSeparada()" (click)="setCuentaSeparada(true)">👥 Separada</button>
+      </div>
 
       <!-- Buscador global de productos -->
       <div class="buscar-row">
@@ -1628,7 +1640,7 @@
                 <strong class="item-desc">{{ item.descripcion }}</strong>
                 <span class="item-meta">
                   {{ item.cantidad }} × {{ item.precioUnitario | currency:'MXN':'symbol-narrow':'1.2-2' }}
-                  <span class="item-persona">P{{ item.comensal ?? 1 }}</span>
+                  @if (cuentaSeparada()) { <span class="item-persona">P{{ item.comensal ?? 1 }}</span> }
                 </span>
               </div>
               <span class="item-subtotal">
@@ -2171,16 +2183,18 @@
       <strong class="qty-name">{{ selectedProducto()!.description }}</strong>
       <p class="qty-price">{{ precioVentaActual() | currency:'MXN':'symbol-narrow':'1.2-2' }} / u</p>
 
-      <div class="comensal-sel">
-        <span class="comensal-label">¿De quién?</span>
-        <div class="comensal-btns">
-          @for (p of personasDisponibles(); track p) {
-            <button type="button" class="comensal-btn" [class.active]="comensalSel() === p"
-              (click)="setComensalSel(p)" [disabled]="agregandoItem()">P{{ p }}</button>
-          }
-          <button type="button" class="comensal-btn add" (click)="masPersonas()" [disabled]="agregandoItem()" title="Agregar persona">＋</button>
+      @if (cuentaSeparada()) {
+        <div class="comensal-sel">
+          <span class="comensal-label">¿De quién?</span>
+          <div class="comensal-btns">
+            @for (p of personasDisponibles(); track p) {
+              <button type="button" class="comensal-btn" [class.active]="comensalSel() === p"
+                (click)="setComensalSel(p)" [disabled]="agregandoItem()">P{{ p }}</button>
+            }
+            <button type="button" class="comensal-btn add" (click)="masPersonas()" [disabled]="agregandoItem()" title="Agregar persona">＋</button>
+          </div>
         </div>
-      </div>
+      }
 
       @if (prodInvVenta()?.vendePorCopa) {
         <div class="presentacion-toggle" role="group" aria-label="Forma de venta">
@@ -2315,24 +2329,6 @@
         @if (authProcesando()) { Procesando… } @else { Autorizar }
       </button>
       <button class="qty-cancel" type="button" (click)="cerrarAuth()" [disabled]="authProcesando()">Cancelar</button>
-    </div>
-  </div>
-}
-
-<!-- ── Modal: ¿cómo cobras? normal vs por separado ─────────────────────────── -->
-@if (showCobroChoice()) {
-  <div class="qty-overlay" role="dialog" aria-modal="true" aria-label="Forma de cobro">
-    <div class="qty-panel">
-      <strong class="qty-name">¿Cómo cobras la mesa?</strong>
-      <p class="qty-price total-precio">{{ totalCuenta() | currency:'MXN':'symbol-narrow':'1.2-2' }}</p>
-      <button class="confirmar-btn alta-submit" type="button" (click)="elegirCobroNormal()">
-        💳 Cobro normal (toda la cuenta)
-      </button>
-      <button class="confirmar-btn alta-submit" type="button" (click)="elegirCobroSeparado()"
-        style="background:#315da8">
-        👥 Por separado (cada quien lo suyo)
-      </button>
-      <button class="qty-cancel" type="button" (click)="cancelarCobroChoice()">Cancelar</button>
     </div>
   </div>
 }

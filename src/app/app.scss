@@ -2898,3 +2898,22 @@ footer {
   color: #47554d;
   li { display: flex; justify-content: space-between; gap: 8px; }
 }
+
+/* Toggle junta / separada */
+.cuenta-modo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  flex-wrap: wrap;
+}
+.cuenta-modo-lbl { font-weight: 700; color: #6b7c73; font-size: 0.9rem; }
+.cuenta-modo button {
+  padding: 7px 14px;
+  border: 1.5px solid #d9e2dd;
+  border-radius: 999px;
+  background: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+.cuenta-modo button.active { border-color: #147a4b; background: #147a4b; color: #fff; }

@@ -1092,6 +1092,12 @@ export class App {
   protected readonly descuentoAplicado = signal<{ monto: number; motivo: string; por: string } | null>(null);
 
   // ── Comensales (cada quien paga lo suyo) ────────────────────────────────────
+  // Modo de la cuenta: junta (normal) o separada (por persona). Por defecto junta.
+  protected readonly cuentaSeparada = signal(false);
+  protected setCuentaSeparada(v: boolean): void {
+    this.cuentaSeparada.set(v);
+    if (!v) { this.numComensales.set(1); this.comensalSel.set(1); }
+  }
   protected readonly numComensales = signal(1);
   protected readonly comensalSel   = signal(1);   // a quién se le carga el producto que se agrega
   protected readonly cobroComensal = signal<number | null>(null);  // comensal que se está cobrando
@@ -2109,7 +2115,7 @@ export class App {
       await firstValueFrom(
         this.http.post(
           `${environment.urlChatBot}/restaurant-publico/cuentas/${mesa.idCuentaActual}/items`,
-          { idMaterial: producto.id, descripcion, cantidad, precio, presentacion, comensal: this.comensalSel() },
+          { idMaterial: producto.id, descripcion, cantidad, precio, presentacion, comensal: this.cuentaSeparada() ? this.comensalSel() : 1 },
         ),
       );
       this.selectedProducto.set(null);
@@ -2243,22 +2249,18 @@ export class App {
 
   protected quitarDescuento(): void { this.descuentoAplicado.set(null); }
 
-  // ── Elección de cobro: normal vs por comensal ───────────────────────────────
-  protected readonly showCobroChoice   = signal(false);
+  // ── Cobro: sigue el modo de la cuenta (junta → normal, separada → por persona) ─
   protected readonly showCobroSeparado = signal(false);
   protected readonly cuentaCerradaComensal = signal(false);
 
-  protected iniciarCobro(): void { this.showCobroChoice.set(true); }
-  protected cancelarCobroChoice(): void { this.showCobroChoice.set(false); }
-  protected elegirCobroNormal(): void {
-    this.showCobroChoice.set(false);
-    this.cobroComensal.set(null);
-    this.abrirPago();
-  }
-  protected elegirCobroSeparado(): void {
-    this.showCobroChoice.set(false);
-    this.descuentoAplicado.set(null);   // el descuento global no aplica en separado
-    this.showCobroSeparado.set(true);
+  protected iniciarCobro(): void {
+    if (this.cuentaSeparada() && this.comensalesConItems().length > 1) {
+      this.descuentoAplicado.set(null);   // el descuento global no aplica en separado
+      this.showCobroSeparado.set(true);
+    } else {
+      this.cobroComensal.set(null);
+      this.abrirPago();
+    }
   }
   protected cerrarCobroSeparado(): void { this.showCobroSeparado.set(false); }
   protected cobrarEsteComensal(comensal: number): void {
@@ -2464,11 +2466,11 @@ export class App {
     this.showPayment.set(false);
     this.prodBusqueda.set('');
     this.descuentoAplicado.set(null);
+    this.cuentaSeparada.set(false);
     this.numComensales.set(1);
     this.comensalSel.set(1);
     this.cobroComensal.set(null);
     this.showCobroSeparado.set(false);
-    this.showCobroChoice.set(false);
     this.mesasResource.reload();
   }
 
