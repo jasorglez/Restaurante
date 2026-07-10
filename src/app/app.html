@@ -1628,6 +1628,7 @@
                 <strong class="item-desc">{{ item.descripcion }}</strong>
                 <span class="item-meta">
                   {{ item.cantidad }} × {{ item.precioUnitario | currency:'MXN':'symbol-narrow':'1.2-2' }}
+                  <span class="item-persona">P{{ item.comensal ?? 1 }}</span>
                 </span>
               </div>
               <span class="item-subtotal">
@@ -1666,7 +1667,7 @@
           <button class="agregar-btn" type="button" (click)="backToFamilias()">
             + Agregar productos
           </button>
-          <button class="cobrar-btn" type="button" (click)="abrirPago()">
+          <button class="cobrar-btn" type="button" (click)="iniciarCobro()">
             Cobrar
           </button>
         </div>
@@ -1677,7 +1678,7 @@
     @if (showPayment()) {
       <div class="qty-overlay" role="dialog" aria-modal="true" aria-label="Confirmar cobro">
         <div class="qty-panel pago-panel">
-          <strong class="qty-name">Cobrar cuenta</strong>
+          <strong class="qty-name">{{ cobroComensal() != null ? 'Cobrar Persona ' + cobroComensal() : 'Cobrar cuenta' }}</strong>
           @if (descuentoAplicado()) {
             <p class="pago-subtotal">Subtotal {{ totalCuenta() | currency:'MXN':'symbol-narrow':'1.2-2' }}</p>
             <p class="pago-descuento">
@@ -1690,7 +1691,7 @@
             <p class="pago-dividido">Dividido entre {{ dividirEntre() }} · {{ montoPorPersona() | currency:'MXN':'symbol-narrow':'1.2-2' }} por persona</p>
           }
 
-          @if (!descuentoAplicado()) {
+          @if (!descuentoAplicado() && cobroComensal() === null) {
             <button type="button" class="desc-aplicar" (click)="pedirDescuento()" [disabled]="cobrando()">% Aplicar descuento</button>
           }
 
@@ -2170,6 +2171,17 @@
       <strong class="qty-name">{{ selectedProducto()!.description }}</strong>
       <p class="qty-price">{{ precioVentaActual() | currency:'MXN':'symbol-narrow':'1.2-2' }} / u</p>
 
+      <div class="comensal-sel">
+        <span class="comensal-label">¿De quién?</span>
+        <div class="comensal-btns">
+          @for (p of personasDisponibles(); track p) {
+            <button type="button" class="comensal-btn" [class.active]="comensalSel() === p"
+              (click)="setComensalSel(p)" [disabled]="agregandoItem()">P{{ p }}</button>
+          }
+          <button type="button" class="comensal-btn add" (click)="masPersonas()" [disabled]="agregandoItem()" title="Agregar persona">＋</button>
+        </div>
+      </div>
+
       @if (prodInvVenta()?.vendePorCopa) {
         <div class="presentacion-toggle" role="group" aria-label="Forma de venta">
           <button type="button" class="pres-btn" [class.active]="presentacionSel() === 'COMPLETA'"
@@ -2303,6 +2315,56 @@
         @if (authProcesando()) { Procesando… } @else { Autorizar }
       </button>
       <button class="qty-cancel" type="button" (click)="cerrarAuth()" [disabled]="authProcesando()">Cancelar</button>
+    </div>
+  </div>
+}
+
+<!-- ── Modal: ¿cómo cobras? normal vs por separado ─────────────────────────── -->
+@if (showCobroChoice()) {
+  <div class="qty-overlay" role="dialog" aria-modal="true" aria-label="Forma de cobro">
+    <div class="qty-panel">
+      <strong class="qty-name">¿Cómo cobras la mesa?</strong>
+      <p class="qty-price total-precio">{{ totalCuenta() | currency:'MXN':'symbol-narrow':'1.2-2' }}</p>
+      <button class="confirmar-btn alta-submit" type="button" (click)="elegirCobroNormal()">
+        💳 Cobro normal (toda la cuenta)
+      </button>
+      <button class="confirmar-btn alta-submit" type="button" (click)="elegirCobroSeparado()"
+        style="background:#315da8">
+        👥 Por separado (cada quien lo suyo)
+      </button>
+      <button class="qty-cancel" type="button" (click)="cancelarCobroChoice()">Cancelar</button>
+    </div>
+  </div>
+}
+
+<!-- ── Modal: cobro por comensal ────────────────────────────────────────────── -->
+@if (showCobroSeparado()) {
+  <div class="qty-overlay" role="dialog" aria-modal="true" aria-label="Cobro por separado">
+    <div class="qty-panel drill-panel">
+      <div class="alta-head">
+        <strong>👥 Cobro por separado</strong>
+        <button type="button" class="inv-cancel" (click)="cerrarCobroSeparado()">✕</button>
+      </div>
+      <p class="inv-help">Cobra a cada persona lo suyo. La cuenta se cierra cuando ya no queden productos.</p>
+      @for (g of comensalesConItems(); track g.comensal) {
+        <div class="comensal-card">
+          <div class="comensal-card-head">
+            <strong>Persona {{ g.comensal }}</strong>
+            <span class="inv-exist">{{ g.subtotal | currency:'MXN':'symbol-narrow':'1.2-2' }}</span>
+          </div>
+          <ul class="comensal-items">
+            @for (it of g.items; track it.id) {
+              <li>{{ it.cantidad }}× {{ it.descripcion }} <span>{{ it.subtotal | currency:'MXN':'symbol-narrow':'1.2-2' }}</span></li>
+            }
+          </ul>
+          <button class="confirmar-btn alta-submit" type="button" (click)="cobrarEsteComensal(g.comensal)">
+            Cobrar Persona {{ g.comensal }} · {{ g.subtotal | currency:'MXN':'symbol-narrow':'1.2-2' }}
+          </button>
+        </div>
+      } @empty {
+        <div class="state-panel"><strong>No hay productos por cobrar.</strong></div>
+      }
+      <button class="qty-cancel" type="button" (click)="cerrarCobroSeparado()">Cerrar</button>
     </div>
   </div>
 }

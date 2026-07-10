@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '1.88 (04 Julio 2026) Configuración: administrar impresoras de red (alta/edición/borrado + prueba)',
+  version: '1.89 (09 Julio 2026) Cobro por comensal (cada quien lo suyo): asignar producto a persona y al cobrar preguntar normal/separado',
 }; 

@@ -1090,9 +1090,39 @@ export class App {
 
   // Descuento aplicado (autorizado por supervisor) y total a pagar.
   protected readonly descuentoAplicado = signal<{ monto: number; motivo: string; por: string } | null>(null);
-  protected readonly totalAPagar = computed(() =>
-    Math.max(0, this.totalCuenta() - (this.descuentoAplicado()?.monto ?? 0)),
-  );
+
+  // ── Comensales (cada quien paga lo suyo) ────────────────────────────────────
+  protected readonly numComensales = signal(1);
+  protected readonly comensalSel   = signal(1);   // a quién se le carga el producto que se agrega
+  protected readonly cobroComensal = signal<number | null>(null);  // comensal que se está cobrando
+  protected setComensalSel(n: number): void { this.comensalSel.set(n); }
+  protected masPersonas(): void { this.numComensales.update(n => Math.min(12, n + 1)); }
+  // Personas disponibles = las que se hayan creado o las que ya tengan productos.
+  protected readonly personasDisponibles = computed(() => {
+    const maxItem = this.items().reduce((m, i) => Math.max(m, i.comensal ?? 1), 1);
+    const total = Math.max(this.numComensales(), maxItem);
+    return Array.from({ length: total }, (_, i) => i + 1);
+  });
+  // Items agrupados por comensal (NULL cuenta como 1), con subtotal.
+  protected readonly comensalesConItems = computed(() => {
+    const mapa = new Map<number, { comensal: number; items: ItemCuenta[]; subtotal: number }>();
+    for (const it of this.items()) {
+      const c = it.comensal ?? 1;
+      if (!mapa.has(c)) mapa.set(c, { comensal: c, items: [], subtotal: 0 });
+      const g = mapa.get(c)!;
+      g.items.push(it);
+      g.subtotal += it.subtotal;
+    }
+    return Array.from(mapa.values()).sort((a, b) => a.comensal - b.comensal);
+  });
+
+  protected readonly totalAPagar = computed(() => {
+    const c = this.cobroComensal();
+    if (c != null) {
+      return this.items().filter(i => (i.comensal ?? 1) === c).reduce((s, i) => s + i.subtotal, 0);
+    }
+    return Math.max(0, this.totalCuenta() - (this.descuentoAplicado()?.monto ?? 0));
+  });
 
   // ── Dividir cuenta (partes iguales) ────────────────────────────────────────
   protected readonly dividirEntre = signal(1);
@@ -2079,7 +2109,7 @@ export class App {
       await firstValueFrom(
         this.http.post(
           `${environment.urlChatBot}/restaurant-publico/cuentas/${mesa.idCuentaActual}/items`,
-          { idMaterial: producto.id, descripcion, cantidad, precio, presentacion },
+          { idMaterial: producto.id, descripcion, cantidad, precio, presentacion, comensal: this.comensalSel() },
         ),
       );
       this.selectedProducto.set(null);
@@ -2213,6 +2243,30 @@ export class App {
 
   protected quitarDescuento(): void { this.descuentoAplicado.set(null); }
 
+  // ── Elección de cobro: normal vs por comensal ───────────────────────────────
+  protected readonly showCobroChoice   = signal(false);
+  protected readonly showCobroSeparado = signal(false);
+  protected readonly cuentaCerradaComensal = signal(false);
+
+  protected iniciarCobro(): void { this.showCobroChoice.set(true); }
+  protected cancelarCobroChoice(): void { this.showCobroChoice.set(false); }
+  protected elegirCobroNormal(): void {
+    this.showCobroChoice.set(false);
+    this.cobroComensal.set(null);
+    this.abrirPago();
+  }
+  protected elegirCobroSeparado(): void {
+    this.showCobroChoice.set(false);
+    this.descuentoAplicado.set(null);   // el descuento global no aplica en separado
+    this.showCobroSeparado.set(true);
+  }
+  protected cerrarCobroSeparado(): void { this.showCobroSeparado.set(false); }
+  protected cobrarEsteComensal(comensal: number): void {
+    this.cobroComensal.set(comensal);
+    this.showCobroSeparado.set(false);
+    this.abrirPago();
+  }
+
   // ── Pago ──────────────────────────────────────────────────────────────────
   protected setTipoPago(tipo: TipoPago): void {
     this.tipoPago.set(tipo);
@@ -2259,20 +2313,28 @@ export class App {
   protected cancelarPago(): void {
     this.showPayment.set(false);
     this.cobroError.set('');
+    // Si estaba cobrando un comensal, regresa a la lista de comensales.
+    if (this.cobroComensal() != null) {
+      this.cobroComensal.set(null);
+      this.showCobroSeparado.set(true);
+    }
   }
 
   protected async confirmarCobro(): Promise<void> {
     const mesa = this.selectedMesa();
     if (!mesa?.idCuentaActual) return;
     if (!this.pagoSuficiente()) {
-      this.cobroError.set('El monto recibido no cubre el total de la cuenta.');
+      this.cobroError.set('El monto recibido no cubre el total.');
       return;
     }
 
+    const comensal = this.cobroComensal();
     const tipo = this.tipoPago();
-    const snapshotItems = [...this.items()];
     const desc = this.descuentoAplicado();
     const snapshotTotal = this.totalAPagar();
+    const snapshotItems = comensal != null
+      ? this.items().filter(i => (i.comensal ?? 1) === comensal)
+      : [...this.items()];
     const snapshotCambio = this.cambio();
     const efectivoPagado = tipo === 'TARJETA' ? snapshotTotal : (this.montoPagado() ?? 0);
     const tarjetaPagada = tipo === 'MIXTO' ? (this.montoTarjeta() ?? 0) : 0;
@@ -2280,22 +2342,26 @@ export class App {
     this.cobrando.set(true);
     this.cobroError.set('');
     try {
-      await firstValueFrom(
-        this.http.post(
-          `${environment.urlChatBot}/restaurant-publico/cuentas/${mesa.idCuentaActual}/cobrar`,
-          {
-            idCompany: this.companyId()!,
-            tipoPago: tipo,
-            descuento: desc?.monto ?? 0,
-            descuentoMotivo: desc?.motivo ?? null,
-            descuentoAutorizadoPor: desc?.por ?? null,
-          },
-        ),
-      );
+      const base = `${environment.urlChatBot}/restaurant-publico/cuentas/${mesa.idCuentaActual}`;
+      if (comensal != null) {
+        const res: any = await firstValueFrom(this.http.post(`${base}/cobrar-comensal`, {
+          idCompany: this.companyId()!, tipoPago: tipo, comensal,
+        }));
+        this.cuentaCerradaComensal.set(!!res?.cuentaCerrada);
+      } else {
+        await firstValueFrom(this.http.post(`${base}/cobrar`, {
+          idCompany: this.companyId()!,
+          tipoPago: tipo,
+          descuento: desc?.monto ?? 0,
+          descuentoMotivo: desc?.motivo ?? null,
+          descuentoAutorizadoPor: desc?.por ?? null,
+        }));
+        this.cuentaCerradaComensal.set(true);
+      }
 
       this.ticketData.set({
         companyName: this.companyName(),
-        mesaNombre: mesa.nombre,
+        mesaNombre: comensal != null ? `${mesa.nombre} · Persona ${comensal}` : mesa.nombre,
         idCuenta: mesa.idCuentaActual,
         items: snapshotItems,
         total: snapshotTotal,
@@ -2308,6 +2374,7 @@ export class App {
 
       this.showPayment.set(false);
       this.ticketVisible.set(true);
+      this.itemsResource.reload();   // refresca lo que queda por cobrar
     } catch (err: any) {
       const msg = err?.error?.error ?? err?.message ?? 'No se pudo procesar el cobro. Intenta de nuevo.';
       this.cobroError.set(msg);
@@ -2368,6 +2435,13 @@ export class App {
   protected cerrarTicket(): void {
     this.ticketVisible.set(false);
     this.ticketData.set(null);
+    // Cobro por comensal con productos aún pendientes → vuelve a la lista.
+    if (this.cobroComensal() != null && !this.cuentaCerradaComensal()) {
+      this.cobroComensal.set(null);
+      this.showCobroSeparado.set(true);
+      return;
+    }
+    this.cobroComensal.set(null);
     this.backToMesas();
   }
 
@@ -2390,6 +2464,11 @@ export class App {
     this.showPayment.set(false);
     this.prodBusqueda.set('');
     this.descuentoAplicado.set(null);
+    this.numComensales.set(1);
+    this.comensalSel.set(1);
+    this.cobroComensal.set(null);
+    this.showCobroSeparado.set(false);
+    this.showCobroChoice.set(false);
     this.mesasResource.reload();
   }
 

@@ -2840,3 +2840,61 @@ footer {
 
 /* Módulo Configuración */
 .config { --accent: #5b6b7a; --soft: #eef1f4; }
+
+/* ── Comensales (cada quien paga lo suyo) ────────────────────────────────── */
+.comensal-sel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 4px 0 10px;
+}
+.comensal-label { font-weight: 700; color: #6b7c73; font-size: 0.85rem; }
+.comensal-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+.comensal-btn {
+  min-width: 42px;
+  padding: 8px 12px;
+  border: 1.5px solid #d9e2dd;
+  border-radius: 10px;
+  background: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+.comensal-btn.active { border-color: #147a4b; background: #147a4b; color: #fff; }
+.comensal-btn.add { border-style: dashed; color: #147a4b; }
+
+.item-persona {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #eef3fc;
+  color: #2b4d86;
+  font-weight: 800;
+  font-size: 0.72rem;
+}
+
+.comensal-card {
+  border: 1px solid #e6ecea;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 10px;
+  background: #fff;
+}
+.comensal-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  strong { font-size: 1.05rem; }
+}
+.comensal-items {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.9rem;
+  color: #47554d;
+  li { display: flex; justify-content: space-between; gap: 8px; }
+}

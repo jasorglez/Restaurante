@@ -24,4 +24,5 @@ export interface ItemCuenta {
   precioUnitario: number;
   subtotal: number;
   enviadoCocina: boolean;
+  comensal?: number | null;
 }
