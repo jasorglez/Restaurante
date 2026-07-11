@@ -63,26 +63,40 @@
 
 <main class="dashboard-shell">
   <header class="topbar">
-    <div class="brand">
-      @if (companyLogo()) {
-        <img class="brand-logo" [src]="companyLogo()!" [alt]="companyName()" />
-      } @else {
-        <span class="brand-mark" aria-hidden="true">R</span>
-      }
-      <div>
-        <p class="eyebrow">PUNTO DE VENTA</p>
-        <h1>{{ companyName() }}</h1>
+    <div class="topbar-row">
+      <div class="brand">
+        @if (companyLogo()) {
+          <img class="brand-logo" [src]="companyLogo()!" [alt]="companyName()" />
+        } @else {
+          <span class="brand-mark" aria-hidden="true">R</span>
+        }
+        <div>
+          <p class="eyebrow">PUNTO DE VENTA</p>
+          <h1>{{ companyName() }}</h1>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <div class="status" aria-label="Estado del sistema">
+          <span class="status-dot" aria-hidden="true"></span>
+          Sistema disponible
+        </div>
+        <button class="cambiar-empresa-header" type="button" title="Cambiar empresa" (click)="cambiarEmpresa()">
+          ⇄
+        </button>
       </div>
     </div>
-    <div class="topbar-actions">
-      <div class="status" aria-label="Estado del sistema">
-        <span class="status-dot" aria-hidden="true"></span>
-        Sistema disponible
-      </div>
-      <button class="cambiar-empresa-header" type="button" title="Cambiar empresa" (click)="cambiarEmpresa()">
-        ⇄
-      </button>
-    </div>
+
+    @if (companyId() && !selEmpresa()) {
+      <nav class="quick-nav" aria-label="Accesos rápidos">
+        <button type="button" [class.active]="moduloActivo() === 'MENU'"       (click)="backToMenu()">🏠 Menú</button>
+        <button type="button" [class.active]="moduloActivo() === 'MESAS'"      (click)="backToMesas()">🍽️ Mesas</button>
+        <button type="button" [class.active]="moduloActivo() === 'CAJAS'"      (click)="selectModule('CAJAS')">🏧 Cajas</button>
+        <button type="button" [class.active]="moduloActivo() === 'COCINA'"     (click)="selectModule('COCINA')">👨‍🍳 Cocina</button>
+        <button type="button" [class.active]="moduloActivo() === 'REPORTES'"   (click)="selectModule('REPORTES')">📊 Reportes</button>
+        <button type="button" [class.active]="moduloActivo() === 'INVENTARIO'" (click)="selectModule('INVENTARIO')">📦 Inventario</button>
+        <button type="button" [class.active]="moduloActivo() === 'CONFIG'"     (click)="selectModule('CONFIG')">⚙️ Config</button>
+      </nav>
+    }
   </header>
 
   <!-- ── MENÚ PRINCIPAL ─────────────────────────────────────────────────── -->

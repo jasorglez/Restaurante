@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '1.95 (11 Julio 2026) Caja: opción "Cobrar mesa" con lista de mesas ocupadas (por cobrar primero) y acceso directo al cobro',
+  version: '1.96 (11 Julio 2026) Accesos rápidos arriba: Menú, Mesas, Cajas, Cocina, Reportes, Inventario, Config',
 }; 

@@ -14,15 +14,43 @@
 }
 
 .topbar {
-  min-height: 88px;
-  padding: 16px clamp(24px, 4vw, 52px);
+  padding: 14px clamp(24px, 4vw, 52px);
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 10px;
   border-bottom: 1px solid #dfe5df;
   background: rgb(255 255 255 / 82%);
   backdrop-filter: blur(14px);
 }
+.topbar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.quick-nav {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  -webkit-overflow-scrolling: touch;
+}
+.quick-nav::-webkit-scrollbar { height: 0; }
+.quick-nav button {
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  border: 1px solid #dce4de;
+  border-radius: 999px;
+  background: #fff;
+  color: #33463a;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+.quick-nav button:hover { border-color: #147a4b; color: #147a4b; }
+.quick-nav button.active { background: #147a4b; border-color: #147a4b; color: #fff; }
 
 .brand {
   display: flex;

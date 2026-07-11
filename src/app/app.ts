@@ -122,6 +122,18 @@ export class App {
 
   // ── Vista principal ────────────────────────────────────────────────────────
   protected readonly view = signal<View>('menu');
+  // Módulo activo (para resaltar los accesos rápidos de arriba).
+  protected readonly moduloActivo = computed<RestaurantModule | 'MENU'>(() => {
+    switch (this.view()) {
+      case 'mesas': case 'familias': case 'productos': case 'cuenta': return 'MESAS';
+      case 'cajas': return 'CAJAS';
+      case 'cocina': return 'COCINA';
+      case 'reportes': return 'REPORTES';
+      case 'inventario': return 'INVENTARIO';
+      case 'config': return 'CONFIG';
+      default: return 'MENU';
+    }
+  });
   protected readonly selectedMesa = signal<Mesa | null>(null);
   protected readonly openingMesa = signal(false);
   protected readonly mesaActionError = signal('');
