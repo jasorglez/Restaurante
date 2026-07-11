@@ -741,6 +741,9 @@
             <div><span>Turno #</span><strong>{{ turnoActivo()!.id }}</strong></div>
           </div>
           <div class="turno-acciones">
+            <button class="turno-accion-btn cobrar-mesa-btn" type="button" (click)="abrirCobrarMesa()">
+              💰 Cobrar mesa
+            </button>
             <button class="turno-accion-btn egresos" type="button" (click)="abrirEgresos()">
               💸 Egresos
             </button>
@@ -749,6 +752,42 @@
             </button>
           </div>
         </div>
+
+      } @else if (turnoActivo() && cajasSubView() === 'cobrar') {
+        <!-- ── Cobrar mesa (acceso rápido del cajero) ──────────────────────── -->
+        <div class="tables-toolbar corte-toolbar">
+          <button class="back-button" type="button" (click)="cajasSubView.set('inicio')">
+            <span aria-hidden="true">←</span> Turno
+          </button>
+          <div class="tables-heading"><h2>Cobrar mesa</h2></div>
+          <button class="refresh-button" type="button" title="Actualizar" (click)="mesasResource.reload()">↻</button>
+        </div>
+
+        <input class="buscar-input" type="search" inputmode="search" placeholder="Buscar mesa (ej. 4)…"
+          [value]="cobrarBusqueda()" (input)="setCobrarBusqueda($event)" style="margin-bottom:10px">
+
+        @if (loading() && mesas().length === 0) {
+          <div class="state-panel" role="status"><span class="loader" aria-hidden="true"></span><strong>Cargando mesas…</strong></div>
+        } @else if (mesasParaCobrarFiltradas().length === 0) {
+          <div class="state-panel"><strong>No hay mesas ocupadas</strong><p>Cuando una mesa tenga cuenta abierta aparecerá aquí.</p></div>
+        } @else {
+          <ul class="inv-list">
+            @for (m of mesasParaCobrarFiltradas(); track m.id) {
+              <li class="inv-item cobrar-mesa-item" (click)="cobrarMesaRapido(m)">
+                <div class="inv-item-main">
+                  <strong>{{ m.nombre }}</strong>
+                  @if (estadoMesa(m) === 'por_cobrar') { <span class="inv-badge" style="background:#dbe7fb;color:#2b4d86">por cobrar</span> }
+                  <span class="inv-exist">{{ (m.totalActual ?? 0) | currency:'MXN':'symbol-narrow':'1.2-2' }}</span>
+                </div>
+                <div class="inv-mov-detalle">
+                  <span>{{ m.numItems }} productos</span>
+                  @if (m.minutosAbierta != null) { <span>· ⏱ {{ m.minutosAbierta }} min</span> }
+                  <span style="margin-left:auto;color:#147a4b;font-weight:800">Cobrar →</span>
+                </div>
+              </li>
+            }
+          </ul>
+        }
 
       } @else if (turnoActivo() && cajasSubView() === 'egresos') {
         <!-- ── Egresos ─────────────────────────────────────────────────────── -->

@@ -249,7 +249,7 @@ export class App {
     return list.length === 1 ? list[0] : null;
   });
 
-  protected readonly cajasSubView = signal<'inicio' | 'egresos' | 'corte'>('inicio');
+  protected readonly cajasSubView = signal<'inicio' | 'egresos' | 'corte' | 'cobrar'>('inicio');
   protected readonly totalEgresosLista = computed(() =>
     this.egresosLista().reduce((s, e) => s + e.monto, 0),
   );
@@ -901,7 +901,8 @@ export class App {
   protected readonly mesasResource = httpResource<Mesa[]>(
     () => {
       this.mesasTick();   // auto-refresco de estados/cronómetros
-      return this.view() === 'mesas'
+      const enCobrarCaja = this.view() === 'cajas' && this.cajasSubView() === 'cobrar';
+      return this.view() === 'mesas' || enCobrarCaja
         ? `${environment.urlAdministration}/Restaurant/mesas/${this.companyId()!}`
         : undefined;
     },
@@ -923,6 +924,38 @@ export class App {
   protected readonly mesasSucias = computed(
     () => this.mesas().filter(m => this.estadoMesa(m) === 'sucia').length,
   );
+
+  // Mesas ocupadas listas para cobrar (las "por cobrar" primero). Para el cajero.
+  protected readonly mesasParaCobrar = computed(() =>
+    this.mesas()
+      .filter(m => m.tieneCuentaAbierta)
+      .sort((a, b) => {
+        const pa = this.estadoMesa(a) === 'por_cobrar' ? 0 : 1;
+        const pb = this.estadoMesa(b) === 'por_cobrar' ? 0 : 1;
+        return pa !== pb ? pa - pb : a.nombre.localeCompare(b.nombre, undefined, { numeric: true });
+      }),
+  );
+
+  protected readonly cobrarBusqueda = signal('');
+  protected setCobrarBusqueda(e: Event): void { this.cobrarBusqueda.set((e.target as HTMLInputElement).value); }
+  protected readonly mesasParaCobrarFiltradas = computed(() => {
+    const t = this.cobrarBusqueda().trim().toLowerCase();
+    const lista = this.mesasParaCobrar();
+    return t ? lista.filter(m => m.nombre.toLowerCase().includes(t)) : lista;
+  });
+
+  protected abrirCobrarMesa(): void {
+    this.cobrarBusqueda.set('');
+    this.cajasSubView.set('cobrar');
+    this.mesasResource.reload();
+  }
+  protected cobrarMesaRapido(m: Mesa): void {
+    this.selectedMesa.set(m);
+    this.mesaActionError.set('');
+    this.dividirEntre.set(1);
+    if (m.idCuentaActual) void this.cargarModoCuenta(m.idCuentaActual);
+    this.view.set('cuenta');
+  }
 
   // Estado efectivo (con fallback si el backend aún no lo envía).
   protected estadoMesa(m: Mesa): string {

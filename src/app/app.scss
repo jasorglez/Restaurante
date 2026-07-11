@@ -2937,3 +2937,8 @@ footer {
   color: #8a9b91;
   text-decoration: line-through;
 }
+
+/* Cobrar mesa (acceso rápido del cajero) */
+.turno-accion-btn.cobrar-mesa-btn { border-color: #147a4b; color: #147a4b; }
+.cobrar-mesa-item { cursor: pointer; }
+.cobrar-mesa-item:hover { border-color: #147a4b; background: #f4faf6; }
