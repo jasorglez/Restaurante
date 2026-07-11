@@ -1084,8 +1084,10 @@ export class App {
     { defaultValue: [] },
   );
   protected readonly items = this.itemsResource.value;
+  // Productos aún por cobrar (los pagados de una cuenta separada quedan aparte).
+  protected readonly itemsPendientes = computed(() => this.items().filter(i => !i.pagado));
   protected readonly totalCuenta = computed(() =>
-    this.items().reduce((sum, i) => sum + i.subtotal, 0),
+    this.itemsPendientes().reduce((sum, i) => sum + i.subtotal, 0),
   );
 
   // Descuento aplicado (autorizado por supervisor) y total a pagar.
@@ -1097,7 +1099,39 @@ export class App {
   protected setCuentaSeparada(v: boolean): void {
     this.cuentaSeparada.set(v);
     if (!v) { this.numComensales.set(1); this.comensalSel.set(1); }
+    this.persistModo();
   }
+  // Guarda el modo (junta/separada + personas) en la cuenta para que sea persistente.
+  private persistModo(): void {
+    const id = this.selectedMesa()?.idCuentaActual;
+    if (!id) return;
+    firstValueFrom(this.http.post(
+      `${environment.urlChatBot}/restaurant-publico/cuentas/${id}/modo`,
+      { separada: this.cuentaSeparada(), numComensales: this.cuentaSeparada() ? this.numComensales() : null },
+    )).catch(() => { /* no bloquear */ });
+  }
+  // Restaura el modo al entrar a una mesa (persistencia).
+  private async cargarModoCuenta(idCuenta: number): Promise<void> {
+    try {
+      const m: any = await firstValueFrom(this.http.get(
+        `${environment.urlChatBot}/restaurant-publico/cuentas/${idCuenta}/modo`));
+      this.cuentaSeparada.set(!!m?.separada);
+      this.numComensales.set(m?.numComensales && m.numComensales > 0 ? m.numComensales : 1);
+    } catch { /* deja junta por defecto */ }
+  }
+
+  // Aviso al intentar juntar una cuenta separada.
+  protected readonly avisoJuntar     = signal(false);
+  protected readonly juntarBloqueado = signal(false);
+  protected intentarJunta(): void {
+    if (!this.cuentaSeparada()) return;
+    if (this.items().some(i => i.pagado)) { this.juntarBloqueado.set(true); return; }
+    if (this.items().length > 0) { this.avisoJuntar.set(true); return; }
+    this.setCuentaSeparada(false);
+  }
+  protected confirmarJuntar(): void { this.avisoJuntar.set(false); this.setCuentaSeparada(false); }
+  protected cancelarJuntar(): void { this.avisoJuntar.set(false); }
+  protected cerrarJuntarBloqueado(): void { this.juntarBloqueado.set(false); }
   protected readonly numComensales = signal(1);
   protected readonly comensalSel   = signal(1);   // a quién se le carga el producto que se agrega
 
@@ -1117,6 +1151,12 @@ export class App {
     this.numComensales.set(this.prePersonas());
     this.comensalSel.set(1);
     this.preguntaMesa.set(false);
+    this.persistModo();
+  }
+  // Cancelar el prompt: la mesa se abrió por error → volver a mesas.
+  protected cancelarPregunta(): void {
+    this.preguntaMesa.set(false);
+    this.backToMesas();
   }
   protected readonly cobroComensal = signal<number | null>(null);  // comensal que se está cobrando
   protected setComensalSel(n: number): void { this.comensalSel.set(n); }
@@ -1127,23 +1167,25 @@ export class App {
     const total = Math.max(this.numComensales(), maxItem);
     return Array.from({ length: total }, (_, i) => i + 1);
   });
-  // Items agrupados por comensal (NULL cuenta como 1), con subtotal.
+  // Items agrupados por comensal (NULL cuenta como 1). pendiente = por cobrar; pagado = ya cobrado.
   protected readonly comensalesConItems = computed(() => {
-    const mapa = new Map<number, { comensal: number; items: ItemCuenta[]; subtotal: number }>();
+    const mapa = new Map<number, { comensal: number; items: ItemCuenta[]; subtotal: number; pendiente: number; pagado: boolean }>();
     for (const it of this.items()) {
       const c = it.comensal ?? 1;
-      if (!mapa.has(c)) mapa.set(c, { comensal: c, items: [], subtotal: 0 });
+      if (!mapa.has(c)) mapa.set(c, { comensal: c, items: [], subtotal: 0, pendiente: 0, pagado: false });
       const g = mapa.get(c)!;
       g.items.push(it);
       g.subtotal += it.subtotal;
+      if (!it.pagado) g.pendiente += it.subtotal;
     }
+    for (const g of mapa.values()) g.pagado = g.pendiente === 0;
     return Array.from(mapa.values()).sort((a, b) => a.comensal - b.comensal);
   });
 
   protected readonly totalAPagar = computed(() => {
     const c = this.cobroComensal();
     if (c != null) {
-      return this.items().filter(i => (i.comensal ?? 1) === c).reduce((s, i) => s + i.subtotal, 0);
+      return this.items().filter(i => (i.comensal ?? 1) === c && !i.pagado).reduce((s, i) => s + i.subtotal, 0);
     }
     return Math.max(0, this.totalCuenta() - (this.descuentoAplicado()?.monto ?? 0));
   });
@@ -2037,6 +2079,7 @@ export class App {
     this.mesaActionError.set('');
     if (mesa.tieneCuentaAbierta) {
       this.view.set('familias');
+      if (mesa.idCuentaActual) void this.cargarModoCuenta(mesa.idCuentaActual);
     } else {
       void this.openFreeMesa(mesa);
     }
@@ -2276,7 +2319,8 @@ export class App {
   protected readonly cuentaCerradaComensal = signal(false);
 
   protected iniciarCobro(): void {
-    if (this.cuentaSeparada() && this.comensalesConItems().length > 1) {
+    const separada = this.cuentaSeparada() || this.items().some(i => i.pagado);
+    if (separada) {
       this.descuentoAplicado.set(null);   // el descuento global no aplica en separado
       this.showCobroSeparado.set(true);
     } else {

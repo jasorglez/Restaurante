@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '1.91 (09 Julio 2026) Al abrir la mesa pregunta ¿junta o separada? y cuántas personas, para ordenar por persona',
+  version: '1.92 (11 Julio 2026) Cuenta separada persistente: recuerda modo/personas, persona pagada en verde, avisos y cancelar prompt',
 }; 

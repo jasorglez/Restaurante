@@ -410,7 +410,7 @@
 
       <div class="cuenta-modo">
         <span class="cuenta-modo-lbl">Cuenta:</span>
-        <button type="button" [class.active]="!cuentaSeparada()" (click)="setCuentaSeparada(false)">🧾 Junta</button>
+        <button type="button" [class.active]="!cuentaSeparada()" (click)="intentarJunta()">🧾 Junta</button>
         <button type="button" [class.active]="cuentaSeparada()" (click)="setCuentaSeparada(true)">👥 Separada</button>
       </div>
 
@@ -531,7 +531,7 @@
 
       <div class="cuenta-modo">
         <span class="cuenta-modo-lbl">Cuenta:</span>
-        <button type="button" [class.active]="!cuentaSeparada()" (click)="setCuentaSeparada(false)">🧾 Junta</button>
+        <button type="button" [class.active]="!cuentaSeparada()" (click)="intentarJunta()">🧾 Junta</button>
         <button type="button" [class.active]="cuentaSeparada()" (click)="setCuentaSeparada(true)">👥 Separada</button>
       </div>
 
@@ -1634,7 +1634,7 @@
         </div>
       } @else {
         <div class="items-list">
-          @for (item of items(); track item.id) {
+          @for (item of itemsPendientes(); track item.id) {
             <div class="item-row" [class.eliminando]="eliminandoId() === item.id">
               <div class="item-info">
                 <strong class="item-desc">{{ item.descripcion }}</strong>
@@ -2343,19 +2343,21 @@
       </div>
       <p class="inv-help">Cobra a cada persona lo suyo. La cuenta se cierra cuando ya no queden productos.</p>
       @for (g of comensalesConItems(); track g.comensal) {
-        <div class="comensal-card">
+        <div class="comensal-card" [class.pagada]="g.pagado">
           <div class="comensal-card-head">
-            <strong>Persona {{ g.comensal }}</strong>
+            <strong>Persona {{ g.comensal }} @if (g.pagado) { <span class="pagado-tag">✓ Pagó</span> }</strong>
             <span class="inv-exist">{{ g.subtotal | currency:'MXN':'symbol-narrow':'1.2-2' }}</span>
           </div>
           <ul class="comensal-items">
             @for (it of g.items; track it.id) {
-              <li>{{ it.cantidad }}× {{ it.descripcion }} <span>{{ it.subtotal | currency:'MXN':'symbol-narrow':'1.2-2' }}</span></li>
+              <li [class.pagado]="it.pagado">{{ it.cantidad }}× {{ it.descripcion }} <span>{{ it.subtotal | currency:'MXN':'symbol-narrow':'1.2-2' }}</span></li>
             }
           </ul>
-          <button class="confirmar-btn alta-submit" type="button" (click)="cobrarEsteComensal(g.comensal)">
-            Cobrar Persona {{ g.comensal }} · {{ g.subtotal | currency:'MXN':'symbol-narrow':'1.2-2' }}
-          </button>
+          @if (!g.pagado) {
+            <button class="confirmar-btn alta-submit" type="button" (click)="cobrarEsteComensal(g.comensal)">
+              Cobrar Persona {{ g.comensal }} · {{ g.pendiente | currency:'MXN':'symbol-narrow':'1.2-2' }}
+            </button>
+          }
         </div>
       } @empty {
         <div class="state-panel"><strong>No hay productos por cobrar.</strong></div>
@@ -2378,6 +2380,7 @@
         <button class="confirmar-btn alta-submit" type="button" (click)="responderSeparada()" style="background:#315da8">
           👥 Separada <small style="display:block;font-weight:500">Cada quien paga lo suyo</small>
         </button>
+        <button class="qty-cancel" type="button" (click)="cancelarPregunta()">✕ Cancelar (volver a mesas)</button>
       } @else {
         <strong class="qty-name">¿Cuántas personas?</strong>
         <div class="dividir-stepper" style="justify-content:center;margin:16px 0">
@@ -2390,6 +2393,29 @@
         </button>
         <button class="qty-cancel" type="button" (click)="preguntaPaso.set('modo')">← Atrás</button>
       }
+    </div>
+  </div>
+}
+
+<!-- ── Modal: ¿juntar la cuenta separada? ──────────────────────────────────── -->
+@if (avisoJuntar()) {
+  <div class="qty-overlay" role="dialog" aria-modal="true" aria-label="Juntar cuenta">
+    <div class="qty-panel">
+      <strong class="qty-name">Esta mesa es por separado</strong>
+      <p class="inv-help" style="text-align:center">¿Deseas juntarla en una sola cuenta? Los productos quedarán todos juntos.</p>
+      <button class="confirmar-btn alta-submit" type="button" (click)="confirmarJuntar()">Sí, juntar</button>
+      <button class="qty-cancel" type="button" (click)="cancelarJuntar()">No, dejar separada</button>
+    </div>
+  </div>
+}
+
+<!-- ── Modal: no se puede juntar (ya hay pagos) ────────────────────────────── -->
+@if (juntarBloqueado()) {
+  <div class="qty-overlay" role="dialog" aria-modal="true" aria-label="No se puede juntar">
+    <div class="qty-panel">
+      <strong class="qty-name">No se puede juntar</strong>
+      <p class="inv-help" style="text-align:center">Ya hay personas cobradas en esta mesa. La cuenta debe seguir por separado.</p>
+      <button class="confirmar-btn alta-submit" type="button" (click)="cerrarJuntarBloqueado()">Entendido</button>
     </div>
   </div>
 }

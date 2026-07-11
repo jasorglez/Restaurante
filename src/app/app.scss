@@ -2917,3 +2917,23 @@ footer {
   cursor: pointer;
 }
 .cuenta-modo button.active { border-color: #147a4b; background: #147a4b; color: #fff; }
+
+/* Persona pagada en el cobro separado */
+.comensal-card.pagada {
+  border-color: #23a565;
+  background: #eef9f2;
+  opacity: 0.95;
+}
+.pagado-tag {
+  margin-left: 8px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #23a565;
+  color: #fff;
+}
+.comensal-items li.pagado {
+  color: #8a9b91;
+  text-decoration: line-through;
+}
