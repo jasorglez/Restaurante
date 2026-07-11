@@ -849,6 +849,8 @@ export class App {
   protected readonly tipoPago = signal<TipoPago>('EFECTIVO');
   protected readonly montoPagado  = signal<number | null>(null);
   protected readonly montoTarjeta = signal<number | null>(null);
+  protected readonly referenciaTarjeta = signal('');   // opcional, para control
+  protected setReferenciaTarjeta(e: Event): void { this.referenciaTarjeta.set((e.target as HTMLInputElement).value); }
   private montoPagadoEl:  HTMLInputElement | null = null;
   private montoTarjetaEl: HTMLInputElement | null = null;
   protected readonly cobrando = signal(false);
@@ -2340,6 +2342,7 @@ export class App {
     this.tipoPago.set(tipo);
     this.montoPagado.set(null);
     this.montoTarjeta.set(null);
+    if (tipo === 'EFECTIVO') this.referenciaTarjeta.set('');
     if (this.montoPagadoEl)  this.montoPagadoEl.value  = '';
     if (this.montoTarjetaEl) this.montoTarjetaEl.value = '';
   }
@@ -2366,6 +2369,7 @@ export class App {
     this.tipoPago.set('EFECTIVO');
     this.montoPagado.set(null);
     this.montoTarjeta.set(null);
+    this.referenciaTarjeta.set('');
     this.montoPagadoEl  = null;
     this.montoTarjetaEl = null;
     this.cobroError.set('');
@@ -2411,9 +2415,10 @@ export class App {
     this.cobroError.set('');
     try {
       const base = `${environment.urlChatBot}/restaurant-publico/cuentas/${mesa.idCuentaActual}`;
+      const refTarjeta = tipo === 'EFECTIVO' ? null : (this.referenciaTarjeta().trim() || null);
       if (comensal != null) {
         const res: any = await firstValueFrom(this.http.post(`${base}/cobrar-comensal`, {
-          idCompany: this.companyId()!, tipoPago: tipo, comensal,
+          idCompany: this.companyId()!, tipoPago: tipo, comensal, referenciaTarjeta: refTarjeta,
         }));
         this.cuentaCerradaComensal.set(!!res?.cuentaCerrada);
       } else {
@@ -2423,6 +2428,7 @@ export class App {
           descuento: desc?.monto ?? 0,
           descuentoMotivo: desc?.motivo ?? null,
           descuentoAutorizadoPor: desc?.por ?? null,
+          referenciaTarjeta: refTarjeta,
         }));
         this.cuentaCerradaComensal.set(true);
       }

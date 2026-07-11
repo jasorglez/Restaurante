@@ -1717,6 +1717,14 @@
               (click)="setTipoPago('MIXTO')"   [disabled]="cobrando()">🔀 Mixto</button>
           </div>
 
+          @if (tipoPago() === 'TARJETA' || tipoPago() === 'MIXTO') {
+            <div class="monto-section">
+              <label class="monto-label">💳 Tarjeta — referencia <span style="font-weight:500;color:#8a9b91">(opcional)</span></label>
+              <input class="turno-input" type="text" placeholder="Últimos 4 díg. / autorización / banco…"
+                [value]="referenciaTarjeta()" (input)="setReferenciaTarjeta($event)" [disabled]="cobrando()">
+            </div>
+          }
+
           @if (tipoPago() !== 'TARJETA') {
             <div class="monto-section">
               @if (tipoPago() === 'MIXTO') {
