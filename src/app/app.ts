@@ -90,8 +90,7 @@ export class App {
   // Clave requerida para poder cambiar de empresa (evita que un usuario
   // normal salga de su propia empresa).
   private static readonly CLAVE_CAMBIO_EMPRESA = 'QAdmin9317';
-  // PIN de supervisor para cancelaciones, descuentos y cortesías.
-  private static readonly CLAVE_SUPERVISOR = 'Super2026';
+  // El PIN de supervisor ahora se valida en el backend (por empresa); default 'Super2026'.
   protected readonly pedirClave  = signal(false);
   protected readonly claveInput  = signal('');
   protected readonly claveError  = signal('');
@@ -1373,6 +1372,31 @@ export class App {
     }
   }
 
+  // ── Configuración · PIN de supervisor ───────────────────────────────────────
+  protected readonly pinActual = signal('');
+  protected readonly pinNuevo  = signal('');
+  protected readonly guardandoPin = signal(false);
+  protected readonly pinMsg    = signal<{ ok: boolean; msg: string } | null>(null);
+  protected setPinActual(e: Event): void { this.pinActual.set((e.target as HTMLInputElement).value); }
+  protected setPinNuevo(e: Event): void { this.pinNuevo.set((e.target as HTMLInputElement).value); }
+
+  protected async guardarPin(): Promise<void> {
+    this.guardandoPin.set(true);
+    this.pinMsg.set(null);
+    try {
+      await firstValueFrom(this.http.post(
+        `${environment.urlChatBot}/restaurant-publico/pin/cambiar`,
+        { idCompany: this.companyId()!, pinActual: this.pinActual(), pinNuevo: this.pinNuevo() }));
+      this.pinMsg.set({ ok: true, msg: 'PIN actualizado correctamente ✓' });
+      this.pinActual.set('');
+      this.pinNuevo.set('');
+    } catch (err: any) {
+      this.pinMsg.set({ ok: false, msg: err?.error?.error ?? 'No se pudo cambiar el PIN.' });
+    } finally {
+      this.guardandoPin.set(false);
+    }
+  }
+
   // ── Cocina (KDS) ────────────────────────────────────────────────────────────
   protected readonly cocinaTick = signal(0);
   protected readonly cocinaResource = httpResource<OrdenCocina[]>(
@@ -2294,6 +2318,15 @@ export class App {
     }
   }
 
+  // Cambiar un producto: lo quita (sin PIN, antes de cobrar) y lleva a elegir el nuevo.
+  protected async cambiarItem(item: ItemCuenta): Promise<void> {
+    // Conserva la persona del producto que se cambia (cuenta separada).
+    if (this.cuentaSeparada() && item.comensal) this.comensalSel.set(item.comensal);
+    await this.eliminarItem(item);
+    this.prodBusqueda.set('');
+    this.view.set('familias');
+  }
+
   // ── Autorización de supervisor (cancelación / cortesía / descuento) ─────────
   protected readonly authAccion = signal<{ tipo: 'cancelar' | 'cortesia' | 'descuento'; item?: ItemCuenta } | null>(null);
   protected readonly authMotivo = signal('');
@@ -2340,8 +2373,16 @@ export class App {
   protected async confirmarAuth(): Promise<void> {
     const acc = this.authAccion();
     if (!acc) return;
-    if (this.authPin() !== App.CLAVE_SUPERVISOR) { this.authError.set('PIN de supervisor incorrecto.'); return; }
     if (!this.authPor().trim()) { this.authError.set('Indica quién autoriza.'); return; }
+    // Valida el PIN de supervisor en el backend (por empresa).
+    try {
+      const r: any = await firstValueFrom(this.http.post(
+        `${environment.urlChatBot}/restaurant-publico/pin/validar`,
+        { idCompany: this.companyId()!, pin: this.authPin() }));
+      if (!r?.ok) { this.authError.set('PIN de supervisor incorrecto.'); return; }
+    } catch {
+      this.authError.set('No se pudo validar el PIN. Intenta de nuevo.'); return;
+    }
 
     const mesa = this.selectedMesa();
     const idCuenta = mesa?.idCuentaActual;

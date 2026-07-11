@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '1.98 (11 Julio 2026) Cantidades al ordenar: 1-10, 15, 20 + campo para escribir la cantidad',
+  version: '1.99 (11 Julio 2026) Cambiar producto libre antes de cobrar (botón 🔁, quitar sin PIN) + PIN de supervisor por empresa validado en backend/config',
 }; 

@@ -1658,6 +1658,25 @@
           </div>
         }
       }
+
+      <!-- ── PIN de supervisor ── -->
+      <h3 class="dash-sub" style="margin-top:22px">🔐 PIN de supervisor</h3>
+      <p class="inv-help">Se pide para cortesías y descuentos. Válido por empresa.</p>
+      <div class="cfg-inv">
+        <label class="turno-label">PIN actual</label>
+        <input class="turno-input" type="password" autocomplete="off" placeholder="PIN actual"
+          [value]="pinActual()" (input)="setPinActual($event)" [disabled]="guardandoPin()">
+        <label class="turno-label" style="margin-top:8px">Nuevo PIN (mín. 4)</label>
+        <input class="turno-input" type="password" autocomplete="off" placeholder="Nuevo PIN"
+          [value]="pinNuevo()" (input)="setPinNuevo($event)" [disabled]="guardandoPin()">
+        @if (pinMsg()) {
+          <p [class]="pinMsg()!.ok ? 'inv-ok' : 'qty-error'" style="margin:8px 0">{{ pinMsg()!.msg }}</p>
+        }
+        <button class="confirmar-btn alta-submit" type="button" (click)="guardarPin()"
+          [disabled]="guardandoPin() || !pinActual() || !pinNuevo()">
+          @if (guardandoPin()) { Guardando… } @else { Cambiar PIN }
+        </button>
+      </div>
     </section>
 
   <!-- ── CUENTA / COBRO ─────────────────────────────────────────────────── -->
@@ -1699,10 +1718,15 @@
               <span class="item-subtotal">
                 {{ item.subtotal | currency:'MXN':'symbol-narrow':'1.2-2' }}
               </span>
+              <button class="item-cortesia" type="button" (click)="cambiarItem(item)"
+                title="Cambiar por otro producto" aria-label="Cambiar {{ item.descripcion }}">🔁</button>
               <button class="item-cortesia" type="button" (click)="pedirCortesia(item)"
                 title="Cortesía (gratis)" aria-label="Cortesía {{ item.descripcion }}">🎁</button>
-              <button class="item-del" type="button" (click)="pedirCancelar(item)"
-                aria-label="Cancelar {{ item.descripcion }}">✕</button>
+              <button class="item-del" type="button" (click)="eliminarItem(item)"
+                [disabled]="eliminandoId() !== null"
+                aria-label="Quitar {{ item.descripcion }}">
+                @if (eliminandoId() === item.id) { … } @else { ✕ }
+              </button>
             </div>
           }
         </div>
