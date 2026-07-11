@@ -1155,9 +1155,16 @@ export class App {
     this.preguntaMesa.set(false);
     this.persistModo();
   }
-  // Cancelar el prompt: la mesa se abrió por error → volver a mesas.
-  protected cancelarPregunta(): void {
+  // Cancelar el prompt: la mesa se abrió por error → borrar la cuenta vacía y volver a mesas.
+  protected async cancelarPregunta(): Promise<void> {
     this.preguntaMesa.set(false);
+    const id = this.selectedMesa()?.idCuentaActual;
+    if (id) {
+      try {
+        await firstValueFrom(this.http.post(
+          `${environment.urlChatBot}/restaurant-publico/cuentas/${id}/cancelar-vacia`, {}));
+      } catch { /* si falla, igual regresa */ }
+    }
     this.backToMesas();
   }
   protected readonly cobroComensal = signal<number | null>(null);  // comensal que se está cobrando

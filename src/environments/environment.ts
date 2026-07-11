@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '1.93 (11 Julio 2026) Cobro con tarjeta: campo opcional de referencia (no bloqueante) para control',
+  version: '1.94 (11 Julio 2026) Fix: cancelar el prompt de la mesa borra la cuenta vacía y la mesa vuelve a libre',
 }; 
