@@ -2970,3 +2970,29 @@ footer {
 .turno-accion-btn.cobrar-mesa-btn { border-color: #147a4b; color: #147a4b; }
 .cobrar-mesa-item { cursor: pointer; }
 .cobrar-mesa-item:hover { border-color: #147a4b; background: #f4faf6; }
+
+/* Cantidad personalizada al agregar producto */
+.qty-grid { flex-wrap: wrap; justify-content: center; }
+.qty-custom {
+  display: flex;
+  gap: 8px;
+  margin: 10px 0 4px;
+}
+.qty-custom-input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1.5px solid #d9e2dd;
+  border-radius: 12px;
+  font-size: 1rem;
+  text-align: center;
+}
+.qty-custom-btn {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 12px;
+  background: #147a4b;
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+.qty-custom-btn:disabled { opacity: 0.5; cursor: not-allowed; }

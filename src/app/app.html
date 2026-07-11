@@ -2288,11 +2288,18 @@
       }
       <p class="qty-cant-label">¿Cuántos?</p>
       <div class="qty-grid">
-        @for (n of [1, 2, 3, 4, 5]; track n) {
+        @for (n of cantidadesRapidas; track n) {
           <button class="qty-btn" type="button" (click)="agregarProducto(n)" [disabled]="agregandoItem()">
             {{ n }}
           </button>
         }
+      </div>
+      <div class="qty-custom">
+        <input class="qty-custom-input" type="number" min="1" step="1" inputmode="numeric" placeholder="Otra cantidad…"
+          [value]="cantidadCustom() ?? ''" (input)="setCantidadCustom($event)"
+          (keyup.enter)="agregarCustom()" [disabled]="agregandoItem()">
+        <button class="qty-custom-btn" type="button" (click)="agregarCustom()"
+          [disabled]="agregandoItem() || !cantidadCustom()">Agregar</button>
       </div>
       <button class="qty-cancel" type="button" (click)="cancelarProducto()" [disabled]="agregandoItem()">
         Cancelar

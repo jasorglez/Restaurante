@@ -2191,6 +2191,19 @@ export class App {
   protected cancelarProducto(): void {
     this.selectedProducto.set(null);
     this.addError.set('');
+    this.cantidadCustom.set(null);
+  }
+
+  // Cantidades rápidas + cantidad personalizada.
+  protected readonly cantidadesRapidas = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20];
+  protected readonly cantidadCustom = signal<number | null>(null);
+  protected setCantidadCustom(e: Event): void {
+    const v = parseInt((e.target as HTMLInputElement).value, 10);
+    this.cantidadCustom.set(!isNaN(v) && v > 0 ? v : null);
+  }
+  protected agregarCustom(): void {
+    const n = this.cantidadCustom();
+    if (n && n > 0) void this.agregarProducto(n);
   }
 
   protected setProdNota(e: Event): void {
@@ -2239,6 +2252,7 @@ export class App {
       );
       this.selectedProducto.set(null);
       this.prodNota.set('');
+      this.cantidadCustom.set(null);
       this.itemsResource.reload();
     } catch {
       this.addError.set('No se pudo agregar el producto. Intenta de nuevo.');

@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '1.97 (11 Julio 2026) Fix build: subir presupuesto de estilos/bundle en angular.json (app.scss pasaba 50kB)',
+  version: '1.98 (11 Julio 2026) Cantidades al ordenar: 1-10, 15, 20 + campo para escribir la cantidad',
 }; 
