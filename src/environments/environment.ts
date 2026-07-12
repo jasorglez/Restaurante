@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '2.03 (12 Julio 2026) Responsivo inteligente: celular parado 1 columna, acostado 2, tablet normal (mesas y menú)',
+  version: '2.04 (12 Julio 2026) Menú principal en celular: tarjetas horizontales tipo lista (ya no estiradas); respaldo max-width 480px',
 }; 

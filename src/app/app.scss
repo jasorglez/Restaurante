@@ -3100,10 +3100,27 @@ footer {
    ========================================================================== */
 
 /* ── Celular vertical (parado): UNA sola mesa por fila ── */
-@media (orientation: portrait) and (max-width: 600px) {
-  /* Menú principal en una columna */
-  .menu-grid   { grid-template-columns: 1fr; }
-  .menu-card   { min-height: 132px; }
+@media (max-width: 480px), (orientation: portrait) and (max-width: 600px) {
+  /* Menú principal: tarjetas horizontales tipo lista (no estiradas) */
+  .menu-view { overflow: hidden; }
+  .menu-aura { display: none; }
+  .menu-hero { margin: 6px 0 18px; }
+  .hero-title { font-size: clamp(1.7rem, 8vw, 2.3rem); }
+  .hero-sub { font-size: 0.9rem; }
+  .menu-grid { grid-template-columns: 1fr; gap: 10px; }
+  .menu-card {
+    flex-direction: row;
+    align-items: center;
+    min-height: 0;
+    padding: 14px 16px;
+    gap: 14px;
+    border-radius: 16px;
+  }
+  .menu-card .icon-wrap { width: 52px; flex: 0 0 52px; }
+  .menu-card .card-copy { margin-top: 0; flex: 1; gap: 2px; }
+  .menu-card .card-copy strong { font-size: 1.22rem; }
+  .menu-card .card-cta { margin-top: 0; flex: 0 0 auto; padding: 8px 12px; }
+  .menu-card::before { display: none; }
 
   /* Mesas: 1 por fila, tarjeta horizontal compacta (sin el gráfico grande) */
   .tables-grid { grid-template-columns: 1fr; gap: 8px; }
