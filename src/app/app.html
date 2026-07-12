@@ -239,6 +239,17 @@
         <p class="action-error" role="alert">{{ mesaActionError() }}</p>
       }
 
+      @if (!loading() && !error()) {
+        <div class="buscar-row">
+          <span class="buscar-icon" aria-hidden="true">🔍</span>
+          <input class="buscar-input" type="search" inputmode="search" placeholder="Buscar mesa (ej. 15)…"
+            [value]="mesaBusqueda()" (input)="setMesaBusqueda($event)">
+          @if (mesaBusqueda()) {
+            <button class="buscar-clear" type="button" (click)="limpiarMesaBusqueda()" aria-label="Limpiar búsqueda">✕</button>
+          }
+        </div>
+      }
+
       @if (loading()) {
         <div class="state-panel" role="status">
           <span class="loader" aria-hidden="true"></span>
@@ -250,9 +261,11 @@
           <p>{{ error() }}</p>
           <button type="button" (click)="loadMesas()">Reintentar</button>
         </div>
+      } @else if (mesaBusqueda() && mesasFiltradas().length === 0) {
+        <div class="state-panel"><strong>Sin resultados para "{{ mesaBusqueda() }}"</strong></div>
       } @else {
         <div class="tables-grid">
-          @for (mesa of mesas(); track mesa.id) {
+          @for (mesa of mesasFiltradas(); track mesa.id) {
             <div class="table-card-wrap">
             <button
               class="table-button"
@@ -320,12 +333,14 @@
             </div>
             </div>
           }
-          <!-- Tarjeta agregar nueva mesa -->
-          <button class="table-button add-mesa-btn" type="button" (click)="abrirNuevaMesa()">
-            <span class="add-mesa-icon">＋</span>
-            <strong>Nueva Mesa</strong>
-            <span class="table-state">Agregar</span>
-          </button>
+          <!-- Tarjeta agregar nueva mesa (oculta durante la búsqueda) -->
+          @if (!mesaBusqueda()) {
+            <button class="table-button add-mesa-btn" type="button" (click)="abrirNuevaMesa()">
+              <span class="add-mesa-icon">＋</span>
+              <strong>Nueva Mesa</strong>
+              <span class="table-state">Agregar</span>
+            </button>
+          }
         </div>
       }
 

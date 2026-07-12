@@ -920,6 +920,15 @@ export class App {
     { defaultValue: [] },
   );
   protected readonly mesas = this.mesasResource.value;
+  // Buscador de mesas (filtra por nombre/número).
+  protected readonly mesaBusqueda = signal('');
+  protected setMesaBusqueda(e: Event): void { this.mesaBusqueda.set((e.target as HTMLInputElement).value); }
+  protected limpiarMesaBusqueda(): void { this.mesaBusqueda.set(''); }
+  protected readonly mesasFiltradas = computed(() => {
+    const t = this.mesaBusqueda().trim().toLowerCase();
+    const lista = this.mesas();
+    return t ? lista.filter(m => m.nombre.toLowerCase().includes(t)) : lista;
+  });
   protected readonly loading = this.mesasResource.isLoading;
   protected readonly error = computed(() =>
     this.mesasResource.error()
