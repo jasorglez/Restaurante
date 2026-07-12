@@ -3091,3 +3091,69 @@ footer {
   font-weight: 800;
   font-size: 0.78rem;
 }
+
+/* ============================================================================
+   RESPONSIVO POR TIPO DE DISPOSITIVO (orientación + lado corto)
+   - Celular PARADO (portrait, ancho ≤ 600): 1 columna
+   - Celular ACOSTADO (landscape, alto ≤ 600): 2 columnas
+   - Tablet / escritorio: se quedan con el layout normal
+   ========================================================================== */
+
+/* ── Celular vertical (parado): UNA sola mesa por fila ── */
+@media (orientation: portrait) and (max-width: 600px) {
+  /* Menú principal en una columna */
+  .menu-grid   { grid-template-columns: 1fr; }
+  .menu-card   { min-height: 132px; }
+
+  /* Mesas: 1 por fila, tarjeta horizontal compacta (sin el gráfico grande) */
+  .tables-grid { grid-template-columns: 1fr; gap: 8px; }
+  .table-button {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 58px;
+    padding: 12px 102px 12px 16px;
+    gap: 4px 10px;
+    text-align: left;
+    border-radius: 14px;
+    border-width: 1.5px;
+  }
+  .table-graphic { display: none; }
+  .table-button strong,
+  .table-button > strong { font-size: 1.06rem; }
+  .table-state  { margin: 0; }
+  .table-detail { margin: 0; font-size: 0.8rem; }
+  .table-timer  { margin: 0; }
+  .mesa-actions {
+    flex-direction: row;
+    top: 50%;
+    bottom: auto;
+    transform: translateY(-50%);
+    right: 8px;
+    gap: 5px;
+  }
+  .mesa-action,
+  .mesa-actions .edit-mesa-btn { width: 30px; height: 30px; }
+  .add-mesa-btn.table-button { flex-direction: column; padding: 16px; min-height: 90px; }
+
+  /* Familias / productos también en 1 columna para dedos grandes */
+  .families-grid { grid-template-columns: 1fr; }
+  .products-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Celular horizontal (acostado): DOS por fila ── */
+@media (orientation: landscape) and (max-height: 600px) {
+  .menu-grid     { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .menu-card     { min-height: 128px; }
+  .tables-grid   { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .families-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .products-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  /* Tarjeta de mesa compacta para pantalla baja */
+  .table-button { min-height: 132px; padding: 12px 10px; border-radius: 16px; }
+  .table-graphic { transform: scale(0.55); margin: -22px 0 -14px; }
+  .table-button strong, .table-button > strong { font-size: 1rem; }
+  .table-state { font-size: 0.6rem; padding: 3px 8px; }
+  .table-detail, .table-timer { font-size: 0.7rem; }
+}
