@@ -3181,3 +3181,64 @@ footer {
   .table-state { font-size: 0.6rem; padding: 3px 8px; }
   .table-detail, .table-timer { font-size: 0.7rem; }
 }
+
+/* ============================================================================
+   CELULAR VERTICAL – pase integral (caja, reportes, inventario, cocina, config)
+   ========================================================================== */
+@media (max-width: 480px), (orientation: portrait) and (max-width: 600px) {
+  /* Contenedores: usar casi todo el ancho, poco margen lateral */
+  .tables-view { width: calc(100% - 20px); padding: 16px 0 28px; }
+  .content     { width: calc(100% - 20px); }
+
+  /* Barra superior de cada vista */
+  .tables-toolbar { gap: 8px; margin-bottom: 14px; }
+  .tables-heading h2 { font-size: 1.45rem; line-height: 1.1; }
+  .tables-heading .eyebrow { font-size: 0.6rem; }
+  .back-button, .refresh-button { min-height: 42px; padding: 0 12px; font-size: 0.85rem; }
+
+  /* ── CAJA ── */
+  .turno-form, .turno-activo, .corte-card {
+    max-width: 100%;
+    margin: 14px auto;
+    padding: 20px 16px;
+    border-radius: 18px;
+  }
+  .turno-acciones { grid-template-columns: 1fr; }   /* botones apilados y grandes */
+  .turno-titulo { font-size: 1.2rem; }
+  .egresos-lista { max-width: 100%; padding: 0 2px 24px; }
+  .monto-row { flex-wrap: nowrap; }
+  .arqueo-row { grid-template-columns: 54px 1fr 82px; gap: 8px; }
+
+  /* Cola de cobro */
+  .cola-cobro { padding: 14px; }
+  .cola-cobro-list li { flex-wrap: wrap; gap: 4px 8px; }
+  .cola-espera { margin-left: 0; }
+
+  /* ── REPORTES ── */
+  .reporte-controls { padding: 10px 12px; }
+  .reporte-fecha-input { flex: 1; min-width: 0; }
+  .reporte-tabs { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .reporte-tabs::-webkit-scrollbar { height: 0; }
+  .reporte-tab { flex: 0 0 auto; padding: 7px 12px; font-size: 0.8rem; }
+  .dash-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .dash-kpi.big { grid-column: 1 / -1; }
+  .dash-value { font-size: 1.3rem; }
+
+  /* ── INVENTARIO: tabs deslizables, formularios full width ── */
+  .inv-unidad, .inv-fechas { flex-wrap: wrap; }
+  .inv-tabla { font-size: 12px; }
+  .inv-tabla th, .inv-tabla td { padding: 6px 6px; }
+
+  /* ── COCINA (KDS) ── */
+  .kds-grid { grid-template-columns: 1fr; }
+
+  /* ── PAGO / cobro ── */
+  .pago-panel, .qty-panel { width: min(94vw, 440px); }
+  .pago-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .pago-btn { padding: 10px 4px; font-size: 0.8rem; }
+  .cobro-actions { grid-template-columns: 1fr; }
+
+  /* Modales tipo panel: que quepan y con scroll interno */
+  .qty-overlay { padding: 12px; }
+  .drill-panel { width: 94vw; max-height: 86vh; }
+}

@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '2.05 (12 Julio 2026) Fix desbordamiento horizontal en celular: overflow-x hidden global + hero title ajustable',
+  version: '2.06 (12 Julio 2026) Pase integral responsivo celular vertical: caja, reportes, inventario, cocina, pago y contenedores',
 }; 
