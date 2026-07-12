@@ -1039,7 +1039,27 @@ footer {
   .tables-heading .eyebrow { display: none; }
   .refresh-button { width: 48px; padding: 0; font-size: 0; }
   .refresh-button span { font-size: 1.3rem; }
-  .tables-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* ── Mesas compactas en celular ── */
+  .tables-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .table-button { min-height: 148px; padding: 14px 10px; border-radius: 18px; border-width: 1.5px; }
+  /* Escala el gráfico (mesa+sillas) sin descuadrar las posiciones px */
+  .table-graphic { transform: scale(0.62); margin: -18px 0 -10px; }
+  .table-button strong,
+  .table-button > strong { font-size: 1.02rem; }
+  .table-state { font-size: 0.6rem; padding: 3px 8px; }
+  .table-detail { font-size: 0.72rem; }
+  .table-timer { font-size: 0.66rem; }
+  .table-summary {
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    min-height: 0;
+    padding: 10px 14px;
+    font-size: 0.78rem;
+  }
+  .table-summary strong { margin-left: 0; width: 100%; order: -1; }
+  .mesa-actions { top: 6px; right: 6px; gap: 4px; }
+  .mesa-action, .mesa-actions .edit-mesa-btn { width: 30px; height: 30px; }
+
   .families-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   .family-button {
     min-height: 118px;

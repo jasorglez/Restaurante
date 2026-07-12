@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '2.00 (12 Julio 2026) Buscador de mesas en el salón (filtra por número/nombre, ej. "15")',
+  version: '2.01 (12 Julio 2026) Mesas responsivas en celular: tarjetas y gráfico compactos, resumen y acciones adaptados',
 }; 
