@@ -2,16 +2,23 @@
   display: block;
   min-height: 100dvh;
   color: #17211b;
+  overflow-x: hidden;      /* nada más ancho que la pantalla */
+  max-width: 100vw;
 }
 
 .dashboard-shell {
   min-height: 100dvh;
   display: grid;
   grid-template-rows: auto 1fr auto;
+  overflow-x: hidden;
+  max-width: 100vw;
   background:
     radial-gradient(circle at 12% 8%, rgb(225 243 233 / 85%), transparent 30rem),
     #f5f7f4;
 }
+
+/* El título del hero nunca debe desbordar (se ajusta al ancho) */
+.hero-title { max-width: 100%; overflow-wrap: break-word; }
 
 .topbar {
   padding: 14px clamp(24px, 4vw, 52px);

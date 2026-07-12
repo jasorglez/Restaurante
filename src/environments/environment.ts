@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '2.04 (12 Julio 2026) Menú principal en celular: tarjetas horizontales tipo lista (ya no estiradas); respaldo max-width 480px',
+  version: '2.05 (12 Julio 2026) Fix desbordamiento horizontal en celular: overflow-x hidden global + hero title ajustable',
 }; 
