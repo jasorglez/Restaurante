@@ -90,7 +90,9 @@
       <nav class="quick-nav" aria-label="Accesos rápidos">
         <button type="button" [class.active]="moduloActivo() === 'MENU'"       (click)="backToMenu()">🏠 Menú</button>
         <button type="button" [class.active]="moduloActivo() === 'MESAS'"      (click)="backToMesas()">🍽️ Mesas</button>
-        <button type="button" [class.active]="moduloActivo() === 'CAJAS'"      (click)="selectModule('CAJAS')">🏧 Cajas</button>
+        <button type="button" [class.active]="moduloActivo() === 'CAJAS'"      (click)="selectModule('CAJAS')">
+          🏧 Cajas @if (mesasPorCobrar() > 0) { <span class="nav-badge">{{ mesasPorCobrar() }}</span> }
+        </button>
         <button type="button" [class.active]="moduloActivo() === 'COCINA'"     (click)="selectModule('COCINA')">👨‍🍳 Cocina</button>
         <button type="button" [class.active]="moduloActivo() === 'REPORTES'"   (click)="selectModule('REPORTES')">📊 Reportes</button>
         <button type="button" [class.active]="moduloActivo() === 'INVENTARIO'" (click)="selectModule('INVENTARIO')">📦 Inventario</button>
@@ -317,10 +319,10 @@
               <button class="edit-mesa-btn" type="button" title="Editar mesa"
                 (click)="abrirEditMesa(mesa, $event)">✏️</button>
               @if (estadoMesa(mesa) === 'ocupada') {
-                <button class="mesa-action pc" type="button" title="Marcar por cobrar"
+                <button class="mesa-action pc" type="button" title="Enviar a cobrar (avisa a caja)"
                   (click)="marcarPorCobrar(mesa, true, $event)">💲</button>
               } @else if (estadoMesa(mesa) === 'por_cobrar') {
-                <button class="mesa-action" type="button" title="Quitar por cobrar"
+                <button class="mesa-action" type="button" title="Cancelar envío a cobrar"
                   (click)="marcarPorCobrar(mesa, false, $event)">↩</button>
               } @else if (estadoMesa(mesa) === 'sucia') {
                 <button class="mesa-action lib" type="button" title="Liberar (limpia)"
@@ -757,6 +759,25 @@
         </div>
 
       } @else if (turnoActivo() && cajasSubView() === 'inicio') {
+        <!-- ── Cola de cobro (avisos al cajero) ────────────────────────────── -->
+        @if (colaCobro().length > 0) {
+          <div class="cola-cobro" (click)="abrirCobrarMesa()">
+            <div class="cola-cobro-head">
+              🔔 <strong>{{ colaCobro().length }}</strong> mesa(s) esperando cobro
+            </div>
+            <ol class="cola-cobro-list">
+              @for (m of colaCobro(); track m.id) {
+                <li>
+                  <span class="cola-mesa">{{ m.nombre }}</span>
+                  <span class="cola-total">{{ (m.totalActual ?? 0) | currency:'MXN':'symbol-narrow':'1.2-2' }}</span>
+                  <span class="cola-espera">hace {{ minutosEsperando(m) }} min</span>
+                </li>
+              }
+            </ol>
+            <span class="cola-cobro-cta">Ir a cobrar →</span>
+          </div>
+        }
+
         <!-- ── Turno activo – opciones ─────────────────────────────────────── -->
         <div class="turno-activo">
           <div class="turno-check">▶</div>
@@ -771,7 +792,7 @@
           </div>
           <div class="turno-acciones">
             <button class="turno-accion-btn cobrar-mesa-btn" type="button" (click)="abrirCobrarMesa()">
-              💰 Cobrar mesa
+              💰 Cobrar mesa @if (mesasPorCobrar() > 0) { <span class="nav-badge">{{ mesasPorCobrar() }}</span> }
             </button>
             <button class="turno-accion-btn egresos" type="button" (click)="abrirEgresos()">
               💸 Egresos
@@ -802,15 +823,16 @@
         } @else {
           <ul class="inv-list">
             @for (m of mesasParaCobrarFiltradas(); track m.id) {
-              <li class="inv-item cobrar-mesa-item" (click)="cobrarMesaRapido(m)">
+              <li class="inv-item cobrar-mesa-item" [class.en-cola]="estadoMesa(m) === 'por_cobrar'" (click)="cobrarMesaRapido(m)">
                 <div class="inv-item-main">
+                  @if (estadoMesa(m) === 'por_cobrar') { <span class="cola-pos">#{{ $index + 1 }}</span> }
                   <strong>{{ m.nombre }}</strong>
-                  @if (estadoMesa(m) === 'por_cobrar') { <span class="inv-badge" style="background:#dbe7fb;color:#2b4d86">por cobrar</span> }
+                  @if (estadoMesa(m) === 'por_cobrar') { <span class="inv-badge" style="background:#dbe7fb;color:#2b4d86">esperando {{ minutosEsperando(m) }} min</span> }
                   <span class="inv-exist">{{ (m.totalActual ?? 0) | currency:'MXN':'symbol-narrow':'1.2-2' }}</span>
                 </div>
                 <div class="inv-mov-detalle">
                   <span>{{ m.numItems }} productos</span>
-                  @if (m.minutosAbierta != null) { <span>· ⏱ {{ m.minutosAbierta }} min</span> }
+                  @if (m.minutosAbierta != null) { <span>· ⏱ {{ m.minutosAbierta }} min abierta</span> }
                   <span style="margin-left:auto;color:#147a4b;font-weight:800">Cobrar →</span>
                 </div>
               </li>

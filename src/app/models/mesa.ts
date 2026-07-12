@@ -10,4 +10,5 @@ export interface Mesa {
   estado?: string;          // libre | ocupada | por_cobrar | sucia
   minutosAbierta?: number;
   sucia?: boolean;
+  porCobrarAt?: string | null;   // cuándo se envió a cobrar (cola de caja)
 }

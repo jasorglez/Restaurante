@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '2.01 (12 Julio 2026) Mesas responsivas en celular: tarjetas y gráfico compactos, resumen y acciones adaptados',
+  version: '2.02 (12 Julio 2026) Cola de cobro: enviar mesa a cobrar avisa a caja con orden de llegada (FIFO), badges y banner',
 }; 

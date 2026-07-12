@@ -3016,3 +3016,78 @@ footer {
   cursor: pointer;
 }
 .qty-custom-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Cola de cobro (aviso al cajero) ─────────────────────────────────────── */
+.nav-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  margin-left: 2px;
+  border-radius: 999px;
+  background: #c0392b;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+.cola-cobro {
+  margin: 0 0 18px;
+  padding: 16px 18px;
+  border: 1.5px solid #f0c795;
+  border-radius: 16px;
+  background: linear-gradient(155deg, #fff 30%, #fff7ea);
+  cursor: pointer;
+  box-shadow: 0 8px 22px -12px rgb(184 120 20 / 40%);
+}
+.cola-cobro:hover { border-color: #e88424; }
+.cola-cobro-head { font-size: 1.05rem; color: #8a4b0e; margin-bottom: 8px; }
+.cola-cobro-head strong { font-size: 1.25rem; }
+.cola-cobro-list {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  counter-reset: cola;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cola-cobro-list li {
+  counter-increment: cola;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 70%);
+}
+.cola-cobro-list li::before {
+  content: counter(cola);
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  border-radius: 50%;
+  background: #e88424;
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.82rem;
+}
+.cola-mesa { font-weight: 800; color: #17241c; }
+.cola-total { color: #147a4b; font-weight: 700; }
+.cola-espera { margin-left: auto; color: #8a5a00; font-size: 0.82rem; font-weight: 700; }
+.cola-cobro-cta { color: #b06c19; font-weight: 800; font-size: 0.9rem; }
+
+.cobrar-mesa-item.en-cola { border-color: #9db8e6; background: #f4f8fe; }
+.cola-pos {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #315da8;
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.78rem;
+}

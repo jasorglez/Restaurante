@@ -294,10 +294,10 @@ export class App {
       if (this.view() === 'cocina') this.cocinaTick.update(t => t + 1);
     }, 15000);
 
-    // Auto-refresco de mesas (estados + cronómetro) cada 30 s mientras esté visible.
+    // Auto-refresco de mesas (estados + cronómetro + cola de cobro) cada 20 s.
     setInterval(() => {
-      if (this.view() === 'mesas') this.mesasTick.update(t => t + 1);
-    }, 30000);
+      if (this.view() === 'mesas' || this.view() === 'cajas') this.mesasTick.update(t => t + 1);
+    }, 20000);
 
     const yaInstalada = window.matchMedia?.('(display-mode: standalone)').matches
       || (navigator as any).standalone === true;
@@ -912,8 +912,8 @@ export class App {
   protected readonly mesasResource = httpResource<Mesa[]>(
     () => {
       this.mesasTick();   // auto-refresco de estados/cronómetros
-      const enCobrarCaja = this.view() === 'cajas' && this.cajasSubView() === 'cobrar';
-      return this.view() === 'mesas' || enCobrarCaja
+      // Se carga en el salón y en Caja (para la cola de cobro).
+      return this.view() === 'mesas' || this.view() === 'cajas'
         ? `${environment.urlAdministration}/Restaurant/mesas/${this.companyId()!}`
         : undefined;
     },
@@ -945,16 +945,34 @@ export class App {
     () => this.mesas().filter(m => this.estadoMesa(m) === 'sucia').length,
   );
 
-  // Mesas ocupadas listas para cobrar (las "por cobrar" primero). Para el cajero.
+  // Mesas ocupadas listas para cobrar. Las "por cobrar" primero en ORDEN DE LLEGADA
+  // (la que pidió primero, se cobra primero); el resto por nombre.
   protected readonly mesasParaCobrar = computed(() =>
     this.mesas()
       .filter(m => m.tieneCuentaAbierta)
       .sort((a, b) => {
         const pa = this.estadoMesa(a) === 'por_cobrar' ? 0 : 1;
         const pb = this.estadoMesa(b) === 'por_cobrar' ? 0 : 1;
-        return pa !== pb ? pa - pb : a.nombre.localeCompare(b.nombre, undefined, { numeric: true });
+        if (pa !== pb) return pa - pb;
+        if (pa === 0) {   // ambas por cobrar → por hora de solicitud (FIFO)
+          const ta = a.porCobrarAt ? Date.parse(a.porCobrarAt) : 0;
+          const tb = b.porCobrarAt ? Date.parse(b.porCobrarAt) : 0;
+          return ta - tb;
+        }
+        return a.nombre.localeCompare(b.nombre, undefined, { numeric: true });
       }),
   );
+
+  // Cola de cobro: solo las mesas enviadas a cobrar, en orden de llegada.
+  protected readonly colaCobro = computed(() =>
+    this.mesas()
+      .filter(m => this.estadoMesa(m) === 'por_cobrar')
+      .sort((a, b) => (a.porCobrarAt ? Date.parse(a.porCobrarAt) : 0) - (b.porCobrarAt ? Date.parse(b.porCobrarAt) : 0)),
+  );
+  protected minutosEsperando(m: Mesa): number {
+    if (!m.porCobrarAt) return 0;
+    return Math.max(0, Math.floor((Date.now() - Date.parse(m.porCobrarAt)) / 60000));
+  }
 
   protected readonly cobrarBusqueda = signal('');
   protected setCobrarBusqueda(e: Event): void { this.cobrarBusqueda.set((e.target as HTMLInputElement).value); }
