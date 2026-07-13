@@ -1678,6 +1678,15 @@
         } @else {
           <div class="cfg-inv" style="margin-top:12px">
             <strong>{{ impEditId() === null ? 'Nueva impresora' : 'Editar impresora' }}</strong>
+
+            <label class="turno-label" style="margin-top:8px">Modelo recomendado (opcional)</label>
+            <select class="turno-input" (change)="aplicarPreset($event)" [disabled]="guardandoImp()">
+              <option value="">— Elige un modelo para autollenar —</option>
+              @for (p of impPresets; track p.nombre; let i = $index) {
+                <option [value]="i">{{ p.nombre }} · {{ p.nota }}</option>
+              }
+            </select>
+
             <label class="turno-label" style="margin-top:8px">Nombre</label>
             <input class="turno-input" type="text" placeholder="Ej. Cocina, Caja, Barra"
               [value]="impNombre()" (input)="setImpNombre($event)" [disabled]="guardandoImp()">

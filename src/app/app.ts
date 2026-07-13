@@ -1325,6 +1325,24 @@ export class App {
   protected readonly impPuerto   = signal<number | null>(9100);
   protected readonly guardandoImp = signal(false);
   protected readonly impError    = signal('');
+
+  // Modelos recomendados (todos ESC/POS 80mm, puerto 9100). Prefiere la config.
+  protected readonly impPresets: { nombre: string; puerto: number; nota: string }[] = [
+    { nombre: 'Epson TM-T20III (Ethernet)', puerto: 9100, nota: 'Estándar de oro · caja' },
+    { nombre: 'Epson TM-m30 II (Eth/WiFi)', puerto: 9100, nota: 'Compacta · mostrador' },
+    { nombre: 'Star TSP143 IIILAN',          puerto: 9100, nota: 'Confiable · LAN' },
+    { nombre: 'Xprinter XP-N160II (Eth)',    puerto: 9100, nota: 'Económica' },
+    { nombre: '3nStar RPT008 (Ethernet)',    puerto: 9100, nota: 'Económica LATAM' },
+    { nombre: 'Epson TM-U220B (Ethernet)',   puerto: 9100, nota: 'Impacto · cocina (aguanta calor)' },
+    { nombre: 'Otra / genérica ESC-POS',     puerto: 9100, nota: '80mm por red' },
+  ];
+  protected aplicarPreset(e: Event): void {
+    const i = parseInt((e.target as HTMLSelectElement).value, 10);
+    const p = this.impPresets[i];
+    if (!p) return;
+    this.impPuerto.set(p.puerto);
+    if (!this.impNombre().trim()) this.impNombre.set(p.nombre);
+  }
   protected readonly probandoImp = signal<number | null>(null);
   protected readonly impTestMsg  = signal<{ id: number; ok: boolean; msg: string } | null>(null);
 

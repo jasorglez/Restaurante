@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '2.07 (12 Julio 2026) Fix raíz del desbordamiento en celular: grid minmax(0,1fr) + overflow-x global (la caja ya no se sale)',
+  version: '2.08 (13 Julio 2026) Config impresoras: selector de modelos recomendados (Epson/Star/Xprinter/3nStar) que autollenar el puerto',
 }; 
