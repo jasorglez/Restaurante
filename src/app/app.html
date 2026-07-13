@@ -103,15 +103,11 @@
 
   <!-- ── MENÚ PRINCIPAL ─────────────────────────────────────────────────── -->
   @if (view() === 'menu') {
-    <section class="content menu-view" aria-labelledby="main-title">
+    <section class="content menu-view" aria-label="Menú principal">
       <span class="menu-aura menu-aura-1" aria-hidden="true"></span>
       <span class="menu-aura menu-aura-2" aria-hidden="true"></span>
 
-      <div class="menu-hero">
-        <span class="hero-badge">✦ BIENVENIDO</span>
-        <h2 id="main-title" class="hero-title">Punto&nbsp;Venta <span>Restaurante&nbsp;2.0</span></h2>
-        <p class="hero-sub">{{ companyName() }} · elige un módulo para comenzar</p>
-      </div>
+      <p class="menu-elige">Elige un módulo para comenzar</p>
 
       <nav class="menu-grid" aria-label="Módulos del restaurante">
         <button class="menu-card mesas" type="button" (click)="selectModule('MESAS')" style="--i:0">

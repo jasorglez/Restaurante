@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '2.08 (13 Julio 2026) Config impresoras: selector de modelos recomendados (Epson/Star/Xprinter/3nStar) que autollenar el puerto',
+  version: '2.09 (13 Julio 2026) Menú principal: se quita el letrero grande "Punto Venta"; los botones suben (se ven todos)',
 }; 

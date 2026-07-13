@@ -2443,7 +2443,15 @@ footer {
 
 .inventario { --accent: #6d4bd1; --soft: #efeafc; }
 
-.menu-view { position: relative; overflow: hidden; }
+.menu-view { position: relative; overflow: hidden; padding-top: clamp(16px, 3vh, 28px); }
+.menu-elige {
+  position: relative;
+  z-index: 1;
+  margin: 0 0 clamp(14px, 2.5vh, 22px);
+  color: #6a756e;
+  font-size: 1rem;
+  font-weight: 600;
+}
 
 .menu-aura {
   position: absolute;
