@@ -9,6 +9,8 @@ body {
   min-width: 320px;
   min-height: 100%;
   margin: 0;
+  max-width: 100%;
+  overflow-x: hidden;   /* nada más ancho que el celular */
 }
 
 body,

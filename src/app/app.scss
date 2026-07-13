@@ -10,6 +10,7 @@
   min-height: 100dvh;
   display: grid;
   grid-template-rows: auto 1fr auto;
+  grid-template-columns: minmax(0, 1fr);   /* evita que un hijo ancho estire toda la página */
   overflow-x: hidden;
   max-width: 100vw;
   background:
@@ -19,6 +20,16 @@
 
 /* El título del hero nunca debe desbordar (se ajusta al ancho) */
 .hero-title { max-width: 100%; overflow-wrap: break-word; }
+
+/* Guardas anti-desbordamiento en los contenedores clave */
+.topbar, .content, .tables-view { min-width: 0; }
+.topbar-row { min-width: 0; }
+.brand { min-width: 0; }
+.brand > div { min-width: 0; }
+h1 { overflow-wrap: anywhere; }
+/* Valores largos (nombre de caja/cajero) se ajustan, no estiran la tarjeta */
+.turno-info > div { gap: 12px; }
+.turno-info > div strong { min-width: 0; overflow-wrap: anywhere; text-align: right; }
 
 .topbar {
   padding: 14px clamp(24px, 4vw, 52px);

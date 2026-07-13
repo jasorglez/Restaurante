@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '2.06 (12 Julio 2026) Pase integral responsivo celular vertical: caja, reportes, inventario, cocina, pago y contenedores',
+  version: '2.07 (12 Julio 2026) Fix raíz del desbordamiento en celular: grid minmax(0,1fr) + overflow-x global (la caja ya no se sale)',
 }; 
