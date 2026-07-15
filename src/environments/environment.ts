@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '2.09 (13 Julio 2026) Menú principal: se quita el letrero grande "Punto Venta"; los botones suben (se ven todos)',
+  version: '2.10 (15 Julio 2026) Devolución de ticket en caja: saca dinero con PIN de supervisor y motivo; el corte lo resta',
 }; 

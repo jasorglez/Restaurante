@@ -260,7 +260,74 @@ export class App {
     return list.length === 1 ? list[0] : null;
   });
 
-  protected readonly cajasSubView = signal<'inicio' | 'egresos' | 'corte' | 'cobrar'>('inicio');
+  protected readonly cajasSubView = signal<'inicio' | 'egresos' | 'corte' | 'cobrar' | 'devolucion'>('inicio');
+
+  // ── Devolución de ticket (sale dinero de caja, con PIN de supervisor) ───────
+  protected readonly devRef    = signal('');
+  protected readonly devMonto  = signal<number | null>(null);
+  protected readonly devMotivo = signal('');
+  protected readonly devPor     = signal('');
+  protected readonly devPin     = signal('');
+  protected readonly devProcesando = signal(false);
+  protected readonly devError   = signal('');
+  protected readonly devOk      = signal('');
+  protected setDevRef(e: Event): void { this.devRef.set((e.target as HTMLInputElement).value); }
+  protected setDevMotivo(e: Event): void { this.devMotivo.set((e.target as HTMLInputElement).value); }
+  protected setDevPor(e: Event): void { this.devPor.set((e.target as HTMLInputElement).value); }
+  protected setDevPin(e: Event): void { this.devPin.set((e.target as HTMLInputElement).value); }
+  protected setDevMonto(e: Event): void {
+    const v = parseFloat((e.target as HTMLInputElement).value);
+    this.devMonto.set(!isNaN(v) && v > 0 ? v : null);
+  }
+  protected abrirDevolucion(): void {
+    this.devRef.set(''); this.devMonto.set(null); this.devMotivo.set('');
+    this.devPor.set(''); this.devPin.set(''); this.devError.set(''); this.devOk.set('');
+    this.cajasSubView.set('devolucion');
+  }
+
+  protected async registrarDevolucion(): Promise<void> {
+    const turno = this.turnoActivo();
+    const monto = this.devMonto();
+    if (!turno) return;
+    if (monto === null) { this.devError.set('Indica el monto a devolver.'); return; }
+    if (!this.devPor().trim()) { this.devError.set('Indica quién autoriza.'); return; }
+
+    this.devProcesando.set(true);
+    this.devError.set(''); this.devOk.set('');
+    try {
+      // 1) Validar PIN de supervisor
+      const r: any = await firstValueFrom(this.http.post(
+        `${environment.urlChatBot}/restaurant-publico/pin/validar`,
+        { idCompany: this.companyId()!, pin: this.devPin() }));
+      if (!r?.ok) { this.devError.set('PIN de supervisor incorrecto.'); return; }
+
+      const ref = this.devRef().trim();
+      const motivo = this.devMotivo().trim();
+      const desc = `Devolución${ref ? ' ticket ' + ref : ''}${motivo ? ': ' + motivo : ''}`;
+
+      // 2) Registrar la salida de caja (egreso) → el corte lo resta
+      await firstValueFrom(this.http.post<EgresoCaja>(
+        `${environment.urlAdministration}/Restaurant/turnos/${turno.id}/egresos`,
+        { descripcion: desc, monto }));
+
+      // 3) Bitácora de autorización (auditoría)
+      try {
+        await firstValueFrom(this.http.post(
+          `${environment.urlChatBot}/restaurant-publico/autorizaciones`,
+          { idCompany: this.companyId()!, tipo: 'DEVOLUCION', descripcion: ref || null,
+            monto, motivo: motivo || null, autorizadoPor: this.devPor().trim() }));
+      } catch { /* la salida ya quedó registrada */ }
+
+      this.devOk.set(`Devolución registrada: se sacaron ${monto} de la caja.`);
+      this.devRef.set(''); this.devMonto.set(null); this.devMotivo.set('');
+      this.devPin.set('');
+      this.resumenCorteResource.reload();
+    } catch (err: any) {
+      this.devError.set(err?.error?.error ?? 'No se pudo registrar la devolución.');
+    } finally {
+      this.devProcesando.set(false);
+    }
+  }
   protected readonly totalEgresosLista = computed(() =>
     this.egresosLista().reduce((s, e) => s + e.monto, 0),
   );
@@ -340,7 +407,7 @@ export class App {
     () => {
       const t = this.turnoActivo();
       const sv = this.cajasSubView();
-      if (!t || (sv !== 'corte' && sv !== 'egresos')) return undefined;
+      if (!t || (sv !== 'corte' && sv !== 'egresos' && sv !== 'devolucion')) return undefined;
       return `${environment.urlAdministration}/Restaurant/turnos/${t.id}/resumen`;
     },
   );

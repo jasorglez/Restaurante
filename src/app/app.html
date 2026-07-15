@@ -793,6 +793,9 @@
             <button class="turno-accion-btn egresos" type="button" (click)="abrirEgresos()">
               💸 Egresos
             </button>
+            <button class="turno-accion-btn devolucion" type="button" (click)="abrirDevolucion()">
+              ↩️ Devolución
+            </button>
             <button class="turno-accion-btn corte" type="button" (click)="abrirCorte()">
               📊 Corte de Caja
             </button>
@@ -897,6 +900,60 @@
             </div>
           </div>
         }
+
+      } @else if (cajasSubView() === 'devolucion') {
+        <!-- ── Devolución de ticket (sale dinero de caja) ─────────────────── -->
+        <div class="tables-toolbar corte-toolbar">
+          <button class="back-button" type="button" (click)="cajasSubView.set('inicio')">
+            <span aria-hidden="true">←</span> Turno
+          </button>
+          <div class="tables-heading"><h2>Devolución</h2></div>
+          <span></span>
+        </div>
+
+        <div class="turno-form">
+          <p class="inv-help">Regresa dinero al cliente por un ticket ya cobrado. Sale de la caja y el corte lo resta. Requiere PIN de supervisor.</p>
+          @if (efectivoDisponible() !== null) {
+            <div class="corte-row esperado-row" style="margin-bottom:6px">
+              <span>Efectivo disponible en caja</span>
+              <strong>{{ efectivoDisponible() | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+            </div>
+          }
+          @if (devOk()) { <div class="inv-ok">{{ devOk() }}</div> }
+
+          <div class="turno-fields">
+            <label class="turno-label">Ticket / referencia (opcional)</label>
+            <input class="turno-input" type="text" placeholder="Ej. #1234 / mesa 5"
+              [value]="devRef()" (input)="setDevRef($event)" [disabled]="devProcesando()">
+
+            <label class="turno-label" style="margin-top:8px">Monto a devolver</label>
+            <div class="monto-row turno-monto">
+              <span class="monto-currency">$</span>
+              <input class="monto-input" type="number" min="0" step="0.01" placeholder="0.00"
+                [value]="devMonto() ?? ''" (input)="setDevMonto($event)" [disabled]="devProcesando()">
+            </div>
+
+            <label class="turno-label" style="margin-top:8px">Motivo</label>
+            <input class="turno-input" type="text" placeholder="Ej. producto equivocado, se canceló…"
+              [value]="devMotivo()" (input)="setDevMotivo($event)" [disabled]="devProcesando()">
+
+            <label class="turno-label" style="margin-top:8px">Autoriza (nombre)</label>
+            <input class="turno-input" type="text" placeholder="Nombre del supervisor"
+              [value]="devPor()" (input)="setDevPor($event)" [disabled]="devProcesando()">
+
+            <label class="turno-label" style="margin-top:8px">PIN de supervisor</label>
+            <input class="turno-input" type="password" autocomplete="off" placeholder="PIN"
+              [value]="devPin()" (input)="setDevPin($event)" (keyup.enter)="registrarDevolucion()" [disabled]="devProcesando()">
+          </div>
+
+          @if (devError()) { <p class="action-error" role="alert">{{ devError() }}</p> }
+
+          <button class="cobrar-btn turno-iniciar-btn" type="button"
+            (click)="registrarDevolucion()"
+            [disabled]="devProcesando() || !devMonto() || !devPor().trim() || !devPin()">
+            @if (devProcesando()) { Registrando… } @else { ↩️ Registrar devolución }
+          </button>
+        </div>
 
       } @else if (cajasSubView() === 'corte') {
         <!-- ── Corte de Caja ───────────────────────────────────────────────── -->

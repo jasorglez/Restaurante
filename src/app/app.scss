@@ -3261,3 +3261,11 @@ footer {
   .qty-overlay { padding: 12px; }
   .drill-panel { width: 94vw; max-height: 86vh; }
 }
+
+/* Botón Devolución en caja */
+.turno-accion-btn.devolucion {
+  background: #fdece9;
+  border-color: #e0876f;
+  color: #a03822;
+  &:hover { background: #e0876f; color: #fff; }
+}
