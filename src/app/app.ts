@@ -1357,9 +1357,13 @@ export class App {
   protected readonly loginPin      = signal('');
   protected readonly loginError    = signal('');
   protected readonly loginProcesando = signal(false);
-  protected pushPin(d: string): void { if (this.loginPin().length < 12) this.loginPin.update(p => p + d); this.loginError.set(''); }
+  protected pushPin(d: string): void { if (this.loginPin().length < 20) this.loginPin.update(p => p + d); this.loginError.set(''); }
   protected borrarPin(): void { this.loginPin.update(p => p.slice(0, -1)); }
   protected limpiarPin(): void { this.loginPin.set(''); }
+  // Modo texto para escribir un PIN con letras (llave maestra de admin).
+  protected readonly loginModoTexto = signal(false);
+  protected toggleLoginTexto(): void { this.loginModoTexto.update(v => !v); this.loginPin.set(''); this.loginError.set(''); }
+  protected setLoginPin(e: Event): void { this.loginPin.set((e.target as HTMLInputElement).value); this.loginError.set(''); }
 
   protected async login(): Promise<void> {
     const pin = this.loginPin();

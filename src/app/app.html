@@ -80,17 +80,31 @@
       </div>
       @if (loginError()) { <p class="qty-error" role="alert">{{ loginError() }}</p> }
 
-      <div class="pin-pad">
-        @for (n of ['1','2','3','4','5','6','7','8','9']; track n) {
-          <button type="button" class="pin-key" (click)="pushPin(n)" [disabled]="loginProcesando()">{{ n }}</button>
-        }
-        <button type="button" class="pin-key pin-del" (click)="borrarPin()" [disabled]="loginProcesando()">⌫</button>
-        <button type="button" class="pin-key" (click)="pushPin('0')" [disabled]="loginProcesando()">0</button>
-        <button type="button" class="pin-key pin-ok" (click)="login()" [disabled]="loginProcesando() || loginPin().length < 4">
-          @if (loginProcesando()) { … } @else { ✓ }
+      @if (loginModoTexto()) {
+        <input class="turno-input" type="password" autocomplete="off" placeholder="PIN de administrador"
+          [value]="loginPin()" (input)="setLoginPin($event)" (keyup.enter)="login()"
+          [disabled]="loginProcesando()" style="text-align:center" autofocus>
+        <button class="confirmar-btn alta-submit" type="button" (click)="login()"
+          [disabled]="loginProcesando() || loginPin().length < 4">
+          @if (loginProcesando()) { Entrando… } @else { Entrar }
         </button>
-      </div>
+      } @else {
+        <div class="pin-pad">
+          @for (n of ['1','2','3','4','5','6','7','8','9']; track n) {
+            <button type="button" class="pin-key" (click)="pushPin(n)" [disabled]="loginProcesando()">{{ n }}</button>
+          }
+          <button type="button" class="pin-key pin-del" (click)="borrarPin()" [disabled]="loginProcesando()">⌫</button>
+          <button type="button" class="pin-key" (click)="pushPin('0')" [disabled]="loginProcesando()">0</button>
+          <button type="button" class="pin-key pin-ok" (click)="login()" [disabled]="loginProcesando() || loginPin().length < 4">
+            @if (loginProcesando()) { … } @else { ✓ }
+          </button>
+        </div>
+      }
 
+      <button class="login-cambiar" type="button" (click)="toggleLoginTexto()">
+        {{ loginModoTexto() ? '🔢 Usar teclado numérico' : '🔤 PIN con letras (admin)' }}
+      </button>
+      <br>
       <button class="login-cambiar" type="button" (click)="cambiarEmpresa()">⇄ Cambiar empresa</button>
     </div>
   </div>
