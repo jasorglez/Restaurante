@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '2.13 (15 Julio 2026) Login: PIN maestro numérico por defecto (9317) + opción de PIN con letras; ya se puede entrar sin usuarios',
+  version: '2.14 (15 Julio 2026) Auditoría: bitácora de todos los movimientos por usuario + visor en Reportes (admin)',
 }; 

@@ -1232,8 +1232,12 @@
             type="button" (click)="reporteSubView.set('mesas')">🍽️ Mesas</button>
           <button class="reporte-tab" [class.active]="reporteSubView() === 'caja'"
             type="button" (click)="reporteSubView.set('caja')">🏧 Caja</button>
+          @if (esAdmin()) {
+            <button class="reporte-tab" [class.active]="reporteSubView() === 'auditoria'"
+              type="button" (click)="reporteSubView.set('auditoria')">🕵️ Auditoría</button>
+          }
         </div>
-        @if (reporteSubView() !== 'resumen') {
+        @if (reporteSubView() !== 'resumen' && reporteSubView() !== 'auditoria') {
           <button class="nueva-mesa-btn no-print" type="button" (click)="imprimirReporte()">
             🖨️ Imprimir
           </button>
@@ -1292,6 +1296,32 @@
               }
             </ul>
           }
+        }
+      }
+
+      <!-- ── Auditoría (solo admin) ─────────────────────────────────────────── -->
+      @if (reporteSubView() === 'auditoria') {
+        @if (auditoriaResource.isLoading()) {
+          <div class="state-panel"><span class="loader"></span><strong>Cargando bitácora…</strong></div>
+        } @else if (auditoria().length === 0) {
+          <div class="state-panel"><strong>Sin movimientos en esta fecha</strong></div>
+        } @else {
+          <ul class="inv-list">
+            @for (a of auditoria(); track a.id) {
+              <li class="inv-item">
+                <div class="inv-item-main">
+                  <strong>{{ etiquetaAccion(a.accion) }}</strong>
+                  <span class="inv-badge">{{ a.usuario || 'Admin' }}</span>
+                  @if (a.monto) { <span class="inv-exist">{{ a.monto | currency:'MXN':'symbol-narrow':'1.2-2' }}</span> }
+                </div>
+                <div class="inv-mov-detalle">
+                  @if (a.nombreMesa) { <span>{{ a.nombreMesa }}</span> }
+                  @if (a.descripcion) { <span>· {{ a.descripcion }}</span> }
+                  <span class="inv-fecha">{{ a.fecha | date:'dd/MM HH:mm' }}</span>
+                </div>
+              </li>
+            }
+          </ul>
         }
       }
 

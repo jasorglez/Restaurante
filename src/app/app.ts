@@ -319,6 +319,7 @@ export class App {
             monto, motivo: motivo || null, autorizadoPor: this.devPor().trim() }));
       } catch { /* la salida ya quedó registrada */ }
 
+      this.auditar('DEVOLUCION', { entidad: 'CAJA', monto, descripcion: desc });
       this.devOk.set(`Devolución registrada: se sacaron ${monto} de la caja.`);
       this.devRef.set(''); this.devMonto.set(null); this.devMotivo.set('');
       this.devPin.set('');
@@ -448,7 +449,26 @@ export class App {
   });
 
   // ── Reportes ──────────────────────────────────────────────────────────────
-  protected readonly reporteSubView = signal<'mesas' | 'caja' | 'resumen'>('mesas');
+  protected readonly reporteSubView = signal<'mesas' | 'caja' | 'resumen' | 'auditoria'>('mesas');
+
+  // Auditoría (bitácora de movimientos por usuario) — solo admin.
+  protected readonly auditoriaResource = httpResource<any[]>(
+    () => this.view() === 'reportes' && this.reporteSubView() === 'auditoria' && this.esAdmin()
+      ? `${environment.urlChatBot}/restaurant-publico/auditoria/${this.companyId()!}?desde=${this.reporteFecha()}&hasta=${this.reporteFecha()}`
+      : undefined,
+    { defaultValue: [] },
+  );
+  protected readonly auditoria = this.auditoriaResource.value;
+  protected etiquetaAccion(a: string): string {
+    const m: Record<string, string> = {
+      LOGIN: '🔑 Entró', LOGOUT: '🚪 Salió', ABRIR_MESA: '🍽️ Abrió mesa',
+      COBRO: '💵 Cobró', COBRO_COMENSAL: '💵 Cobró (persona)', CANCELAR_ITEM: '❌ Canceló',
+      CORTESIA: '🎁 Cortesía', DESCUENTO: '％ Descuento', DEVOLUCION: '↩️ Devolución',
+      EGRESO: '💸 Egreso', INGRESO_INV: '📦 Ingreso inv.', AJUSTE_INV: '✎ Ajuste inv.',
+      ABRIR_TURNO: '▶️ Abrió turno', CERRAR_TURNO: '⏹️ Cerró turno',
+    };
+    return m[a] ?? a;
+  }
   protected readonly reporteFecha   = signal<string>(new Date().toISOString().split('T')[0]);
 
   // Dashboard del día
@@ -714,6 +734,7 @@ export class App {
       this.ingresoActivoId.set(null);
       this.ingresoPiezas.set(null);
       this.ingresoOk.set(`Ingreso registrado: +${piezas} pieza(s) de ${mat.descripcion}.`);
+      this.auditar('INGRESO_INV', { entidad: 'INVENTARIO', idEntidad: mat.idMaterial, monto: piezas, descripcion: `+${piezas} pza · ${mat.descripcion}` });
       this.existenciasResource.reload();
     } catch {
       this.ingresoError.set('No se pudo registrar el ingreso.');
@@ -765,6 +786,7 @@ export class App {
       this.ajustePiezas.set(null);
       this.ajusteOnzas.set(null);
       this.ingresoOk.set(`Existencia ajustada: ${mat.descripcion} = ${piezas} pza${onzas ? ` + ${onzas} oz` : ''}.`);
+      this.auditar('AJUSTE_INV', { entidad: 'INVENTARIO', idEntidad: mat.idMaterial, descripcion: `${mat.descripcion} = ${piezas} pza${onzas ? ' + ' + onzas + ' oz' : ''}` });
       this.existenciasResource.reload();
     } catch {
       this.ajusteError.set('No se pudo registrar el ajuste.');
@@ -1378,6 +1400,7 @@ export class App {
       localStorage.setItem(App.LS_USUARIO, JSON.stringify(u));
       this.loginPin.set('');
       this.view.set('menu');
+      this.auditar('LOGIN', { descripcion: `Entró ${u.nombre} (${u.rol})` });
     } catch {
       this.loginError.set('PIN incorrecto.');
     } finally {
@@ -1386,10 +1409,37 @@ export class App {
   }
 
   protected cerrarSesion(): void {
+    this.auditar('LOGOUT', {});
     this.usuario.set(null);
     localStorage.removeItem(App.LS_USUARIO);
     this.loginPin.set('');
     this.view.set('menu');
+  }
+
+  // Registra un movimiento en la bitácora con el usuario actual (no bloquea si falla).
+  protected auditar(accion: string, extras: {
+    entidad?: string; idEntidad?: number | null; descripcion?: string; monto?: number | null;
+    idMesa?: number | null; nombreMesa?: string | null;
+  } = {}): void {
+    const u = this.usuario();
+    const cid = this.companyId();
+    if (!cid) return;
+    firstValueFrom(this.http.post(
+      `${environment.urlChatBot}/restaurant-publico/auditoria`,
+      {
+        idCompany: cid,
+        idUsuario: u?.id ?? null,
+        usuario: u?.nombre ?? null,
+        rol: u?.rol ?? null,
+        accion,
+        entidad: extras.entidad ?? null,
+        idEntidad: extras.idEntidad ?? null,
+        descripcion: extras.descripcion ?? null,
+        monto: extras.monto ?? null,
+        idMesa: extras.idMesa ?? null,
+        nombreMesa: extras.nombreMesa ?? null,
+      },
+    )).catch(() => { /* la auditoría nunca rompe la operación */ });
   }
 
   // Permisos por rol. mesero: mesas/cocina · cajero: + cajas/reportes/inventario · admin: todo
@@ -1686,6 +1736,7 @@ export class App {
         ),
       );
       this.turnoActivo.set(turno);
+      this.auditar('ABRIR_TURNO', { entidad: 'TURNO', idEntidad: turno.id, monto: this.fondoInicial() ?? 0, descripcion: `Fondo ${this.fondoInicial() ?? 0}` });
     } catch {
       this.turnoError.set('No se pudo iniciar el turno. Intenta de nuevo.');
     } finally {
@@ -1736,6 +1787,7 @@ export class App {
         ),
       );
       this.egresosLista.update(list => [egreso, ...list]);
+      this.auditar('EGRESO', { entidad: 'CAJA', monto, descripcion: this.egresoDesc().trim() || 'Egreso' });
       this.egresoDesc.set('');
       this.egresoMonto.set(null);
       this.resumenCorteResource.reload();   // actualiza el disponible
@@ -1782,6 +1834,7 @@ export class App {
         ),
       );
       this.corteResultado.set(result);
+      this.auditar('CERRAR_TURNO', { entidad: 'TURNO', idEntidad: turno.id, monto: this.efectivoContado() ?? 0, descripcion: `Contado ${this.efectivoContado() ?? 0}` });
       if (snapshotResumen) {
         this.corteResumenSnapshot.set({
           ...snapshotResumen,
@@ -2410,6 +2463,7 @@ export class App {
         totalActual: cuenta.total,
       });
       this.view.set('familias');
+      this.auditar('ABRIR_MESA', { entidad: 'MESA', idEntidad: mesa.id, idMesa: mesa.id, nombreMesa: mesa.nombre });
       // Mesa nueva → preguntar si la cuenta es junta o separada.
       this.preguntaPaso.set('modo');
       this.prePersonas.set(2);
@@ -2624,15 +2678,18 @@ export class App {
     this.authProcesando.set(true);
     this.authError.set('');
     try {
+      const nm = this.selectedMesa()?.nombre ?? null;
       if (acc.tipo === 'descuento') {
         const monto = this.calcDescuento();
         if (monto <= 0) { this.authError.set('Indica un descuento válido.'); return; }
         this.descuentoAplicado.set({ monto, motivo, por });
+        this.auditar('DESCUENTO', { entidad: 'CUENTA', idEntidad: idCuenta, monto, nombreMesa: nm, descripcion: `${motivo || 'Descuento'} · autoriza ${por}` });
         this.authAccion.set(null);
       } else if (acc.tipo === 'cortesia' && acc.item && idCuenta) {
         await firstValueFrom(this.http.post(`${base}/items/${acc.item.id}/cortesia`, {
           idCompany: this.companyId()!, tipo: 'CORTESIA', descripcion: acc.item.descripcion, motivo, autorizadoPor: por,
         }));
+        this.auditar('CORTESIA', { entidad: 'CUENTA', idEntidad: idCuenta, monto: acc.item.subtotal, nombreMesa: nm, descripcion: `${acc.item.descripcion} · autoriza ${por}` });
         this.itemsResource.reload();
         this.authAccion.set(null);
       } else if (acc.tipo === 'cancelar' && acc.item && idCuenta) {
@@ -2642,6 +2699,7 @@ export class App {
           idCompany: this.companyId()!, tipo: 'CANCELACION', descripcion: acc.item.descripcion,
           monto: acc.item.subtotal, motivo, autorizadoPor: por,
         }));
+        this.auditar('CANCELAR_ITEM', { entidad: 'CUENTA', idEntidad: idCuenta, monto: acc.item.subtotal, nombreMesa: nm, descripcion: `${acc.item.descripcion} · autoriza ${por}` });
         this.itemsResource.reload();
         this.authAccion.set(null);
       }
@@ -2786,6 +2844,11 @@ export class App {
 
       this.showPayment.set(false);
       this.ticketVisible.set(true);
+      this.auditar(comensal != null ? 'COBRO_COMENSAL' : 'COBRO', {
+        entidad: 'CUENTA', idEntidad: mesa.idCuentaActual, monto: snapshotTotal,
+        idMesa: mesa.id, nombreMesa: mesa.nombre,
+        descripcion: `${tipo}${comensal != null ? ' · Persona ' + comensal : ''}`,
+      });
       this.itemsResource.reload();   // refresca lo que queda por cobrar
     } catch (err: any) {
       const msg = err?.error?.error ?? err?.message ?? 'No se pudo procesar el cobro. Intenta de nuevo.';
