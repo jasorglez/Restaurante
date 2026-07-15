@@ -452,10 +452,30 @@ export class App {
   protected readonly reporteSubView = signal<'mesas' | 'caja' | 'resumen' | 'auditoria'>('mesas');
 
   // Auditoría (bitácora de movimientos por usuario) — solo admin.
+  protected readonly auditFiltroUsuario = signal<number | null>(null);   // id_usuario o null = todos
+  protected readonly auditFiltroAccion  = signal<string>('');            // '' = todas
+  protected setAuditUsuario(e: Event): void {
+    const v = (e.target as HTMLSelectElement).value;
+    this.auditFiltroUsuario.set(v === '' ? null : +v);
+  }
+  protected setAuditAccion(e: Event): void { this.auditFiltroAccion.set((e.target as HTMLSelectElement).value); }
+  // Acciones para el select (con su etiqueta bonita).
+  protected readonly accionesAudit = [
+    'LOGIN', 'LOGOUT', 'ABRIR_MESA', 'COBRO', 'COBRO_COMENSAL', 'CANCELAR_ITEM',
+    'CORTESIA', 'DESCUENTO', 'DEVOLUCION', 'EGRESO', 'INGRESO_INV', 'AJUSTE_INV',
+    'ABRIR_TURNO', 'CERRAR_TURNO',
+  ];
+
   protected readonly auditoriaResource = httpResource<any[]>(
-    () => this.view() === 'reportes' && this.reporteSubView() === 'auditoria' && this.esAdmin()
-      ? `${environment.urlChatBot}/restaurant-publico/auditoria/${this.companyId()!}?desde=${this.reporteFecha()}&hasta=${this.reporteFecha()}`
-      : undefined,
+    () => {
+      if (this.view() !== 'reportes' || this.reporteSubView() !== 'auditoria' || !this.esAdmin()) return undefined;
+      const u = this.auditFiltroUsuario();
+      const a = this.auditFiltroAccion();
+      let url = `${environment.urlChatBot}/restaurant-publico/auditoria/${this.companyId()!}?desde=${this.reporteFecha()}&hasta=${this.reporteFecha()}`;
+      if (u !== null) url += `&idUsuario=${u}`;
+      if (a) url += `&accion=${a}`;
+      return url;
+    },
     { defaultValue: [] },
   );
   protected readonly auditoria = this.auditoriaResource.value;
@@ -1596,9 +1616,13 @@ export class App {
 
   // ── Configuración · Usuarios (solo admin) ───────────────────────────────────
   protected readonly usuariosResource = httpResource<Usuario[]>(
-    () => this.view() === 'config' && this.esAdmin()
-      ? `${environment.urlChatBot}/restaurant-publico/usuarios/${this.companyId()!}`
-      : undefined,
+    () => {
+      const enConfig = this.view() === 'config';
+      const enAudit  = this.view() === 'reportes' && this.reporteSubView() === 'auditoria';
+      return (enConfig || enAudit) && this.esAdmin()
+        ? `${environment.urlChatBot}/restaurant-publico/usuarios/${this.companyId()!}`
+        : undefined;
+    },
     { defaultValue: [] },
   );
   protected readonly usuarios = this.usuariosResource.value;

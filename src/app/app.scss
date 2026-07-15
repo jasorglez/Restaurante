@@ -3345,3 +3345,12 @@ footer {
 @media (max-width: 480px), (orientation: portrait) and (max-width: 600px) {
   .user-nom { display: none; }
 }
+
+/* Filtros de auditoría */
+.audit-filtros {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.audit-filtros select { flex: 1; min-width: 150px; }

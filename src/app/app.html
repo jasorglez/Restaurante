@@ -1301,6 +1301,20 @@
 
       <!-- ── Auditoría (solo admin) ─────────────────────────────────────────── -->
       @if (reporteSubView() === 'auditoria') {
+        <div class="audit-filtros">
+          <select class="turno-input" [value]="auditFiltroUsuario() ?? ''" (change)="setAuditUsuario($event)">
+            <option value="">👤 Todos los usuarios</option>
+            @for (u of usuarios(); track u.id) {
+              <option [value]="u.id" [selected]="auditFiltroUsuario() === u.id">{{ u.nombre }}</option>
+            }
+          </select>
+          <select class="turno-input" [value]="auditFiltroAccion()" (change)="setAuditAccion($event)">
+            <option value="">⚡ Todas las acciones</option>
+            @for (a of accionesAudit; track a) {
+              <option [value]="a" [selected]="auditFiltroAccion() === a">{{ etiquetaAccion(a) }}</option>
+            }
+          </select>
+        </div>
         @if (auditoriaResource.isLoading()) {
           <div class="state-panel"><span class="loader"></span><strong>Cargando bitácora…</strong></div>
         } @else if (auditoria().length === 0) {
