@@ -2610,3 +2610,24 @@
     </div>
   </div>
 }
+
+<!-- ── Modal: PIN para módulos protegidos (caja/reportes/inventario/config) ── -->
+@if (pedirPinModulo()) {
+  <div class="qty-overlay" role="dialog" aria-modal="true" aria-label="Acceso protegido">
+    <div class="qty-panel">
+      <strong class="qty-name">🔒 Acceso protegido</strong>
+      <p class="inv-help" style="text-align:center">Este módulo es solo para caja/administración. Ingresa el PIN de supervisor.</p>
+      <input class="turno-input" type="password" autocomplete="off" placeholder="PIN de supervisor"
+        [value]="pinModulo()" (input)="setPinModulo($event)" (keyup.enter)="confirmarPinModulo()"
+        [disabled]="validandoPinModulo()" style="margin-top:6px" autofocus>
+      @if (pinModuloError()) { <p class="qty-error" role="alert">{{ pinModuloError() }}</p> }
+      <button class="confirmar-btn alta-submit" type="button" (click)="confirmarPinModulo()"
+        [disabled]="validandoPinModulo() || !pinModulo()">
+        @if (validandoPinModulo()) { Validando… } @else { Entrar }
+      </button>
+      <button class="qty-cancel" type="button" (click)="cancelarPinModulo()" [disabled]="validandoPinModulo()">
+        Cancelar
+      </button>
+    </div>
+  </div>
+}

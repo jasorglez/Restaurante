@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '2.10 (15 Julio 2026) Devolución de ticket en caja: saca dinero con PIN de supervisor y motivo; el corte lo resta',
+  version: '2.11 (15 Julio 2026) Seguridad: Caja/Reportes/Inventario/Config protegidos con PIN de supervisor (meseros solo Mesas/Cocina)',
 }; 

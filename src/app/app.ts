@@ -1347,7 +1347,50 @@ export class App {
   protected menosComensales(): void { this.dividirEntre.update(n => Math.max(1, n - 1)); }
 
   // ── Navegación ────────────────────────────────────────────────────────────
+  // ── Seguridad: módulos sensibles bloqueados con PIN de supervisor ───────────
+  private readonly modulosSensibles = new Set<RestaurantModule>(['CAJAS', 'REPORTES', 'INVENTARIO', 'CONFIG']);
+  protected readonly appDesbloqueada = signal(false);          // se desbloquea con el PIN por sesión
+  protected readonly pedirPinModulo  = signal<RestaurantModule | null>(null);
+  protected readonly pinModulo       = signal('');
+  protected readonly pinModuloError  = signal('');
+  protected readonly validandoPinModulo = signal(false);
+  protected setPinModulo(e: Event): void { this.pinModulo.set((e.target as HTMLInputElement).value); }
+  protected cancelarPinModulo(): void { this.pedirPinModulo.set(null); this.pinModulo.set(''); this.pinModuloError.set(''); }
+  protected bloquearApp(): void { this.appDesbloqueada.set(false); }
+
+  protected async confirmarPinModulo(): Promise<void> {
+    const target = this.pedirPinModulo();
+    if (!target) return;
+    this.validandoPinModulo.set(true);
+    this.pinModuloError.set('');
+    try {
+      const r: any = await firstValueFrom(this.http.post(
+        `${environment.urlChatBot}/restaurant-publico/pin/validar`,
+        { idCompany: this.companyId()!, pin: this.pinModulo() }));
+      if (!r?.ok) { this.pinModuloError.set('PIN incorrecto.'); return; }
+      this.appDesbloqueada.set(true);
+      this.pedirPinModulo.set(null);
+      this.pinModulo.set('');
+      this.abrirModulo(target);
+    } catch {
+      this.pinModuloError.set('No se pudo validar el PIN.');
+    } finally {
+      this.validandoPinModulo.set(false);
+    }
+  }
+
   protected selectModule(module: RestaurantModule): void {
+    // Módulos sensibles: pedir PIN de supervisor si no se ha desbloqueado.
+    if (this.modulosSensibles.has(module) && !this.appDesbloqueada()) {
+      this.pinModulo.set('');
+      this.pinModuloError.set('');
+      this.pedirPinModulo.set(module);
+      return;
+    }
+    this.abrirModulo(module);
+  }
+
+  private abrirModulo(module: RestaurantModule): void {
     if (module === 'MESAS') this.view.set('mesas');
     if (module === 'CAJAS') {
       this.cajaNombre.set('');
@@ -2775,5 +2818,6 @@ export class App {
     this.prodBusqueda.set('');
     this.turnoActivo.set(null);
     this.turnoError.set('');
+    this.appDesbloqueada.set(false);   // re-bloquea módulos sensibles en el menú
   }
 }
