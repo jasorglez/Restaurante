@@ -13,6 +13,7 @@ import { environment } from '../environments/environment';
 import { CajaInfo, CajaReporte, EgresoCaja, ResumenCorte, Turno, VentaPorTipo } from './models/caja';
 import { OrdenCocina } from './models/cocina';
 import { Impresora } from './models/impresora';
+import { Rol, Usuario } from './models/usuario';
 import { CuentaAbierta, Familia, ItemCuenta, Producto } from './models/familia';
 import { Equivalencia, Existencia, MovimientoInv, ProductoInventario, ResultadoMovimiento, ResumenMov } from './models/inventario';
 import { Mesa } from './models/mesa';
@@ -1347,46 +1348,58 @@ export class App {
   protected menosComensales(): void { this.dividirEntre.update(n => Math.max(1, n - 1)); }
 
   // ── Navegación ────────────────────────────────────────────────────────────
-  // ── Seguridad: módulos sensibles bloqueados con PIN de supervisor ───────────
-  private readonly modulosSensibles = new Set<RestaurantModule>(['CAJAS', 'REPORTES', 'INVENTARIO', 'CONFIG']);
-  protected readonly appDesbloqueada = signal(false);          // se desbloquea con el PIN por sesión
-  protected readonly pedirPinModulo  = signal<RestaurantModule | null>(null);
-  protected readonly pinModulo       = signal('');
-  protected readonly pinModuloError  = signal('');
-  protected readonly validandoPinModulo = signal(false);
-  protected setPinModulo(e: Event): void { this.pinModulo.set((e.target as HTMLInputElement).value); }
-  protected cancelarPinModulo(): void { this.pedirPinModulo.set(null); this.pinModulo.set(''); this.pinModuloError.set(''); }
-  protected bloquearApp(): void { this.appDesbloqueada.set(false); }
+  // ── Usuarios / login por PIN / roles ────────────────────────────────────────
+  private static readonly LS_USUARIO = 'pv_usuario';
+  protected readonly usuario = signal<Usuario | null>(this.restoreUsuario());
+  private restoreUsuario(): Usuario | null {
+    try { const s = localStorage.getItem(App.LS_USUARIO); return s ? JSON.parse(s) : null; } catch { return null; }
+  }
+  protected readonly loginPin      = signal('');
+  protected readonly loginError    = signal('');
+  protected readonly loginProcesando = signal(false);
+  protected pushPin(d: string): void { if (this.loginPin().length < 12) this.loginPin.update(p => p + d); this.loginError.set(''); }
+  protected borrarPin(): void { this.loginPin.update(p => p.slice(0, -1)); }
+  protected limpiarPin(): void { this.loginPin.set(''); }
 
-  protected async confirmarPinModulo(): Promise<void> {
-    const target = this.pedirPinModulo();
-    if (!target) return;
-    this.validandoPinModulo.set(true);
-    this.pinModuloError.set('');
+  protected async login(): Promise<void> {
+    const pin = this.loginPin();
+    if (pin.length < 4) { this.loginError.set('Ingresa tu PIN (4+ dígitos).'); return; }
+    this.loginProcesando.set(true);
+    this.loginError.set('');
     try {
-      const r: any = await firstValueFrom(this.http.post(
-        `${environment.urlChatBot}/restaurant-publico/pin/validar`,
-        { idCompany: this.companyId()!, pin: this.pinModulo() }));
-      if (!r?.ok) { this.pinModuloError.set('PIN incorrecto.'); return; }
-      this.appDesbloqueada.set(true);
-      this.pedirPinModulo.set(null);
-      this.pinModulo.set('');
-      this.abrirModulo(target);
+      const u = await firstValueFrom(this.http.post<Usuario>(
+        `${environment.urlChatBot}/restaurant-publico/usuarios/login`,
+        { idCompany: this.companyId()!, pin }));
+      this.usuario.set(u);
+      localStorage.setItem(App.LS_USUARIO, JSON.stringify(u));
+      this.loginPin.set('');
+      this.view.set('menu');
     } catch {
-      this.pinModuloError.set('No se pudo validar el PIN.');
+      this.loginError.set('PIN incorrecto.');
     } finally {
-      this.validandoPinModulo.set(false);
+      this.loginProcesando.set(false);
     }
   }
 
+  protected cerrarSesion(): void {
+    this.usuario.set(null);
+    localStorage.removeItem(App.LS_USUARIO);
+    this.loginPin.set('');
+    this.view.set('menu');
+  }
+
+  // Permisos por rol. mesero: mesas/cocina · cajero: + cajas/reportes/inventario · admin: todo
+  protected puedeVer(module: RestaurantModule): boolean {
+    const rol: Rol = this.usuario()?.rol ?? 'mesero';
+    if (module === 'MESAS' || module === 'COCINA') return true;
+    if (module === 'CONFIG') return rol === 'admin';
+    // CAJAS, REPORTES, INVENTARIO
+    return rol === 'cajero' || rol === 'admin';
+  }
+  protected readonly esAdmin = computed(() => this.usuario()?.rol === 'admin');
+
   protected selectModule(module: RestaurantModule): void {
-    // Módulos sensibles: pedir PIN de supervisor si no se ha desbloqueado.
-    if (this.modulosSensibles.has(module) && !this.appDesbloqueada()) {
-      this.pinModulo.set('');
-      this.pinModuloError.set('');
-      this.pedirPinModulo.set(module);
-      return;
-    }
+    if (!this.puedeVer(module)) return;   // sin permiso, no entra
     this.abrirModulo(module);
   }
 
@@ -1525,6 +1538,65 @@ export class App {
     } finally {
       this.probandoImp.set(null);
     }
+  }
+
+  // ── Configuración · Usuarios (solo admin) ───────────────────────────────────
+  protected readonly usuariosResource = httpResource<Usuario[]>(
+    () => this.view() === 'config' && this.esAdmin()
+      ? `${environment.urlChatBot}/restaurant-publico/usuarios/${this.companyId()!}`
+      : undefined,
+    { defaultValue: [] },
+  );
+  protected readonly usuarios = this.usuariosResource.value;
+
+  protected readonly showUserForm = signal(false);
+  protected readonly userEditId  = signal<number | null>(null);
+  protected readonly userNombre  = signal('');
+  protected readonly userPin     = signal('');
+  protected readonly userRol     = signal<Rol>('mesero');
+  protected readonly guardandoUser = signal(false);
+  protected readonly userError   = signal('');
+  protected setUserNombre(e: Event): void { this.userNombre.set((e.target as HTMLInputElement).value); }
+  protected setUserPin(e: Event): void { this.userPin.set((e.target as HTMLInputElement).value); }
+  protected setUserRol(e: Event): void { this.userRol.set((e.target as HTMLSelectElement).value as Rol); }
+
+  protected nuevoUsuario(): void {
+    this.userEditId.set(null); this.userNombre.set(''); this.userPin.set('');
+    this.userRol.set('mesero'); this.userError.set(''); this.showUserForm.set(true);
+  }
+  protected editarUsuario(u: Usuario): void {
+    this.userEditId.set(u.id); this.userNombre.set(u.nombre); this.userPin.set('');
+    this.userRol.set(u.rol); this.userError.set(''); this.showUserForm.set(true);
+  }
+  protected cerrarUserForm(): void { this.showUserForm.set(false); }
+
+  protected async guardarUsuario(): Promise<void> {
+    const nombre = this.userNombre().trim();
+    if (!nombre) { this.userError.set('El nombre es obligatorio.'); return; }
+    const id = this.userEditId();
+    if (id === null && this.userPin().trim().length < 4) { this.userError.set('El PIN debe tener 4+ dígitos.'); return; }
+    this.guardandoUser.set(true);
+    this.userError.set('');
+    const body = { idCompany: this.companyId()!, nombre, pin: this.userPin().trim() || null, rol: this.userRol() };
+    const base = `${environment.urlChatBot}/restaurant-publico/usuarios`;
+    try {
+      if (id === null) await firstValueFrom(this.http.post(base, body));
+      else await firstValueFrom(this.http.put(`${base}/${id}`, body));
+      this.showUserForm.set(false);
+      this.usuariosResource.reload();
+    } catch (err: any) {
+      this.userError.set(err?.error?.error ?? 'No se pudo guardar el usuario.');
+    } finally {
+      this.guardandoUser.set(false);
+    }
+  }
+
+  protected async eliminarUsuario(u: Usuario): Promise<void> {
+    try {
+      await firstValueFrom(this.http.delete(
+        `${environment.urlChatBot}/restaurant-publico/usuarios/${u.id}?idCompany=${this.companyId()!}`));
+      this.usuariosResource.reload();
+    } catch { /* noop */ }
   }
 
   // ── Configuración · PIN de supervisor ───────────────────────────────────────
@@ -2818,6 +2890,5 @@ export class App {
     this.prodBusqueda.set('');
     this.turnoActivo.set(null);
     this.turnoError.set('');
-    this.appDesbloqueada.set(false);   // re-bloquea módulos sensibles en el menú
   }
 }

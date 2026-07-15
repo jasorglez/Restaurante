@@ -61,7 +61,42 @@
   </div>
 }
 
-<main class="dashboard-shell">
+<!-- ── LOGIN POR PIN ─────────────────────────────────────────────────────── -->
+@if (companyId() && !selEmpresa() && !usuario()) {
+  <div class="login-screen">
+    <div class="login-card">
+      @if (companyLogo()) {
+        <img class="login-logo" [src]="companyLogo()!" [alt]="companyName()" />
+      } @else {
+        <span class="brand-mark" aria-hidden="true">R</span>
+      }
+      <p class="login-empresa">{{ companyName() }}</p>
+      <h2 class="login-titulo">Ingresa tu PIN</h2>
+
+      <div class="pin-dots" aria-hidden="true">
+        @for (i of [0,1,2,3,4,5]; track i) {
+          <span class="pin-dot" [class.on]="loginPin().length > i"></span>
+        }
+      </div>
+      @if (loginError()) { <p class="qty-error" role="alert">{{ loginError() }}</p> }
+
+      <div class="pin-pad">
+        @for (n of ['1','2','3','4','5','6','7','8','9']; track n) {
+          <button type="button" class="pin-key" (click)="pushPin(n)" [disabled]="loginProcesando()">{{ n }}</button>
+        }
+        <button type="button" class="pin-key pin-del" (click)="borrarPin()" [disabled]="loginProcesando()">⌫</button>
+        <button type="button" class="pin-key" (click)="pushPin('0')" [disabled]="loginProcesando()">0</button>
+        <button type="button" class="pin-key pin-ok" (click)="login()" [disabled]="loginProcesando() || loginPin().length < 4">
+          @if (loginProcesando()) { … } @else { ✓ }
+        </button>
+      </div>
+
+      <button class="login-cambiar" type="button" (click)="cambiarEmpresa()">⇄ Cambiar empresa</button>
+    </div>
+  </div>
+}
+
+<main class="dashboard-shell" [class.oculto]="companyId() && !selEmpresa() && !usuario()">
   <header class="topbar">
     <div class="topbar-row">
       <div class="brand">
@@ -76,27 +111,38 @@
         </div>
       </div>
       <div class="topbar-actions">
-        <div class="status" aria-label="Estado del sistema">
-          <span class="status-dot" aria-hidden="true"></span>
-          Sistema disponible
-        </div>
+        @if (usuario()) {
+          <div class="user-chip" [attr.data-rol]="usuario()!.rol" title="Rol: {{ usuario()!.rol }}">
+            <span class="user-ini">{{ usuario()!.nombre.charAt(0) }}</span>
+            <span class="user-nom">{{ usuario()!.nombre }}</span>
+          </div>
+          <button class="cambiar-empresa-header" type="button" title="Cerrar sesión" (click)="cerrarSesion()">⎋</button>
+        }
         <button class="cambiar-empresa-header" type="button" title="Cambiar empresa" (click)="cambiarEmpresa()">
           ⇄
         </button>
       </div>
     </div>
 
-    @if (companyId() && !selEmpresa()) {
+    @if (companyId() && !selEmpresa() && usuario()) {
       <nav class="quick-nav" aria-label="Accesos rápidos">
         <button type="button" [class.active]="moduloActivo() === 'MENU'"       (click)="backToMenu()">🏠 Menú</button>
         <button type="button" [class.active]="moduloActivo() === 'MESAS'"      (click)="backToMesas()">🍽️ Mesas</button>
-        <button type="button" [class.active]="moduloActivo() === 'CAJAS'"      (click)="selectModule('CAJAS')">
-          🏧 Cajas @if (mesasPorCobrar() > 0) { <span class="nav-badge">{{ mesasPorCobrar() }}</span> }
-        </button>
+        @if (puedeVer('CAJAS')) {
+          <button type="button" [class.active]="moduloActivo() === 'CAJAS'"      (click)="selectModule('CAJAS')">
+            🏧 Cajas @if (mesasPorCobrar() > 0) { <span class="nav-badge">{{ mesasPorCobrar() }}</span> }
+          </button>
+        }
         <button type="button" [class.active]="moduloActivo() === 'COCINA'"     (click)="selectModule('COCINA')">👨‍🍳 Cocina</button>
-        <button type="button" [class.active]="moduloActivo() === 'REPORTES'"   (click)="selectModule('REPORTES')">📊 Reportes</button>
-        <button type="button" [class.active]="moduloActivo() === 'INVENTARIO'" (click)="selectModule('INVENTARIO')">📦 Inventario</button>
-        <button type="button" [class.active]="moduloActivo() === 'CONFIG'"     (click)="selectModule('CONFIG')">⚙️ Config</button>
+        @if (puedeVer('REPORTES')) {
+          <button type="button" [class.active]="moduloActivo() === 'REPORTES'"   (click)="selectModule('REPORTES')">📊 Reportes</button>
+        }
+        @if (puedeVer('INVENTARIO')) {
+          <button type="button" [class.active]="moduloActivo() === 'INVENTARIO'" (click)="selectModule('INVENTARIO')">📦 Inventario</button>
+        }
+        @if (puedeVer('CONFIG')) {
+          <button type="button" [class.active]="moduloActivo() === 'CONFIG'"     (click)="selectModule('CONFIG')">⚙️ Config</button>
+        }
       </nav>
     }
   </header>
@@ -124,6 +170,7 @@
           <span class="card-copy"><strong>MESAS</strong><small>Órdenes y consumo</small></span>
           <span class="card-cta">Entrar <span class="arrow" aria-hidden="true">→</span></span>
         </button>
+        @if (puedeVer('CAJAS')) {
         <button class="menu-card cajas" type="button" (click)="selectModule('CAJAS')" style="--i:1">
           <span class="card-glow" aria-hidden="true"></span>
           <span class="icon-wrap" aria-hidden="true">
@@ -138,6 +185,8 @@
           <span class="card-copy"><strong>CAJAS</strong><small>Turnos y corte</small></span>
           <span class="card-cta">Entrar <span class="arrow" aria-hidden="true">→</span></span>
         </button>
+        }
+        @if (puedeVer('REPORTES')) {
         <button class="menu-card reportes" type="button" (click)="selectModule('REPORTES')" style="--i:2">
           <span class="card-glow" aria-hidden="true"></span>
           <span class="icon-wrap" aria-hidden="true">
@@ -153,6 +202,8 @@
           <span class="card-copy"><strong>REPORTES</strong><small>Ventas y resultados</small></span>
           <span class="card-cta">Entrar <span class="arrow" aria-hidden="true">→</span></span>
         </button>
+        }
+        @if (puedeVer('INVENTARIO')) {
         <button class="menu-card inventario" type="button" (click)="selectModule('INVENTARIO')" style="--i:3">
           <span class="card-glow" aria-hidden="true"></span>
           <span class="icon-wrap" aria-hidden="true">
@@ -167,6 +218,7 @@
           <span class="card-copy"><strong>INVENTARIO</strong><small>Existencias y movimientos</small></span>
           <span class="card-cta">Entrar <span class="arrow" aria-hidden="true">→</span></span>
         </button>
+        }
         <button class="menu-card cocina" type="button" (click)="selectModule('COCINA')" style="--i:4">
           <span class="card-glow" aria-hidden="true"></span>
           <span class="icon-wrap" aria-hidden="true">
@@ -181,6 +233,7 @@
           <span class="card-copy"><strong>COCINA</strong><small>Órdenes en tiempo real</small></span>
           <span class="card-cta">Entrar <span class="arrow" aria-hidden="true">→</span></span>
         </button>
+        @if (puedeVer('CONFIG')) {
         <button class="menu-card config" type="button" (click)="selectModule('CONFIG')" style="--i:5">
           <span class="card-glow" aria-hidden="true"></span>
           <span class="icon-wrap" aria-hidden="true">
@@ -192,9 +245,10 @@
               <circle class="ico-fg" cx="41" cy="41.5" r="5"/>
             </svg>
           </span>
-          <span class="card-copy"><strong>CONFIG</strong><small>Impresoras y ajustes</small></span>
+          <span class="card-copy"><strong>CONFIG</strong><small>Impresoras, usuarios y ajustes</small></span>
           <span class="card-cta">Entrar <span class="arrow" aria-hidden="true">→</span></span>
         </button>
+        }
       </nav>
       <div class="cambiar-empresa-wrap">
         @if (!appStandalone()) {
@@ -1758,6 +1812,52 @@
         }
       }
 
+      <!-- ── Usuarios (solo admin) ── -->
+      @if (esAdmin()) {
+        <h3 class="dash-sub" style="margin-top:22px">👥 Usuarios y roles</h3>
+        <p class="inv-help">Cada quien entra con su PIN. Mesero: mesas/cocina · Cajero: + cajas/reportes/inventario · Admin: todo.</p>
+        <ul class="inv-list">
+          @for (u of usuarios(); track u.id) {
+            <li class="inv-item">
+              <div class="inv-item-main">
+                <strong>{{ u.nombre }}</strong>
+                <span class="inv-badge" [attr.data-rol]="u.rol">{{ u.rol }}</span>
+              </div>
+              <div class="inv-acciones">
+                <button type="button" class="inv-add-btn" (click)="editarUsuario(u)">✎ Editar</button>
+                <button type="button" class="inv-cancel" title="Eliminar" (click)="eliminarUsuario(u)">🗑️</button>
+              </div>
+            </li>
+          } @empty {
+            <div class="state-panel"><strong>Aún no hay usuarios</strong><p>Crea el primero abajo. (Mientras tanto, el PIN de supervisor entra como admin.)</p></div>
+          }
+        </ul>
+        @if (!showUserForm()) {
+          <button type="button" class="desc-aplicar" style="border-style:solid" (click)="nuevoUsuario()">＋ Agregar usuario</button>
+        } @else {
+          <div class="cfg-inv" style="margin-top:12px">
+            <strong>{{ userEditId() === null ? 'Nuevo usuario' : 'Editar usuario' }}</strong>
+            <label class="turno-label" style="margin-top:8px">Nombre</label>
+            <input class="turno-input" type="text" placeholder="Ej. María, Juan…"
+              [value]="userNombre()" (input)="setUserNombre($event)" [disabled]="guardandoUser()">
+            <label class="turno-label" style="margin-top:8px">PIN {{ userEditId() !== null ? '(deja vacío para no cambiarlo)' : '(4+ dígitos)' }}</label>
+            <input class="turno-input" type="password" inputmode="numeric" autocomplete="off" placeholder="PIN"
+              [value]="userPin()" (input)="setUserPin($event)" [disabled]="guardandoUser()">
+            <label class="turno-label" style="margin-top:8px">Rol</label>
+            <select class="turno-input" [value]="userRol()" (change)="setUserRol($event)" [disabled]="guardandoUser()">
+              <option value="mesero">Mesero (mesas / cocina)</option>
+              <option value="cajero">Cajero (+ cajas / reportes / inventario)</option>
+              <option value="admin">Admin (todo)</option>
+            </select>
+            @if (userError()) { <p class="qty-error" role="alert">{{ userError() }}</p> }
+            <button class="confirmar-btn alta-submit" type="button" (click)="guardarUsuario()" [disabled]="guardandoUser()">
+              @if (guardandoUser()) { Guardando… } @else { Guardar }
+            </button>
+            <button class="qty-cancel" type="button" (click)="cerrarUserForm()" [disabled]="guardandoUser()">Cancelar</button>
+          </div>
+        }
+      }
+
       <!-- ── PIN de supervisor ── -->
       <h3 class="dash-sub" style="margin-top:22px">🔐 PIN de supervisor</h3>
       <p class="inv-help">Se pide para cortesías y descuentos. Válido por empresa.</p>
@@ -2611,23 +2711,3 @@
   </div>
 }
 
-<!-- ── Modal: PIN para módulos protegidos (caja/reportes/inventario/config) ── -->
-@if (pedirPinModulo()) {
-  <div class="qty-overlay" role="dialog" aria-modal="true" aria-label="Acceso protegido">
-    <div class="qty-panel">
-      <strong class="qty-name">🔒 Acceso protegido</strong>
-      <p class="inv-help" style="text-align:center">Este módulo es solo para caja/administración. Ingresa el PIN de supervisor.</p>
-      <input class="turno-input" type="password" autocomplete="off" placeholder="PIN de supervisor"
-        [value]="pinModulo()" (input)="setPinModulo($event)" (keyup.enter)="confirmarPinModulo()"
-        [disabled]="validandoPinModulo()" style="margin-top:6px" autofocus>
-      @if (pinModuloError()) { <p class="qty-error" role="alert">{{ pinModuloError() }}</p> }
-      <button class="confirmar-btn alta-submit" type="button" (click)="confirmarPinModulo()"
-        [disabled]="validandoPinModulo() || !pinModulo()">
-        @if (validandoPinModulo()) { Validando… } @else { Entrar }
-      </button>
-      <button class="qty-cancel" type="button" (click)="cancelarPinModulo()" [disabled]="validandoPinModulo()">
-        Cancelar
-      </button>
-    </div>
-  </div>
-}

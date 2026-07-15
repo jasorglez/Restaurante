@@ -3269,3 +3269,79 @@ footer {
   color: #a03822;
   &:hover { background: #e0876f; color: #fff; }
 }
+
+/* ── Login por PIN ───────────────────────────────────────────────────────── */
+.dashboard-shell.oculto { display: none; }
+.login-screen {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 12% 8%, rgb(225 243 233 / 85%), transparent 30rem),
+    #f5f7f4;
+}
+.login-card {
+  width: min(360px, 100%);
+  background: #fff;
+  border-radius: 26px;
+  padding: 28px 24px 22px;
+  box-shadow: 0 18px 48px rgb(24 40 30 / 12%);
+  text-align: center;
+}
+.login-logo { width: 64px; height: 64px; border-radius: 16px; object-fit: contain; }
+.login-empresa { margin: 10px 0 2px; font-weight: 800; color: #17241c; }
+.login-titulo { margin: 4px 0 16px; font-size: 1.15rem; color: #147a4b; }
+.pin-dots { display: flex; justify-content: center; gap: 10px; margin-bottom: 14px; }
+.pin-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid #cfe0d6; background: transparent;
+  transition: 120ms ease;
+}
+.pin-dot.on { background: #147a4b; border-color: #147a4b; }
+.pin-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 8px 0 14px;
+}
+.pin-key {
+  padding: 16px 0;
+  border: 1.5px solid #dfe5df;
+  border-radius: 14px;
+  background: #f7faf8;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #17211b;
+  cursor: pointer;
+}
+.pin-key:hover:not(:disabled) { border-color: #147a4b; }
+.pin-key.pin-ok { background: #147a4b; color: #fff; border-color: #147a4b; }
+.pin-key.pin-del { background: #fff; color: #8a5a00; }
+.login-cambiar {
+  border: none; background: none; color: #315da8;
+  font-weight: 700; cursor: pointer; margin-top: 4px;
+}
+
+/* Chip de usuario en el header */
+.user-chip {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 12px 6px 6px;
+  border-radius: 999px;
+  background: #eef7f1;
+  border: 1px solid #cfe8da;
+}
+.user-ini {
+  width: 26px; height: 26px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: #147a4b; color: #fff; font-weight: 800; font-size: 0.85rem;
+}
+.user-nom { font-weight: 700; font-size: 0.85rem; color: #17241c; }
+.user-chip[data-rol="admin"]  { background: #efeafc; border-color: #d9cef8; .user-ini { background: #6d4bd1; } }
+.user-chip[data-rol="cajero"] { background: #eef3fc; border-color: #d3e0f6; .user-ini { background: #315da8; } }
+.inv-badge[data-rol="admin"]  { background: #efeafc; color: #5b3fb0; }
+.inv-badge[data-rol="cajero"] { background: #eef3fc; color: #2b4d86; }
+.inv-badge[data-rol="mesero"] { background: #e6f5ed; color: #147a4b; }
+@media (max-width: 480px), (orientation: portrait) and (max-width: 600px) {
+  .user-nom { display: none; }
+}
