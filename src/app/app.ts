@@ -385,6 +385,12 @@ export class App {
       }
     });
 
+    // Carga el chat de alertas guardado en el input.
+    effect(() => {
+      const v = this.alertaChatsResource.value();
+      if (v?.chatIds != null) this.alertaChats.set(v.chatIds);
+    });
+
     // ── Instalación PWA ──────────────────────────────────────────────────────
     // Auto-refresco del tablero de cocina cada 15 s mientras esté visible.
     setInterval(() => {
@@ -1704,6 +1710,43 @@ export class App {
     }
   }
 
+  // ── Configuración · Alertas Telegram (solo admin) ───────────────────────────
+  protected readonly alertaChats = signal('');
+  protected readonly guardandoAlertaChats = signal(false);
+  protected readonly alertaChatsMsg = signal('');
+  protected setAlertaChats(e: Event): void { this.alertaChats.set((e.target as HTMLInputElement).value); }
+  protected readonly alertaChatsResource = httpResource<any>(
+    () => this.view() === 'config' && this.esAdmin()
+      ? `${environment.urlChatBot}/restaurant-publico/alertas/${this.companyId()!}/chats`
+      : undefined,
+  );
+
+  protected async guardarAlertaChats(): Promise<void> {
+    this.guardandoAlertaChats.set(true);
+    this.alertaChatsMsg.set('');
+    try {
+      await firstValueFrom(this.http.post(
+        `${environment.urlChatBot}/restaurant-publico/alertas/${this.companyId()!}/chats`,
+        { chatIds: this.alertaChats() }));
+      this.alertaChatsMsg.set('Guardado ✓');
+    } catch { this.alertaChatsMsg.set('No se pudo guardar.'); }
+    finally { this.guardandoAlertaChats.set(false); }
+  }
+
+  // Envía una alerta a Telegram (no bloquea si falla).
+  private enviarAlerta(mensaje: string): void {
+    firstValueFrom(this.http.post(
+      `${environment.urlChatBot}/restaurant-publico/alertas`,
+      { idCompany: this.companyId()!, mensaje })).catch(() => { /* opcional */ });
+  }
+  protected avisarStockBajo(): void {
+    const bajos = this.alertasStock();
+    if (!bajos.length) return;
+    const lista = bajos.map(e => `• ${e.descripcion}: ${e.piezasEnteras} pza (mín ${e.stockMinPiezas})`).join('\n');
+    this.enviarAlerta(`⚠️ ${this.companyName()} · Stock bajo:\n${lista}`);
+    this.ingresoOk.set('Alerta de stock enviada a Telegram.');
+  }
+
   // ── Configuración · Usuarios (solo admin) ───────────────────────────────────
   protected readonly usuariosResource = httpResource<Usuario[]>(
     () => {
@@ -1949,6 +1992,10 @@ export class App {
       );
       this.corteResultado.set(result);
       this.auditar('CERRAR_TURNO', { entidad: 'TURNO', idEntidad: turno.id, monto: this.efectivoContado() ?? 0, descripcion: `Contado ${this.efectivoContado() ?? 0}` });
+      const esp = snapshotResumen?.totales.efectivoEsperado ?? 0;
+      const cont = this.efectivoContado() ?? 0;
+      const dif = cont - esp;
+      this.enviarAlerta(`📊 ${this.companyName()} · Corte de caja\nEsperado: $${esp.toFixed(2)}\nContado: $${cont.toFixed(2)}\nDiferencia: $${dif.toFixed(2)}`);
       if (snapshotResumen) {
         this.corteResumenSnapshot.set({
           ...snapshotResumen,

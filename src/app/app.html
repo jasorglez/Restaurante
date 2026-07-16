@@ -1586,6 +1586,7 @@
         @if (alertasStock().length > 0) {
           <div class="inv-alert" role="alert">
             ⚠️ {{ alertasStock().length }} producto(s) por debajo del mínimo.
+            <button type="button" class="inv-add-btn" style="margin-left:8px" (click)="avisarStockBajo()">🔔 Avisar a Telegram</button>
           </div>
         }
         @if (ingresoOk()) {
@@ -2011,6 +2012,20 @@
           @if (guardandoPin()) { Guardando… } @else { Cambiar PIN }
         </button>
       </div>
+
+      <!-- ── Alertas Telegram (solo admin) ── -->
+      @if (esAdmin()) {
+        <h3 class="dash-sub" style="margin-top:22px">🔔 Alertas a Telegram</h3>
+        <p class="inv-help">Chat ID(s) de Telegram que recibirán avisos (corte de caja, stock bajo). Sepáralos con coma. Obtén el chat ID escribiéndole al bot.</p>
+        <div class="cfg-inv">
+          <input class="turno-input" type="text" placeholder="Ej. 123456789, -100987654"
+            [value]="alertaChats()" (input)="setAlertaChats($event)" [disabled]="guardandoAlertaChats()">
+          @if (alertaChatsMsg()) { <p class="inv-ok" style="margin:8px 0">{{ alertaChatsMsg() }}</p> }
+          <button class="confirmar-btn alta-submit" type="button" (click)="guardarAlertaChats()" [disabled]="guardandoAlertaChats()">
+            @if (guardandoAlertaChats()) { Guardando… } @else { Guardar chats }
+          </button>
+        </div>
+      }
     </section>
 
   <!-- ── CUENTA / COBRO ─────────────────────────────────────────────────── -->
