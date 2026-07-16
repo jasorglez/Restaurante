@@ -990,7 +990,17 @@
           @if (devOk()) { <div class="inv-ok">{{ devOk() }}</div> }
 
           <div class="turno-fields">
-            <label class="turno-label">Ticket / referencia (opcional)</label>
+            @if (cobrosDiaResource.value().length > 0) {
+              <label class="turno-label">Elegir cobro del día (marca la venta como cancelada)</label>
+              <select class="turno-input" (change)="setDevCuenta($event)" [disabled]="devProcesando()">
+                <option value="">— Devolución manual (sin cancelar venta) —</option>
+                @for (c of cobrosDiaResource.value(); track c.idCuenta) {
+                  <option [value]="c.idCuenta">{{ c.mesa }} · {{ c.monto | currency:'MXN':'symbol-narrow':'1.2-2' }} · {{ c.fecha | date:'HH:mm' }}</option>
+                }
+              </select>
+            }
+
+            <label class="turno-label" style="margin-top:8px">Ticket / referencia (opcional)</label>
             <input class="turno-input" type="text" placeholder="Ej. #1234 / mesa 5"
               [value]="devRef()" (input)="setDevRef($event)" [disabled]="devProcesando()">
 

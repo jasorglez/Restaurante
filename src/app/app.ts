@@ -280,9 +280,29 @@ export class App {
     const v = parseFloat((e.target as HTMLInputElement).value);
     this.devMonto.set(!isNaN(v) && v > 0 ? v : null);
   }
+  // Cobros del día (para elegir cuál devolver/cancelar).
+  protected readonly devCuentaSel = signal<number | null>(null);
+  protected readonly cobrosDiaResource = httpResource<any[]>(
+    () => this.view() === 'cajas' && this.cajasSubView() === 'devolucion'
+      ? `${environment.urlChatBot}/restaurant-publico/cobros-dia/${this.companyId()!}?fecha=${new Date().toISOString().split('T')[0]}`
+      : undefined,
+    { defaultValue: [] },
+  );
+  protected setDevCuenta(e: Event): void {
+    const v = (e.target as HTMLSelectElement).value;
+    if (!v) { this.devCuentaSel.set(null); return; }
+    const c = this.cobrosDiaResource.value().find((x: any) => x.idCuenta === +v);
+    if (c) {
+      this.devCuentaSel.set(c.idCuenta);
+      this.devRef.set(`#${c.idCuenta} · ${c.mesa}`);
+      this.devMonto.set(c.monto);
+    }
+  }
+
   protected abrirDevolucion(): void {
     this.devRef.set(''); this.devMonto.set(null); this.devMotivo.set('');
     this.devPor.set(''); this.devPin.set(''); this.devError.set(''); this.devOk.set('');
+    this.devCuentaSel.set(null);
     this.cajasSubView.set('devolucion');
   }
 
@@ -319,8 +339,16 @@ export class App {
             monto, motivo: motivo || null, autorizadoPor: this.devPor().trim() }));
       } catch { /* la salida ya quedó registrada */ }
 
-      this.auditar('DEVOLUCION', { entidad: 'CAJA', monto, descripcion: desc });
-      this.devOk.set(`Devolución registrada: se sacaron ${monto} de la caja.`);
+      // Si se eligió un cobro del día, marca la venta como cancelada en el reporte.
+      const cta = this.devCuentaSel();
+      if (cta != null) {
+        try {
+          await firstValueFrom(this.http.post(
+            `${environment.urlChatBot}/restaurant-publico/cuentas/${cta}/cancelar-venta?idCompany=${this.companyId()!}`, {}));
+        } catch { /* la devolución ya quedó registrada como egreso */ }
+      }
+      this.auditar('DEVOLUCION', { entidad: 'CAJA', idEntidad: cta, monto, descripcion: desc });
+      this.devOk.set(`Devolución registrada: se sacaron ${monto} de la caja${cta != null ? ' y la venta quedó cancelada' : ''}.`);
       this.devRef.set(''); this.devMonto.set(null); this.devMotivo.set('');
       this.devPin.set('');
       this.resumenCorteResource.reload();

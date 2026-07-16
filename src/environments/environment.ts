@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '2.19 (15 Julio 2026) Propinas: captura en el cobro (10/15% o monto) y desglose por mesero en el Resumen',
+  version: '2.20 (15 Julio 2026) Devolución puede elegir el cobro del día y marca la venta como cancelada (active=0) en el reporte',
 }; 
