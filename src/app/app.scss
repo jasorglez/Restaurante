@@ -3445,3 +3445,18 @@ footer {
 .llevar-card:hover { border-color: #b06c19; }
 .llevar-badge { font-size: 0.7rem; font-weight: 800; color: #8a5a00; }
 .llevar-info { font-size: 0.82rem; color: #6b7c73; }
+
+/* Toast checador */
+.checar-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  background: #147a4b;
+  color: #fff;
+  padding: 12px 22px;
+  border-radius: 999px;
+  font-weight: 800;
+  box-shadow: 0 10px 30px -8px rgb(20 122 75 / 50%);
+  z-index: 9999;
+}

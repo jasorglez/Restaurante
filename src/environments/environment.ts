@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '2.25 (15 Julio 2026) Modificadores/extras con precio (con queso +$10) al agregar producto',
+  version: '2.26 (15 Julio 2026) Seguridad: PINs hasheados (SHA-256, compatible) + checador de empleados (entrada/salida)',
 }; 

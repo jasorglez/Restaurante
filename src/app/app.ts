@@ -1592,6 +1592,23 @@ export class App {
     }
   }
 
+  // ── Checador (entrada / salida) ─────────────────────────────────────────────
+  protected readonly checando = signal(false);
+  protected readonly checarMsg = signal('');
+  protected async checar(): Promise<void> {
+    const u = this.usuario();
+    if (!u) return;
+    this.checando.set(true);
+    try {
+      const r: any = await firstValueFrom(this.http.post(
+        `${environment.urlChatBot}/restaurant-publico/checador`,
+        { idCompany: this.companyId()!, idUsuario: u.id || null, usuario: u.nombre }));
+      this.checarMsg.set(r?.tipo === 'SALIDA' ? '👋 Salida registrada' : '✅ Entrada registrada');
+      setTimeout(() => this.checarMsg.set(''), 4000);
+    } catch { this.checarMsg.set('No se pudo checar.'); }
+    finally { this.checando.set(false); }
+  }
+
   protected cerrarSesion(): void {
     this.auditar('LOGOUT', {});
     this.usuario.set(null);
