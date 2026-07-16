@@ -314,6 +314,20 @@
             <button class="buscar-clear" type="button" (click)="limpiarMesaBusqueda()" aria-label="Limpiar búsqueda">✕</button>
           }
         </div>
+
+        <button type="button" class="instalar-btn" style="margin-bottom:12px" (click)="abrirLlevarModal()">🥡 Nuevo pedido para llevar / domicilio</button>
+
+        @if (llevarResource.value().length > 0) {
+          <div class="llevar-lista">
+            @for (c of llevarResource.value(); track c.idCuenta) {
+              <button type="button" class="llevar-card" (click)="abrirPedidoLlevar(c)">
+                <span class="llevar-badge">{{ c.tipo === 'domicilio' ? '🛵 Domicilio' : '🥡 Llevar' }}</span>
+                <strong>{{ c.clienteNombre || 'Sin nombre' }}</strong>
+                <span class="llevar-info">{{ c.numItems }} prod · {{ (c.total ?? 0) | currency:'MXN':'symbol-narrow':'1.2-2' }}</span>
+              </button>
+            }
+          </div>
+        }
       }
 
       @if (loading()) {
@@ -2918,3 +2932,30 @@
   </div>
 }
 
+
+<!-- ── Modal: nuevo pedido para llevar / domicilio ─────────────────────────── -->
+@if (showLlevar()) {
+  <div class="qty-overlay" role="dialog" aria-modal="true" aria-label="Para llevar">
+    <div class="qty-panel">
+      <strong class="qty-name">🥡 Nuevo pedido</strong>
+      <div class="pago-grid" style="margin:8px 0">
+        <button type="button" class="pago-btn" [class.active]="llevarTipo() === 'llevar'" (click)="llevarTipo.set('llevar')">🥡 Para llevar</button>
+        <button type="button" class="pago-btn" [class.active]="llevarTipo() === 'domicilio'" (click)="llevarTipo.set('domicilio')">🛵 Domicilio</button>
+      </div>
+      <div class="turno-fields">
+        <label class="turno-label">Nombre del cliente</label>
+        <input class="turno-input" type="text" placeholder="Ej. Juan" [value]="llevarNombre()" (input)="setLlevarNombre($event)" [disabled]="abriendoLlevar()">
+        <label class="turno-label" style="margin-top:8px">Teléfono</label>
+        <input class="turno-input" type="tel" inputmode="tel" placeholder="10 dígitos" [value]="llevarTel()" (input)="setLlevarTel($event)" [disabled]="abriendoLlevar()">
+        @if (llevarTipo() === 'domicilio') {
+          <label class="turno-label" style="margin-top:8px">Dirección</label>
+          <input class="turno-input" type="text" placeholder="Calle, número, colonia…" [value]="llevarDir()" (input)="setLlevarDir($event)" [disabled]="abriendoLlevar()">
+        }
+      </div>
+      <button class="confirmar-btn alta-submit" type="button" (click)="crearLlevar()" [disabled]="abriendoLlevar()">
+        @if (abriendoLlevar()) { Creando… } @else { Comenzar pedido → }
+      </button>
+      <button class="qty-cancel" type="button" (click)="showLlevar.set(false)" [disabled]="abriendoLlevar()">Cancelar</button>
+    </div>
+  </div>
+}

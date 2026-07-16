@@ -1205,6 +1205,57 @@ export class App {
     return t ? lista.filter(m => m.nombre.toLowerCase().includes(t)) : lista;
   });
 
+  // ── Para llevar / domicilio ─────────────────────────────────────────────────
+  protected readonly showLlevar   = signal(false);
+  protected readonly llevarTipo   = signal<'llevar' | 'domicilio'>('llevar');
+  protected readonly llevarNombre = signal('');
+  protected readonly llevarTel    = signal('');
+  protected readonly llevarDir    = signal('');
+  protected readonly abriendoLlevar = signal(false);
+  protected setLlevarNombre(e: Event): void { this.llevarNombre.set((e.target as HTMLInputElement).value); }
+  protected setLlevarTel(e: Event): void { this.llevarTel.set((e.target as HTMLInputElement).value); }
+  protected setLlevarDir(e: Event): void { this.llevarDir.set((e.target as HTMLInputElement).value); }
+
+  protected readonly llevarResource = httpResource<any[]>(
+    () => this.view() === 'mesas'
+      ? `${environment.urlChatBot}/restaurant-publico/cuentas/llevar/${this.companyId()!}`
+      : undefined,
+    { defaultValue: [] },
+  );
+
+  protected abrirLlevarModal(): void {
+    this.llevarTipo.set('llevar'); this.llevarNombre.set(''); this.llevarTel.set(''); this.llevarDir.set('');
+    this.showLlevar.set(true);
+  }
+  protected async crearLlevar(): Promise<void> {
+    this.abriendoLlevar.set(true);
+    try {
+      const res: any = await firstValueFrom(this.http.post(
+        `${environment.urlChatBot}/restaurant-publico/cuentas/llevar/abrir`,
+        { idCompany: this.companyId()!, tipo: this.llevarTipo(), nombre: this.llevarNombre().trim() || null,
+          tel: this.llevarTel().trim() || null, dir: this.llevarDir().trim() || null }));
+      const nom = this.llevarNombre().trim() || (this.llevarTipo() === 'domicilio' ? 'Domicilio' : 'Para llevar');
+      this.selectedMesa.set({
+        id: res.idMesa, nombre: `🥡 ${nom}`, capacidad: null, activo: true,
+        tieneCuentaAbierta: true, idCuentaActual: res.idCuenta, totalActual: 0, numItems: 0,
+      });
+      this.showLlevar.set(false);
+      this.cuentaSeparada.set(false);
+      this.auditar('ABRIR_MESA', { entidad: 'CUENTA', idEntidad: res.idCuenta, nombreMesa: `${this.llevarTipo()} · ${nom}` });
+      this.view.set('familias');
+    } catch {
+      this.mesaActionError.set('No se pudo crear el pedido para llevar.');
+    } finally { this.abriendoLlevar.set(false); }
+  }
+  protected abrirPedidoLlevar(c: any): void {
+    const et = c.tipo === 'domicilio' ? 'Domicilio' : 'Para llevar';
+    this.selectedMesa.set({
+      id: c.idMesa, nombre: `🥡 ${c.clienteNombre || et}`, capacidad: null, activo: true,
+      tieneCuentaAbierta: true, idCuentaActual: c.idCuenta, totalActual: c.total, numItems: c.numItems,
+    });
+    this.view.set('familias');
+  }
+
   protected abrirCobrarMesa(): void {
     this.cobrarBusqueda.set('');
     this.cajasSubView.set('cobrar');

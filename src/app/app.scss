@@ -3421,3 +3421,27 @@ footer {
   cursor: pointer;
 }
 .propina-rapida button:hover:not(:disabled) { border-color: #147a4b; background: #eef7f1; color: #147a4b; }
+
+/* Para llevar / domicilio */
+.llevar-lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.llevar-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1.5px solid #e0c9a8;
+  border-radius: 14px;
+  background: linear-gradient(155deg, #fff 30%, #fff7ea);
+  cursor: pointer;
+  text-align: left;
+  strong { font-size: 1rem; }
+}
+.llevar-card:hover { border-color: #b06c19; }
+.llevar-badge { font-size: 0.7rem; font-weight: 800; color: #8a5a00; }
+.llevar-info { font-size: 0.82rem; color: #6b7c73; }
