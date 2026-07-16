@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '2.22 (15 Julio 2026) Alertas a Telegram: corte de caja (auto) y stock bajo (botón); config de chats en Config',
+  version: '2.23 (15 Julio 2026) Fidelización: teléfono del cliente en el cobro acumula puntos + consulta de puntos',
 }; 

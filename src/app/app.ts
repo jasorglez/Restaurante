@@ -1060,6 +1060,23 @@ export class App {
   protected readonly montoTarjeta = signal<number | null>(null);
   protected readonly referenciaTarjeta = signal('');   // opcional, para control
   protected setReferenciaTarjeta(e: Event): void { this.referenciaTarjeta.set((e.target as HTMLInputElement).value); }
+  // Fidelización
+  protected readonly clienteTel = signal('');
+  protected readonly clientePuntos = signal<number | null>(null);
+  protected setClienteTel(e: Event): void {
+    this.clienteTel.set((e.target as HTMLInputElement).value);
+    this.clientePuntos.set(null);
+  }
+  protected async consultarPuntos(): Promise<void> {
+    const tel = this.clienteTel().trim();
+    if (tel.length < 8) return;
+    try {
+      const acc: any = await firstValueFrom(this.http.get(
+        `${environment.urlChatBot}/restaurant-publico/loyalty/${this.companyId()!}/${encodeURIComponent(tel)}`));
+      this.clientePuntos.set(acc?.totalPoints ?? 0);
+    } catch { this.clientePuntos.set(0); }
+  }
+
   protected readonly propina = signal<number | null>(null);   // propina del cobro (por mesero)
   protected setPropina(e: Event): void {
     const v = parseFloat((e.target as HTMLInputElement).value);
@@ -2975,6 +2992,8 @@ export class App {
     this.montoTarjeta.set(null);
     this.referenciaTarjeta.set('');
     this.propina.set(null);
+    this.clienteTel.set('');
+    this.clientePuntos.set(null);
     this.montoPagadoEl  = null;
     this.montoTarjetaEl = null;
     this.cobroError.set('');
@@ -3034,6 +3053,7 @@ export class App {
           descuentoMotivo: desc?.motivo ?? null,
           descuentoAutorizadoPor: desc?.por ?? null,
           referenciaTarjeta: refTarjeta,
+          telefonoCliente: this.clienteTel().trim() || null,
         }));
         this.cuentaCerradaComensal.set(true);
       }

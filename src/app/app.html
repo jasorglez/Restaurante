@@ -2168,6 +2168,18 @@
             </div>
           </div>
 
+          <div class="monto-section">
+            <label class="monto-label">⭐ Cliente (teléfono, opcional) <span style="font-weight:500;color:#8a9b91">— acumula puntos</span></label>
+            <div style="display:flex;gap:8px">
+              <input class="turno-input" type="tel" inputmode="tel" placeholder="10 dígitos"
+                [value]="clienteTel()" (input)="setClienteTel($event)" [disabled]="cobrando()">
+              <button type="button" class="inv-add-btn" (click)="consultarPuntos()" [disabled]="cobrando() || clienteTel().trim().length < 8">Puntos</button>
+            </div>
+            @if (clientePuntos() !== null) {
+              <p class="inv-ok" style="margin:6px 0">Puntos actuales: {{ clientePuntos() }}</p>
+            }
+          </div>
+
           @if (tipoPago() !== 'TARJETA') {
             <div class="monto-section">
               @if (tipoPago() === 'MIXTO') {
