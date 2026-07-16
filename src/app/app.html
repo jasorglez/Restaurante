@@ -2727,6 +2727,19 @@
           [value]="prodNota()" (input)="setProdNota($event)" [disabled]="agregandoItem()">
       </div>
 
+      <div class="extras-section">
+        <p class="qty-cant-label" style="margin-bottom:6px">Extras</p>
+        <div class="nota-chips">
+          @for (ex of extrasComunes; track ex.n; let i = $index) {
+            <button type="button" class="nota-chip" [class.active]="extraActivo(i)"
+              (click)="toggleExtra(i)" [disabled]="agregandoItem()">{{ ex.n }} +${{ ex.p }}</button>
+          }
+        </div>
+        @if (extrasTotal() > 0) {
+          <p class="inv-help" style="margin:6px 0 0">Extras: +{{ extrasTotal() | currency:'MXN':'symbol-narrow':'1.2-2' }} · Total unit.: {{ (precioVentaActual() + extrasTotal()) | currency:'MXN':'symbol-narrow':'1.2-2' }}</p>
+        }
+      </div>
+
       @if (addError()) {
         <p class="qty-error" role="alert">{{ addError() }}</p>
       }

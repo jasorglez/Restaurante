@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '2.24 (15 Julio 2026) Para llevar / domicilio: pedidos sin mesa con datos de cliente; lista de pedidos abiertos',
+  version: '2.25 (15 Julio 2026) Modificadores/extras con precio (con queso +$10) al agregar producto',
 }; 

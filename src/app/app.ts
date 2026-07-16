@@ -2770,8 +2770,24 @@ export class App {
     this.selectedProducto.set(producto);
     this.prodNota.set('');
     this.addError.set('');
+    this.extrasSel.set(new Set());
     void this.cargarConfigVenta(producto.id);
   }
+
+  // ── Modificadores / extras (con precio) ─────────────────────────────────────
+  protected readonly extrasComunes = [
+    { n: 'Extra queso', p: 10 }, { n: 'Extra carne', p: 20 }, { n: 'Doble', p: 15 },
+    { n: 'Tocino', p: 12 }, { n: 'Aguacate', p: 10 }, { n: 'Aderezo extra', p: 5 },
+  ];
+  protected readonly extrasSel = signal<Set<number>>(new Set());
+  protected toggleExtra(i: number): void {
+    this.extrasSel.update(s => { const n = new Set(s); n.has(i) ? n.delete(i) : n.add(i); return n; });
+  }
+  protected extraActivo(i: number): boolean { return this.extrasSel().has(i); }
+  protected readonly extrasTotal = computed(() =>
+    [...this.extrasSel()].reduce((sum, i) => sum + (this.extrasComunes[i]?.p ?? 0), 0));
+  protected readonly extrasTexto = computed(() =>
+    [...this.extrasSel()].map(i => this.extrasComunes[i]?.n).filter(Boolean).join(', '));
 
   protected cancelarProducto(): void {
     this.selectedProducto.set(null);
@@ -2820,10 +2836,12 @@ export class App {
     if (cfg?.controlaInventario) {
       presentacion = cfg.vendePorCopa ? this.presentacionSel() : 'COMPLETA';
     }
-    const precio = this.precioVentaActual();
+    const precio = this.precioVentaActual() + this.extrasTotal();
 
     const nota = this.prodNota().trim();
-    const etiqueta = presentacion === 'COPA' ? `${producto.description} (Copa)` : producto.description;
+    const extras = this.extrasTexto();
+    let etiqueta = presentacion === 'COPA' ? `${producto.description} (Copa)` : producto.description;
+    if (extras) etiqueta += ` + ${extras}`;
     const descripcion = nota ? `${etiqueta} (${nota})` : etiqueta;
 
     this.agregandoItem.set(true);
