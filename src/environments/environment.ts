@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '2.20 (15 Julio 2026) Devolución puede elegir el cobro del día y marca la venta como cancelada (active=0) en el reporte',
+  version: '2.21 (15 Julio 2026) Exportar a Excel (CSV): auditoría, reporte de mesas e inventario',
 }; 

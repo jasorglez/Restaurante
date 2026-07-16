@@ -2061,6 +2061,50 @@ export class App {
     pdfMake.createPdf(docDef).open();
   }
 
+  // ── Exportar a Excel (CSV) ──────────────────────────────────────────────────
+  private descargarCsv(nombre: string, encabezados: string[], filas: (string | number)[][]): void {
+    const esc = (v: string | number) => {
+      const s = String(v ?? '');
+      return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const bom = '﻿';   // para que Excel respete acentos
+    const cont = bom + [encabezados, ...filas].map(r => r.map(esc).join(',')).join('\r\n');
+    const blob = new Blob([cont], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${nombre}_${this.reporteFecha()}.csv`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  protected exportarAuditoria(): void {
+    const rows = this.auditoria().map((a: any) => [
+      new Date(a.fecha).toLocaleString('es-MX'), a.usuario || 'Admin', a.accion,
+      a.nombreMesa || '', a.descripcion || '', a.monto ?? '',
+    ]);
+    this.descargarCsv('auditoria', ['Fecha', 'Usuario', 'Acción', 'Mesa', 'Detalle', 'Monto'], rows);
+  }
+
+  protected exportarExistencias(): void {
+    const rows = this.existencias().map(e => [
+      e.descripcion, e.piezasEnteras, e.onzasSobrantes, e.existenciaOnzas, e.stockMinPiezas, e.bajoMinimo ? 'SÍ' : '',
+    ]);
+    this.descargarCsv('inventario', ['Producto', 'Piezas', 'Oz sobrantes', 'Total oz', 'Stock mín', 'Bajo mínimo'], rows);
+  }
+
+  protected exportarReporteMesas(): void {
+    const rows: (string | number)[][] = [];
+    for (const g of this.mesasPorGrupo()) {
+      for (const c of g.cuentas) {
+        for (const it of c.items) {
+          rows.push([g.nombreMesa, it.descripcion ?? 'Item', it.cantidad, it.precioUnitario, it.subtotal]);
+        }
+      }
+    }
+    this.descargarCsv('ventas_mesas', ['Mesa', 'Producto', 'Cantidad', 'Unitario', 'Subtotal'], rows);
+  }
+
   protected async imprimirReporte(): Promise<void> {
     const fecha = this.reporteFecha();
     const subView = this.reporteSubView();

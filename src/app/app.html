@@ -1248,9 +1248,12 @@
           }
         </div>
         @if (reporteSubView() !== 'resumen' && reporteSubView() !== 'auditoria') {
-          <button class="nueva-mesa-btn no-print" type="button" (click)="imprimirReporte()">
-            🖨️ Imprimir
-          </button>
+          <div style="display:flex;gap:8px">
+            @if (reporteSubView() === 'mesas') {
+              <button class="nueva-mesa-btn no-print" type="button" (click)="exportarReporteMesas()">⬇️ Excel</button>
+            }
+            <button class="nueva-mesa-btn no-print" type="button" (click)="imprimirReporte()">🖨️ Imprimir</button>
+          </div>
         } @else { <span></span> }
       </div>
 
@@ -1386,6 +1389,7 @@
               <option [value]="a" [selected]="auditFiltroAccion() === a">{{ etiquetaAccion(a) }}</option>
             }
           </select>
+          <button type="button" class="inv-add-btn" (click)="exportarAuditoria()" [disabled]="auditoria().length === 0">⬇️ Excel</button>
         </div>
         @if (auditoriaResource.isLoading()) {
           <div class="state-panel"><span class="loader"></span><strong>Cargando bitácora…</strong></div>
@@ -1591,6 +1595,7 @@
         <div class="inv-unidad">
           <button type="button" [class.active]="existenciaUnidad() === 'piezas'" (click)="existenciaUnidad.set('piezas')">Piezas</button>
           <button type="button" [class.active]="existenciaUnidad() === 'onzas'" (click)="existenciaUnidad.set('onzas')">Onzas</button>
+          <button type="button" class="inv-add-btn" style="margin-left:auto" (click)="exportarExistencias()" [disabled]="existencias().length === 0">⬇️ Excel</button>
         </div>
 
         @if (existenciasLoading()) {
