@@ -3354,3 +3354,35 @@ footer {
   flex-wrap: wrap;
 }
 .audit-filtros select { flex: 1; min-width: 150px; }
+
+/* Receta / insumos */
+.receta-linea {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+}
+.receta-nom { flex: 1; font-weight: 600; font-size: 0.9rem; }
+.receta-cant {
+  width: 84px;
+  padding: 8px;
+  border: 1px solid #d9e2dd;
+  border-radius: 8px;
+  text-align: right;
+}
+.receta-busca {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  border: 1px solid #e6ecea;
+  border-radius: 10px;
+  overflow: hidden;
+  li {
+    padding: 10px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f2f0;
+    font-size: 0.9rem;
+    &:hover { background: #eef7f1; color: #147a4b; }
+    &:last-child { border-bottom: none; }
+  }
+}

@@ -56,6 +56,13 @@ export interface ResumenMov {
   ingresosPiezas: number;
 }
 
+/** Línea de receta: un insumo que descuenta el platillo. */
+export interface RecetaItem {
+  idInsumo: number;
+  descripcion: string;
+  cantidad: number;
+}
+
 export interface ResultadoMovimiento {
   ok: boolean;
   existenciaOnzas: number;

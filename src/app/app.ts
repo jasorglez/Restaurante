@@ -15,7 +15,7 @@ import { OrdenCocina } from './models/cocina';
 import { Impresora } from './models/impresora';
 import { Rol, Usuario } from './models/usuario';
 import { CuentaAbierta, Familia, ItemCuenta, Producto } from './models/familia';
-import { Equivalencia, Existencia, MovimientoInv, ProductoInventario, ResultadoMovimiento, ResumenMov } from './models/inventario';
+import { Equivalencia, Existencia, MovimientoInv, ProductoInventario, RecetaItem, ResultadoMovimiento, ResumenMov } from './models/inventario';
 import { Mesa } from './models/mesa';
 import { GrupoMesa, ReporteMesa, ResumenDia } from './models/reporte';
 
@@ -855,6 +855,47 @@ export class App {
         this.cfgStockMin.set(cfg.stockMinPiezas || null);
       }
     } catch { /* sin config previa */ }
+    void this.cargarReceta(idMaterial);
+  }
+
+  // ── Receta / insumos del platillo ───────────────────────────────────────────
+  protected readonly receta = signal<RecetaItem[]>([]);
+  protected readonly recetaBusqueda = signal('');
+  protected setRecetaBusqueda(e: Event): void { this.recetaBusqueda.set((e.target as HTMLInputElement).value); }
+  protected readonly recetaBuscaResource = httpResource<Producto[]>(
+    () => {
+      const term = this.recetaBusqueda().trim();
+      if (this.editandoProducto() === null || term.length < 2) return undefined;
+      return `${environment.urlChatBot}/restaurant-publico/productos/${this.companyId()!}/buscar?term=${encodeURIComponent(term)}`;
+    },
+    { defaultValue: [] },
+  );
+  private async cargarReceta(idProducto: number): Promise<void> {
+    this.receta.set([]);
+    this.recetaBusqueda.set('');
+    try {
+      const r = await firstValueFrom(this.http.get<RecetaItem[]>(
+        this.invUrl(`${this.companyId()!}/receta/${idProducto}`)));
+      this.receta.set(r ?? []);
+    } catch { /* sin receta */ }
+  }
+  protected agregarInsumo(p: Producto): void {
+    if (this.receta().some(r => r.idInsumo === p.id)) return;
+    this.receta.update(l => [...l, { idInsumo: p.id, descripcion: p.description, cantidad: 1 }]);
+    this.recetaBusqueda.set('');
+  }
+  protected setInsumoCantidad(idInsumo: number, e: Event): void {
+    const v = parseFloat((e.target as HTMLInputElement).value);
+    this.receta.update(l => l.map(r => r.idInsumo === idInsumo ? { ...r, cantidad: !isNaN(v) && v > 0 ? v : 0 } : r));
+  }
+  protected quitarInsumo(idInsumo: number): void {
+    this.receta.update(l => l.filter(r => r.idInsumo !== idInsumo));
+  }
+  private async guardarReceta(idProducto: number): Promise<void> {
+    await firstValueFrom(this.http.put(
+      this.invUrl('receta'),
+      { idCompany: this.companyId()!, idProducto, lineas: this.receta().filter(r => r.cantidad > 0) },
+    ));
   }
 
   private async guardarConfigProducto(idMaterial: number): Promise<void> {
@@ -2386,6 +2427,9 @@ export class App {
       // Guardar configuración de inventario (no bloquea si falla).
       try { await this.guardarConfigProducto(prod.id); }
       catch { /* config opcional */ }
+      // Guardar receta / insumos (no bloquea si falla).
+      try { await this.guardarReceta(prod.id); }
+      catch { /* receta opcional */ }
       // Mover a otra familia/subfamilia si cambió.
       const famDestino = this.moverFamiliaId();
       const subDestino = this.moverSubfamiliaId();
