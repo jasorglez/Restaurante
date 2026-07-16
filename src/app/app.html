@@ -2013,6 +2013,9 @@
           <button class="agregar-btn" type="button" (click)="backToFamilias()">
             + Agregar productos
           </button>
+          <button class="agregar-btn" type="button" (click)="imprimirComandaTablet()" title="Imprimir comanda a cocina">
+            👨‍🍳 Comanda
+          </button>
           <button class="cobrar-btn" type="button" (click)="iniciarCobro()">
             Cobrar
           </button>
@@ -2123,8 +2126,11 @@
     <div class="ticket-card">
 
       <div class="ticket-actions no-print">
-        <button class="ticket-btn-imprimir" type="button" (click)="imprimirTicket()">
+        <button class="ticket-btn-imprimir" type="button" (click)="imprimirTicketTablet()">
           🖨️&nbsp;Imprimir
+        </button>
+        <button class="ticket-btn-imprimir" type="button" (click)="imprimirTicket()" title="Como PDF">
+          📄&nbsp;PDF
         </button>
         <button class="ticket-btn-cerrar" type="button" (click)="cerrarTicket()">
           Cerrar →

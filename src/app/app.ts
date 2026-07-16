@@ -2975,6 +2975,87 @@ export class App {
     pdfMake.createPdf(docDef).open();
   }
 
+  // ── Impresión desde la TABLET (sistema Android, no la nube) ──────────────────
+  // Genera HTML 80 mm y lo manda al diálogo de impresión del dispositivo.
+  private printHtml80(inner: string): void {
+    const css = `
+      @page { size: 80mm auto; margin: 0; }
+      * { box-sizing: border-box; }
+      body { width: 80mm; margin: 0; padding: 4mm 3mm; font-family: 'Courier New', monospace; color: #000; }
+      .c { text-align: center; }
+      .b { font-weight: bold; }
+      .big { font-size: 15px; }
+      .ln { border-top: 1px dashed #000; margin: 4px 0; }
+      table { width: 100%; border-collapse: collapse; font-size: 11px; }
+      td { padding: 1px 0; vertical-align: top; }
+      .r { text-align: right; }
+      .ct { text-align: center; }
+      .sm { font-size: 10px; color: #333; }
+      h1 { font-size: 14px; margin: 2px 0; }
+    `;
+    const html = `<!doctype html><html><head><meta charset="utf-8"><style>${css}</style></head><body>${inner}</body></html>`;
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
+    const doc = iframe.contentWindow?.document;
+    if (!doc) { document.body.removeChild(iframe); return; }
+    doc.open(); doc.write(html); doc.close();
+    setTimeout(() => {
+      try { iframe.contentWindow?.focus(); iframe.contentWindow?.print(); }
+      finally { setTimeout(() => iframe.remove(), 1000); }
+    }, 250);
+  }
+
+  private esc(s: string): string {
+    return (s ?? '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c] || c));
+  }
+
+  protected imprimirTicketTablet(): void {
+    const t = this.ticketData();
+    if (!t) return;
+    const filas = t.items.map(i =>
+      `<tr><td>${i.cantidad}x ${this.esc(i.descripcion ?? 'Item')}</td><td class="r">$${i.subtotal.toFixed(2)}</td></tr>`).join('');
+    const inner = `
+      <div class="c b big">${this.esc(t.companyName)}</div>
+      <div class="c sm">${this.esc(t.mesaNombre)} · Ticket #${t.idCuenta}</div>
+      <div class="c sm">${new Date(t.fecha).toLocaleString('es-MX')}</div>
+      <div class="ln"></div>
+      <table>${filas}</table>
+      <div class="ln"></div>
+      <table>
+        <tr><td class="b">TOTAL</td><td class="r b">$${t.total.toFixed(2)}</td></tr>
+        <tr><td>Pago (${this.esc(t.tipoPago)})</td><td class="r">$${t.montoPagado.toFixed(2)}</td></tr>
+        ${t.cambio > 0 ? `<tr><td class="b">Cambio</td><td class="r b">$${t.cambio.toFixed(2)}</td></tr>` : ''}
+      </table>
+      <div class="ln"></div>
+      <div class="c sm">¡Gracias por su visita!</div>
+    `;
+    this.printHtml80(inner);
+  }
+
+  // Comanda para cocina (desde la cuenta) — imprime lo que hay en la mesa.
+  protected imprimirComandaTablet(): void {
+    const mesa = this.selectedMesa();
+    const items = this.items();
+    if (!items.length) return;
+    const filas = items.map(i => `<tr><td class="b">${i.cantidad}x ${this.esc(i.descripcion)}</td></tr>`).join('');
+    const inner = `
+      <div class="c b big">COCINA</div>
+      <div class="c b">${this.esc(mesa?.nombre ?? 'Mesa')}</div>
+      <div class="c sm">${new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}</div>
+      <div class="ln"></div>
+      <table>${filas}</table>
+      <div class="ln"></div>
+      <div class="c sm">*** COMANDA ***</div>
+    `;
+    this.printHtml80(inner);
+  }
+
   protected cerrarTicket(): void {
     this.ticketVisible.set(false);
     this.ticketData.set(null);
