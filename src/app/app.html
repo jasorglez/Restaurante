@@ -1329,6 +1329,20 @@
               </ul>
             }
 
+            @if (an.propinasPorUsuario?.length) {
+              <h3 class="dash-sub">💵 Propinas por mesero · Total {{ an.totalPropinas | currency:'MXN':'symbol-narrow':'1.2-2' }}</h3>
+              <ul class="inv-list">
+                @for (u of an.propinasPorUsuario; track u.usuario) {
+                  <li class="inv-item">
+                    <div class="inv-item-main">
+                      <strong>{{ u.usuario }}</strong>
+                      <span class="inv-exist">{{ u.total | currency:'MXN':'symbol-narrow':'1.2-2' }}</span>
+                    </div>
+                  </li>
+                }
+              </ul>
+            }
+
             @if (an.porHora?.length) {
               <h3 class="dash-sub">Ventas por hora (horas pico)</h3>
               <div class="horas-chart">
@@ -2109,6 +2123,20 @@
                 [value]="referenciaTarjeta()" (input)="setReferenciaTarjeta($event)" [disabled]="cobrando()">
             </div>
           }
+
+          <div class="monto-section">
+            <label class="monto-label">💵 Propina <span style="font-weight:500;color:#8a9b91">(opcional, por mesero)</span></label>
+            <div class="propina-rapida">
+              <button type="button" (click)="propinaRapida(10)" [disabled]="cobrando()">10%</button>
+              <button type="button" (click)="propinaRapida(15)" [disabled]="cobrando()">15%</button>
+              <button type="button" (click)="propina.set(null)" [disabled]="cobrando()">Sin propina</button>
+            </div>
+            <div class="monto-row">
+              <span class="monto-currency">$</span>
+              <input class="monto-input" type="number" min="0" step="0.01" placeholder="0.00"
+                [value]="propina() ?? ''" (input)="setPropina($event)" [disabled]="cobrando()">
+            </div>
+          </div>
 
           @if (tipoPago() !== 'TARJETA') {
             <div class="monto-section">

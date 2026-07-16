@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '2.18 (15 Julio 2026) Analítica: comparativo hoy vs ayer, ventas por mesero y horas pico en el Resumen',
+  version: '2.19 (15 Julio 2026) Propinas: captura en el cobro (10/15% o monto) y desglose por mesero en el Resumen',
 }; 

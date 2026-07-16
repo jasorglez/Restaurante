@@ -1026,6 +1026,14 @@ export class App {
   protected readonly montoTarjeta = signal<number | null>(null);
   protected readonly referenciaTarjeta = signal('');   // opcional, para control
   protected setReferenciaTarjeta(e: Event): void { this.referenciaTarjeta.set((e.target as HTMLInputElement).value); }
+  protected readonly propina = signal<number | null>(null);   // propina del cobro (por mesero)
+  protected setPropina(e: Event): void {
+    const v = parseFloat((e.target as HTMLInputElement).value);
+    this.propina.set(!isNaN(v) && v > 0 ? v : null);
+  }
+  protected propinaRapida(pct: number): void {
+    this.propina.set(Math.round(this.totalAPagar() * pct / 100 * 100) / 100);
+  }
   private montoPagadoEl:  HTMLInputElement | null = null;
   private montoTarjetaEl: HTMLInputElement | null = null;
   protected readonly cobrando = signal(false);
@@ -2847,6 +2855,7 @@ export class App {
     this.montoPagado.set(null);
     this.montoTarjeta.set(null);
     this.referenciaTarjeta.set('');
+    this.propina.set(null);
     this.montoPagadoEl  = null;
     this.montoTarjetaEl = null;
     this.cobroError.set('');
@@ -2930,6 +2939,10 @@ export class App {
         idMesa: mesa.id, nombreMesa: mesa.nombre,
         descripcion: `${tipo}${comensal != null ? ' · Persona ' + comensal : ''}`,
       });
+      const prop = this.propina();
+      if (prop && prop > 0) {
+        this.auditar('PROPINA', { entidad: 'CUENTA', idEntidad: mesa.idCuentaActual, monto: prop, nombreMesa: mesa.nombre, descripcion: tipo });
+      }
       this.itemsResource.reload();   // refresca lo que queda por cobrar
     } catch (err: any) {
       const msg = err?.error?.error ?? err?.message ?? 'No se pudo procesar el cobro. Intenta de nuevo.';
