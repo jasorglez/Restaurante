@@ -1296,6 +1296,54 @@
               }
             </ul>
           }
+
+          <!-- ── Analítica ── -->
+          @if (analitica(); as an) {
+            <div class="analitica-comp">
+              <div class="comp-card">
+                <span class="dash-label">Hoy</span>
+                <strong class="dash-value">{{ an.totalHoy | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+                @if (an.totalAyer > 0) {
+                  <span class="comp-delta" [class.up]="an.deltaPct >= 0" [class.down]="an.deltaPct < 0">
+                    {{ an.deltaPct >= 0 ? '▲' : '▼' }} {{ an.deltaPct }}% vs ayer
+                  </span>
+                }
+              </div>
+              <div class="comp-card">
+                <span class="dash-label">Ayer</span>
+                <strong class="dash-value" style="color:#6b7c73">{{ an.totalAyer | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+              </div>
+            </div>
+
+            @if (an.porUsuario?.length) {
+              <h3 class="dash-sub">Ventas por mesero/usuario</h3>
+              <ul class="inv-list">
+                @for (u of an.porUsuario; track u.usuario) {
+                  <li class="inv-item">
+                    <div class="inv-item-main">
+                      <strong>{{ u.usuario }}</strong>
+                      <span class="inv-exist">{{ u.num }} cobros · {{ u.total | currency:'MXN':'symbol-narrow':'1.2-2' }}</span>
+                    </div>
+                  </li>
+                }
+              </ul>
+            }
+
+            @if (an.porHora?.length) {
+              <h3 class="dash-sub">Ventas por hora (horas pico)</h3>
+              <div class="horas-chart">
+                @for (h of an.porHora; track h.hora) {
+                  <div class="hora-row">
+                    <span class="hora-lbl">{{ h.hora }}:00</span>
+                    <div class="hora-bar-wrap">
+                      <div class="hora-bar" [style.width.%]="(h.total / maxHora()) * 100"></div>
+                    </div>
+                    <span class="hora-val">{{ h.total | currency:'MXN':'symbol-narrow':'1.0-0' }}</span>
+                  </div>
+                }
+              </div>
+            }
+          }
         }
       }
 

@@ -3386,3 +3386,25 @@ footer {
     &:last-child { border-bottom: none; }
   }
 }
+
+/* Analítica */
+.analitica-comp { display: flex; gap: 12px; margin: 14px 0; }
+.comp-card {
+  flex: 1;
+  padding: 14px;
+  border: 1px solid #e6ecea;
+  border-radius: 14px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.comp-delta { font-size: 0.8rem; font-weight: 800; }
+.comp-delta.up   { color: #147a4b; }
+.comp-delta.down { color: #c0392b; }
+.horas-chart { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+.hora-row { display: flex; align-items: center; gap: 8px; }
+.hora-lbl { width: 52px; font-size: 0.8rem; font-weight: 700; color: #47554d; }
+.hora-bar-wrap { flex: 1; background: #eef1f0; border-radius: 6px; height: 16px; overflow: hidden; }
+.hora-bar { height: 100%; background: linear-gradient(90deg, #147a4b, #1fa968); border-radius: 6px; min-width: 2px; }
+.hora-val { width: 60px; text-align: right; font-size: 0.78rem; color: #6b7c73; font-variant-numeric: tabular-nums; }

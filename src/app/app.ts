@@ -500,6 +500,19 @@ export class App {
   protected readonly resumenDia        = this.resumenDiaResource.value;
   protected readonly resumenDiaLoading = this.resumenDiaResource.isLoading;
 
+  // Analítica (horas pico, ventas por mesero, comparativo)
+  protected readonly analiticaResource = httpResource<any>(
+    () => this.view() === 'reportes' && this.reporteSubView() === 'resumen'
+      ? `${environment.urlChatBot}/restaurant-publico/analitica/${this.companyId()!}?fecha=${this.reporteFecha()}`
+      : undefined,
+  );
+  protected readonly analitica = this.analiticaResource.value;
+  // Máximo por hora (para el ancho de las barras).
+  protected readonly maxHora = computed(() => {
+    const h = this.analitica()?.porHora ?? [];
+    return h.reduce((m: number, x: any) => Math.max(m, x.total), 0) || 1;
+  });
+
   protected readonly reporteMesasResource = httpResource<ReporteMesa[]>(
     () => {
       if (this.view() !== 'reportes' || this.reporteSubView() !== 'mesas') return undefined;

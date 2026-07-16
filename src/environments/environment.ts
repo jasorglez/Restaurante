@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '2.17 (15 Julio 2026) Impresión desde la tablet: ticket y comanda a cocina vía sistema Android (80mm), sin depender de la nube',
+  version: '2.18 (15 Julio 2026) Analítica: comparativo hoy vs ayer, ventas por mesero y horas pico en el Resumen',
 }; 
