@@ -7,15 +7,20 @@
         <h2>Contraseña requerida</h2>
         <p>Ingresa la contraseña para cambiar de empresa</p>
       </div>
-      <input
-        class="clave-input"
-        type="password"
-        autocomplete="off"
-        placeholder="Contraseña"
-        [value]="claveInput()"
-        (input)="claveInput.set($any($event.target).value)"
-        (keyup.enter)="confirmarClave()"
-        autofocus />
+      <div class="clave-wrap">
+        <input
+          class="clave-input"
+          [type]="verClave('empresa') ? 'text' : 'password'"
+          autocomplete="off"
+          placeholder="Contraseña"
+          [value]="claveInput()"
+          (input)="claveInput.set($any($event.target).value)"
+          (keyup.enter)="confirmarClave()"
+          autofocus />
+        <button class="clave-ojo" type="button" (click)="toggleClave('empresa')"
+          [attr.aria-label]="verClave('empresa') ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+          [attr.title]="verClave('empresa') ? 'Ocultar' : 'Mostrar'">{{ verClave('empresa') ? '🙈' : '👁️' }}</button>
+      </div>
       @if (claveError()) {
         <p class="clave-error">{{ claveError() }}</p>
       }
@@ -81,9 +86,14 @@
       @if (loginError()) { <p class="qty-error" role="alert">{{ loginError() }}</p> }
 
       @if (loginModoTexto()) {
-        <input class="turno-input" type="password" autocomplete="off" placeholder="PIN de administrador"
-          [value]="loginPin()" (input)="setLoginPin($event)" (keyup.enter)="login()"
-          [disabled]="loginProcesando()" style="text-align:center" autofocus>
+        <div class="clave-wrap">
+          <input class="turno-input" [type]="verClave('login') ? 'text' : 'password'" autocomplete="off" placeholder="PIN de administrador"
+            [value]="loginPin()" (input)="setLoginPin($event)" (keyup.enter)="login()"
+            [disabled]="loginProcesando()" style="text-align:center" autofocus>
+          <button class="clave-ojo" type="button" (click)="toggleClave('login')"
+            [attr.aria-label]="verClave('login') ? 'Ocultar PIN' : 'Mostrar PIN'"
+            [attr.title]="verClave('login') ? 'Ocultar' : 'Mostrar'">{{ verClave('login') ? '🙈' : '👁️' }}</button>
+        </div>
         <button class="confirmar-btn alta-submit" type="button" (click)="login()"
           [disabled]="loginProcesando() || loginPin().length < 4">
           @if (loginProcesando()) { Entrando… } @else { Entrar }
@@ -1035,8 +1045,13 @@
               [value]="devPor()" (input)="setDevPor($event)" [disabled]="devProcesando()">
 
             <label class="turno-label" style="margin-top:8px">PIN de supervisor</label>
-            <input class="turno-input" type="password" autocomplete="off" placeholder="PIN"
-              [value]="devPin()" (input)="setDevPin($event)" (keyup.enter)="registrarDevolucion()" [disabled]="devProcesando()">
+            <div class="clave-wrap">
+              <input class="turno-input" [type]="verClave('dev') ? 'text' : 'password'" autocomplete="off" placeholder="PIN"
+                [value]="devPin()" (input)="setDevPin($event)" (keyup.enter)="registrarDevolucion()" [disabled]="devProcesando()">
+              <button class="clave-ojo" type="button" (click)="toggleClave('dev')"
+                [attr.aria-label]="verClave('dev') ? 'Ocultar PIN' : 'Mostrar PIN'"
+                [attr.title]="verClave('dev') ? 'Ocultar' : 'Mostrar'">{{ verClave('dev') ? '🙈' : '👁️' }}</button>
+            </div>
           </div>
 
           @if (devError()) { <p class="action-error" role="alert">{{ devError() }}</p> }
@@ -1992,8 +2007,13 @@
             <input class="turno-input" type="text" placeholder="Ej. María, Juan…"
               [value]="userNombre()" (input)="setUserNombre($event)" [disabled]="guardandoUser()">
             <label class="turno-label" style="margin-top:8px">PIN {{ userEditId() !== null ? '(deja vacío para no cambiarlo)' : '(4+ dígitos)' }}</label>
-            <input class="turno-input" type="password" inputmode="numeric" autocomplete="off" placeholder="PIN"
-              [value]="userPin()" (input)="setUserPin($event)" [disabled]="guardandoUser()">
+            <div class="clave-wrap">
+              <input class="turno-input" [type]="verClave('user') ? 'text' : 'password'" inputmode="numeric" autocomplete="off" placeholder="PIN"
+                [value]="userPin()" (input)="setUserPin($event)" [disabled]="guardandoUser()">
+              <button class="clave-ojo" type="button" (click)="toggleClave('user')"
+                [attr.aria-label]="verClave('user') ? 'Ocultar PIN' : 'Mostrar PIN'"
+                [attr.title]="verClave('user') ? 'Ocultar' : 'Mostrar'">{{ verClave('user') ? '🙈' : '👁️' }}</button>
+            </div>
             <label class="turno-label" style="margin-top:8px">Rol</label>
             <select class="turno-input" [value]="userRol()" (change)="setUserRol($event)" [disabled]="guardandoUser()">
               <option value="mesero">Mesero (mesas / cocina)</option>
@@ -2014,11 +2034,21 @@
       <p class="inv-help">Se pide para cortesías y descuentos. Válido por empresa.</p>
       <div class="cfg-inv">
         <label class="turno-label">PIN actual</label>
-        <input class="turno-input" type="password" autocomplete="off" placeholder="PIN actual"
-          [value]="pinActual()" (input)="setPinActual($event)" [disabled]="guardandoPin()">
+        <div class="clave-wrap">
+          <input class="turno-input" [type]="verClave('pinActual') ? 'text' : 'password'" autocomplete="off" placeholder="PIN actual"
+            [value]="pinActual()" (input)="setPinActual($event)" [disabled]="guardandoPin()">
+          <button class="clave-ojo" type="button" (click)="toggleClave('pinActual')"
+            [attr.aria-label]="verClave('pinActual') ? 'Ocultar PIN' : 'Mostrar PIN'"
+            [attr.title]="verClave('pinActual') ? 'Ocultar' : 'Mostrar'">{{ verClave('pinActual') ? '🙈' : '👁️' }}</button>
+        </div>
         <label class="turno-label" style="margin-top:8px">Nuevo PIN (mín. 4)</label>
-        <input class="turno-input" type="password" autocomplete="off" placeholder="Nuevo PIN"
-          [value]="pinNuevo()" (input)="setPinNuevo($event)" [disabled]="guardandoPin()">
+        <div class="clave-wrap">
+          <input class="turno-input" [type]="verClave('pinNuevo') ? 'text' : 'password'" autocomplete="off" placeholder="Nuevo PIN"
+            [value]="pinNuevo()" (input)="setPinNuevo($event)" [disabled]="guardandoPin()">
+          <button class="clave-ojo" type="button" (click)="toggleClave('pinNuevo')"
+            [attr.aria-label]="verClave('pinNuevo') ? 'Ocultar PIN' : 'Mostrar PIN'"
+            [attr.title]="verClave('pinNuevo') ? 'Ocultar' : 'Mostrar'">{{ verClave('pinNuevo') ? '🙈' : '👁️' }}</button>
+        </div>
         @if (pinMsg()) {
           <p [class]="pinMsg()!.ok ? 'inv-ok' : 'qty-error'" style="margin:8px 0">{{ pinMsg()!.msg }}</p>
         }
@@ -2846,8 +2876,13 @@
         [value]="authPor()" (input)="setAuthPor($event)" [disabled]="authProcesando()">
 
       <label class="turno-label" style="margin-top:8px">PIN de supervisor</label>
-      <input class="turno-input" type="password" autocomplete="off" placeholder="PIN"
-        [value]="authPin()" (input)="setAuthPin($event)" (keyup.enter)="confirmarAuth()" [disabled]="authProcesando()">
+      <div class="clave-wrap">
+        <input class="turno-input" [type]="verClave('auth') ? 'text' : 'password'" autocomplete="off" placeholder="PIN"
+          [value]="authPin()" (input)="setAuthPin($event)" (keyup.enter)="confirmarAuth()" [disabled]="authProcesando()">
+        <button class="clave-ojo" type="button" (click)="toggleClave('auth')"
+          [attr.aria-label]="verClave('auth') ? 'Ocultar PIN' : 'Mostrar PIN'"
+          [attr.title]="verClave('auth') ? 'Ocultar' : 'Mostrar'">{{ verClave('auth') ? '🙈' : '👁️' }}</button>
+      </div>
 
       @if (authError()) { <p class="qty-error" role="alert">{{ authError() }}</p> }
 

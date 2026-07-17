@@ -1237,6 +1237,36 @@ footer {
   &::placeholder { color: #a8b9ae; font-weight: 400; }
 }
 
+/* Campo de clave/PIN con botón 👁 para mostrar/ocultar */
+.clave-wrap {
+  position: relative;
+  display: block;
+  width: 100%;
+
+  input { padding-right: 46px; }   /* deja espacio para el botón del ojo */
+}
+
+.clave-ojo {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1.15rem;
+  line-height: 1;
+  opacity: 0.65;
+  transition: opacity 120ms ease;
+
+  &:hover  { opacity: 1; }
+  &:active { transform: translateY(1px); }
+}
+
 .turno-monto { margin-top: 2px; }
 
 .turno-iniciar-btn {

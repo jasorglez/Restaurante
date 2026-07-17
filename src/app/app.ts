@@ -1856,6 +1856,15 @@ export class App {
   protected setUserPin(e: Event): void { this.userPin.set((e.target as HTMLInputElement).value); }
   protected setUserRol(e: Event): void { this.userRol.set((e.target as HTMLSelectElement).value as Rol); }
 
+  // ── Mostrar/ocultar claves (botón 👁 junto a cada campo de PIN/contraseña) ──
+  private readonly clavesVisibles = signal<ReadonlySet<string>>(new Set<string>());
+  protected verClave(id: string): boolean { return this.clavesVisibles().has(id); }
+  protected toggleClave(id: string): void {
+    const s = new Set(this.clavesVisibles());
+    if (s.has(id)) s.delete(id); else s.add(id);
+    this.clavesVisibles.set(s);
+  }
+
   protected nuevoUsuario(): void {
     this.userEditId.set(null); this.userNombre.set(''); this.userPin.set('');
     this.userRol.set('mesero'); this.userError.set(''); this.showUserForm.set(true);
