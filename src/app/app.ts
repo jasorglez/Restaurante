@@ -588,17 +588,21 @@ export class App {
   });
 
   protected readonly mesasPorGrupo = computed<GrupoMesa[]>(() => {
+    // Recencia por cobro (cerradaAt) o apertura; fallback al id de cuenta.
+    const recencia = (c: ReporteMesa): number => Date.parse(c.cerradaAt ?? c.abiertaAt) || c.idCuenta;
     const mapa = new Map<string, ReporteMesa[]>();
     for (const c of this.reporteMesasResource.value()) {
       const arr = mapa.get(c.nombreMesa) ?? [];
       arr.push(c);
       mapa.set(c.nombreMesa, arr);
     }
-    return Array.from(mapa.entries()).map(([nombreMesa, cuentas]) => ({
-      nombreMesa,
-      cuentas,
-      subtotal: cuentas.reduce((s, c) => s + c.total, 0),
-    }));
+    return Array.from(mapa.entries())
+      .map(([nombreMesa, cuentas]) => ({
+        nombreMesa,
+        cuentas: [...cuentas].sort((a, b) => recencia(b) - recencia(a)),   // más reciente arriba
+        subtotal: cuentas.reduce((s, c) => s + c.total, 0),
+      }))
+      .sort((a, b) => recencia(b.cuentas[0]) - recencia(a.cuentas[0]));      // mesa más reciente primero
   });
 
   protected readonly totalReporteMesas = computed(() =>
