@@ -2666,6 +2666,38 @@ footer {
 }
 .dash-sub { margin: 12px 0 6px; font-size: 1.05rem; }
 
+/* Corte del día (ventas − egresos − devoluciones = neto) */
+.corte-dia {
+  margin: 6px 0 14px;
+  padding: 14px 16px;
+  border: 1px solid #dfe5df;
+  border-radius: 14px;
+  background: #f7faf8;
+
+  .corte-dia-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    padding: 5px 0;
+    font-size: 0.98rem;
+
+    &.sub {
+      padding-left: 14px;
+      color: #6b7c73;
+      font-size: 0.9rem;
+    }
+    &.neg strong { color: #b4433a; }
+    &.total {
+      margin-top: 6px;
+      padding-top: 10px;
+      border-top: 2px solid #cdd8d0;
+      font-size: 1.12rem;
+      strong { color: #147a4b; }
+    }
+  }
+}
+
 /* Botón instalar PWA */
 .instalar-btn {
   padding: 12px 22px;

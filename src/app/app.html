@@ -1321,6 +1321,19 @@
             </div>
           </div>
 
+          <!-- ── Corte del día: ventas − egresos − devoluciones = neto ── -->
+          <div class="corte-dia">
+            <h3 class="dash-sub" style="margin-top:4px">🧾 Corte del día</h3>
+            <div class="corte-dia-row"><span>Ventas del día</span><strong>{{ resumenDia()!.totalVentas | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong></div>
+            <div class="corte-dia-row sub"><span>💵 Efectivo</span><span>{{ resumenDia()!.ventasEfectivo | currency:'MXN':'symbol-narrow':'1.2-2' }}</span></div>
+            <div class="corte-dia-row sub"><span>💳 Tarjeta</span><span>{{ resumenDia()!.ventasTarjeta | currency:'MXN':'symbol-narrow':'1.2-2' }}</span></div>
+            <div class="corte-dia-row sub"><span>Otros</span><span>{{ resumenDia()!.ventasOtros | currency:'MXN':'symbol-narrow':'1.2-2' }}</span></div>
+            <div class="corte-dia-row neg"><span>− Egresos (retiros/gastos)</span><strong>{{ resumenDia()!.totalEgresos | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong></div>
+            <div class="corte-dia-row neg"><span>− Devoluciones</span><strong>{{ resumenDia()!.totalDevoluciones | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong></div>
+            <div class="corte-dia-row total"><span>= Neto en efectivo</span><strong>{{ resumenDia()!.netoEfectivo | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong></div>
+            <p class="inv-help" style="margin-top:6px">Neto = ventas en efectivo − egresos − devoluciones (sin contar el fondo de caja).</p>
+          </div>
+
           @if (resumenDia()!.mesaMayorNombre) {
             <p class="dash-highlight">🏆 Mesa con mayor consumo: <strong>{{ resumenDia()!.mesaMayorNombre }}</strong>
               ({{ resumenDia()!.mesaMayorTotal | currency:'MXN':'symbol-narrow':'1.2-2' }})</p>

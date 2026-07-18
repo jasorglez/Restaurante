@@ -32,6 +32,9 @@ export interface ResumenDia {
   ventasEfectivo: number;
   ventasTarjeta: number;
   ventasOtros: number;
+  totalEgresos: number;
+  totalDevoluciones: number;
+  netoEfectivo: number;
   topPlatillos: PlatilloTop[];
   mesaMayorNombre: string | null;
   mesaMayorTotal: number;
