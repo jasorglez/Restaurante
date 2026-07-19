@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '2.29 (17 Julio 2026) Reporte de Mesas ordenado: cuentas y mesas más recientes arriba',
+  version: '2.30 (19 Julio 2026) Cocina avisa al mesero: la mesa parpadea 🔔 LISTO + campana; botón Entregado',
 }; 

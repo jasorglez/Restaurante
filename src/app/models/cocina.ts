@@ -10,3 +10,12 @@ export interface OrdenCocina {
   minutos: number;
   items: ItemCocina[];
 }
+
+export interface MesaListo {
+  idCuenta: number;
+  idMesa: number;
+  nombreMesa: string;
+  numItems: number;
+  minutos: number;
+  items: ItemCocina[];
+}

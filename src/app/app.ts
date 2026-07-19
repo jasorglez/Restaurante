@@ -11,7 +11,7 @@ if (pdfFonts && (pdfFonts as any).pdfMake) {
 
 import { environment } from '../environments/environment';
 import { CajaInfo, CajaReporte, EgresoCaja, ResumenCorte, Turno, VentaPorTipo } from './models/caja';
-import { OrdenCocina } from './models/cocina';
+import { OrdenCocina, MesaListo } from './models/cocina';
 import { Impresora } from './models/impresora';
 import { Rol, Usuario } from './models/usuario';
 import { CuentaAbierta, Familia, ItemCuenta, Producto } from './models/familia';
@@ -389,6 +389,14 @@ export class App {
     effect(() => {
       const v = this.alertaChatsResource.value();
       if (v?.chatIds != null) this.alertaChats.set(v.chatIds);
+    });
+
+    // Suena la campana cuando cocina marca un platillo listo (cuenta nueva en la lista).
+    effect(() => {
+      const ids = this.listosResource.value().map(l => l.idCuenta);
+      const hayNuevo = ids.some(id => !this.listosAvisados.has(id));
+      this.listosAvisados = new Set(ids);   // solo las vigentes; si vuelve a salir, re-avisa
+      if (hayNuevo) this.sonarCampana();
     });
 
     // ── Instalación PWA ──────────────────────────────────────────────────────
@@ -1147,6 +1155,57 @@ export class App {
     { defaultValue: [] },
   );
   protected readonly mesas = this.mesasResource.value;
+
+  // ── Aviso al mesero: platillos listos de cocina, pendientes de entregar ──────
+  protected readonly listosResource = httpResource<MesaListo[]>(
+    () => {
+      this.mesasTick();   // se refresca con el mismo latido que las mesas
+      return this.view() === 'mesas'
+        ? `${environment.urlChatBot}/restaurant-publico/cocina/${this.companyId()!}/listos`
+        : undefined;
+    },
+    { defaultValue: [] },
+  );
+  // idCuenta de cuentas con platillo listo por entregar.
+  protected readonly mesaListos = computed(() => new Set(this.listosResource.value().map(l => l.idCuenta)));
+  protected mesaTieneListo(mesa: Mesa): boolean {
+    return mesa.idCuentaActual != null && this.mesaListos().has(mesa.idCuentaActual);
+  }
+  protected readonly marcandoEntregado = signal<number | null>(null);
+  protected async marcarEntregado(mesa: Mesa, ev: Event): Promise<void> {
+    ev.stopPropagation();
+    if (mesa.idCuentaActual == null) return;
+    this.marcandoEntregado.set(mesa.id);
+    try {
+      await firstValueFrom(this.http.post(
+        `${environment.urlChatBot}/restaurant-publico/cocina/${mesa.idCuentaActual}/entregado`, {}));
+      this.listosResource.reload();
+    } catch { /* reintenta en el siguiente refresco */ }
+    finally { this.marcandoEntregado.set(null); }
+  }
+  // Cuentas ya avisadas (para sonar la campana solo cuando aparece una NUEVA).
+  private listosAvisados = new Set<number>();
+  private sonarCampana(): void {
+    try {
+      const Ctx = (window as any).AudioContext || (window as any).webkitAudioContext;
+      if (!Ctx) return;
+      const ctx = new Ctx();
+      const beep = (inicio: number, freq: number) => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.type = 'sine'; o.frequency.value = freq;
+        g.gain.setValueAtTime(0.0001, ctx.currentTime + inicio);
+        g.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + inicio + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + inicio + 0.35);
+        o.start(ctx.currentTime + inicio);
+        o.stop(ctx.currentTime + inicio + 0.37);
+      };
+      beep(0, 988); beep(0.22, 1319);   // ding-ding
+      setTimeout(() => { try { ctx.close(); } catch { /* noop */ } }, 800);
+    } catch { /* audio no disponible */ }
+  }
+
   // Buscador de mesas (filtra por nombre/número).
   protected readonly mesaBusqueda = signal('');
   protected setMesaBusqueda(e: Event): void { this.mesaBusqueda.set((e.target as HTMLInputElement).value); }

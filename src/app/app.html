@@ -363,11 +363,15 @@
               [class.busy]="estadoMesa(mesa) === 'ocupada'"
               [class.por-cobrar]="estadoMesa(mesa) === 'por_cobrar'"
               [class.sucia]="estadoMesa(mesa) === 'sucia'"
+              [class.listo]="mesaTieneListo(mesa)"
               [class.selected]="selectedMesa()?.id === mesa.id"
               type="button"
               (click)="selectMesa(mesa)"
               [disabled]="openingMesa()"
             >
+              @if (mesaTieneListo(mesa)) {
+                <span class="table-listo-badge">🔔 LISTO</span>
+              }
               <span class="table-graphic" aria-hidden="true">
                 @let cap = mesa.capacidad ?? 4;
                 @if (cap >= 8) {
@@ -405,6 +409,10 @@
               }
             </button>
             <div class="mesa-actions">
+              @if (mesaTieneListo(mesa)) {
+                <button class="mesa-action entregar" type="button" title="Platillo entregado (quita el aviso)"
+                  (click)="marcarEntregado(mesa, $event)" [disabled]="marcandoEntregado() === mesa.id">✅</button>
+              }
               <button class="edit-mesa-btn" type="button" title="Editar mesa"
                 (click)="abrirEditMesa(mesa, $event)">✏️</button>
               @if (estadoMesa(mesa) === 'ocupada') {
