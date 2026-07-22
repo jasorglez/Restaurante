@@ -1,0 +1,350 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Estilos de la vista Reportes. El componente usa ViewEncapsulation.None, por lo
+ * que estas reglas son globales (necesario para el @media print que aísla la
+ * vista de impresión y para las clases compartidas con Inventario).
+ *
+ * NOTA (deuda técnica): las clases inv-* / turno-input están copiadas de app.scss
+ * porque las comparte con Inventario. Al extraer Inventario se promueven a una
+ * capa shared global y se borran de aquí.
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+/* ── Reportes: controles y tabs ─────────────────────────────────────────────── */
+.reporte-view { padding-bottom: 40px; }
+
+.reporte-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #f5f7f5;
+  border-bottom: 1px solid #dde4de;
+  flex-wrap: wrap;
+}
+.reporte-fecha-input {
+  padding: 8px 12px;
+  border: 1.5px solid #c5d0c8;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  background: #fff;
+  color: #17211b;
+  cursor: pointer;
+}
+.reporte-tabs {
+  display: flex;
+  gap: 4px;
+  background: #e5eee8;
+  border-radius: 12px;
+  padding: 3px;
+}
+.reporte-tab {
+  padding: 7px 18px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #5a7060;
+  cursor: pointer;
+  transition: 120ms ease;
+
+  &.active {
+    background: #fff;
+    color: #147a4b;
+    box-shadow: 0 1px 4px rgb(0 0 0 / 12%);
+  }
+}
+
+/* ── Reportes: tablas de mesas / caja ───────────────────────────────────────── */
+.reporte-print-header {
+  display: none;
+  text-align: center;
+  margin-bottom: 12px;
+  h2 { font-size: 1.1rem; font-weight: 900; }
+  p  { font-size: 0.82rem; color: #555; margin-top: 2px; }
+}
+.reporte-grupo { margin: 16px 16px 0; }
+.reporte-grupo-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #1c7c4b;
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.95rem;
+  border-radius: 10px 10px 0 0;
+}
+.reporte-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  background: #fff;
+  border: 1px solid #dde4de;
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  overflow: hidden;
+
+  th {
+    background: #f0f5f1;
+    color: #4a6050;
+    font-weight: 800;
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    padding: 7px 10px;
+    text-align: left;
+    border-bottom: 1px solid #dde4de;
+  }
+  td {
+    padding: 7px 10px;
+    border-bottom: 1px solid #f0f0f0;
+    color: #2d3d32;
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  .text-right { text-align: right; font-weight: 700; }
+}
+.reporte-table-full { margin: 16px; width: calc(100% - 32px); }
+.reporte-items-row td { padding: 2px 10px 7px; background: #fafcfa; }
+.reporte-items-list { font-size: 0.75rem; color: #7a8f80; font-style: italic; }
+.reporte-subtotal td {
+  background: #f0f7f3;
+  font-weight: 800;
+  color: #147a4b;
+  font-size: 0.82rem;
+}
+.reporte-grand-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 12px 16px 0;
+  padding: 14px 18px;
+  background: #147a4b;
+  color: #fff;
+  border-radius: 12px;
+  font-weight: 900;
+  font-size: 1.05rem;
+}
+.reporte-grand-total-row td {
+  background: #f0f7f3;
+  font-weight: 900;
+  color: #147a4b;
+  font-size: 0.9rem;
+}
+.turno-abierto td { color: #b36a00; font-style: italic; }
+.caja-group-header td {
+  background: #e8f5ee;
+  font-weight: 700;
+  color: #147a4b;
+  font-size: 0.83rem;
+  border-top: 2px solid #b2dcc6;
+}
+.turno-sub-row td {
+  background: #fafafa;
+  font-size: 0.78rem;
+  color: #555;
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+.turno-sub-nota {
+  text-align: right;
+  font-style: italic;
+  color: #999 !important;
+  font-size: 0.75rem !important;
+}
+
+/* ── Reportes: dashboard del resumen ────────────────────────────────────────── */
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin: 6px 0 14px;
+}
+.dash-kpi {
+  padding: 16px;
+  border: 1px solid #e6ecea;
+  border-radius: 16px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dash-kpi.big {
+  grid-column: 1 / -1;
+  background: linear-gradient(135deg, var(--brand), var(--brand-2));
+  border: none;
+  color: #fff;
+  .dash-label { color: rgb(255 255 255 / 85%); }
+  .dash-value { color: #fff; }
+}
+.dash-label { font-size: 0.8rem; font-weight: 700; color: #6b7c73; letter-spacing: 0.02em; }
+.dash-value { font-size: 1.6rem; font-weight: 800; color: #17241c; }
+.dash-highlight {
+  margin: 4px 0 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fff8e8;
+  color: #8a5a00;
+}
+.dash-sub { margin: 12px 0 6px; font-size: 1.05rem; }
+
+.corte-dia {
+  margin: 6px 0 14px;
+  padding: 14px 16px;
+  border: 1px solid #dfe5df;
+  border-radius: 14px;
+  background: #f7faf8;
+
+  .corte-dia-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    padding: 5px 0;
+    font-size: 0.98rem;
+
+    &.sub { padding-left: 14px; color: #6b7c73; font-size: 0.9rem; }
+    &.neg strong { color: #b4433a; }
+    &.total {
+      margin-top: 6px;
+      padding-top: 10px;
+      border-top: 2px solid #cdd8d0;
+      font-size: 1.12rem;
+      strong { color: #147a4b; }
+    }
+  }
+}
+
+/* ── Reportes: auditoría y analítica ────────────────────────────────────────── */
+.audit-filtros {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.audit-filtros select { flex: 1; min-width: 150px; }
+
+.analitica-comp { display: flex; gap: 12px; margin: 14px 0; }
+.comp-card {
+  flex: 1;
+  padding: 14px;
+  border: 1px solid #e6ecea;
+  border-radius: 14px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.comp-delta { font-size: 0.8rem; font-weight: 800; }
+.comp-delta.up   { color: #147a4b; }
+.comp-delta.down { color: #c0392b; }
+.horas-chart { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+.hora-row { display: flex; align-items: center; gap: 8px; }
+.hora-lbl { width: 52px; font-size: 0.8rem; font-weight: 700; color: #47554d; }
+.hora-bar-wrap { flex: 1; background: #eef1f0; border-radius: 6px; height: 16px; overflow: hidden; }
+.hora-bar { height: 100%; background: linear-gradient(90deg, #147a4b, #1fa968); border-radius: 6px; min-width: 2px; }
+.hora-val { width: 60px; text-align: right; font-size: 0.78rem; color: #6b7c73; font-variant-numeric: tabular-nums; }
+
+/* ── Compartido con Inventario (copia temporal, ver NOTA) ───────────────────── */
+.turno-input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid #dfe5df;
+  border-radius: 14px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #17211b;
+  background: #f5f7f4;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 120ms ease;
+
+  &:focus { border-color: #147a4b; background: #fff; }
+  &:disabled { opacity: 0.6; }
+  &::placeholder { color: #a8b9ae; font-weight: 400; }
+}
+.inv-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.inv-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid #e6ecea;
+  border-radius: 12px;
+  background: #fff;
+  &.bajo { border-color: #f0b429; background: #fffdf5; }
+}
+.inv-item-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  strong { flex: 1; }
+}
+.inv-exist { font-weight: 700; color: #147a4b; em { color: #6b7c73; font-style: normal; font-weight: 500; } }
+.inv-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #fdecc8;
+  color: #8a5a00;
+}
+.inv-add-btn {
+  align-self: flex-start;
+  padding: 6px 12px;
+  border: 1px dashed #147a4b;
+  border-radius: 8px;
+  background: #fff;
+  color: #147a4b;
+  font-weight: 600;
+  cursor: pointer;
+}
+.inv-mov-detalle {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: #6b7c73;
+  .neg { color: #c0392b; font-weight: 600; }
+  .inv-fecha { margin-left: auto; }
+}
+.inv-help {
+  margin: 8px 0;
+  font-size: 13px;
+  color: #6b7c73;
+}
+
+/* ── Responsive (celular) ───────────────────────────────────────────────────── */
+@media (max-width: 480px), (orientation: portrait) and (max-width: 600px) {
+  .reporte-controls { padding: 10px 12px; }
+  .reporte-fecha-input { flex: 1; min-width: 0; }
+  .reporte-tabs { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .reporte-tabs::-webkit-scrollbar { height: 0; }
+  .reporte-tab { flex: 0 0 auto; padding: 7px 12px; font-size: 0.8rem; }
+  .dash-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .dash-kpi.big { grid-column: 1 / -1; }
+  .dash-value { font-size: 1.3rem; }
+}
+
+/* ── Impresión: aísla la vista de reporte ───────────────────────────────────── */
+@media print {
+  body * { visibility: hidden; }
+  .reporte-view,
+  .reporte-view * { visibility: visible; }
+  .reporte-view {
+    position: fixed;
+    inset: 0;
+    overflow: visible;
+    background: #fff;
+    padding: 8mm;
+  }
+  .reporte-print-header { display: block; }
+  .no-print { display: none !important; }
+}

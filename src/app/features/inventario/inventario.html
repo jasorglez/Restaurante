@@ -1,0 +1,312 @@
+<section class="tables-view" aria-labelledby="inv-title">
+  <div class="tables-toolbar">
+    <button class="back-button" type="button" (click)="back.emit()">
+      <span aria-hidden="true">←</span> Menú
+    </button>
+    <div class="tables-heading">
+      <p class="eyebrow">PUNTO DE VENTA</p>
+      <h2 id="inv-title">Inventario</h2>
+    </div>
+    <button class="refresh-button" type="button" title="Actualizar"
+      (click)="existencias().length; inv.reloadExistencias(); resumenResource.reload(); movimientosResource.reload()">↻</button>
+  </div>
+
+  <div class="reporte-tabs">
+    <button class="reporte-tab" [class.active]="inventarioSubView() === 'existencias'"
+      type="button" (click)="inventarioSubView.set('existencias')">📦 Existencias</button>
+    <button class="reporte-tab" [class.active]="inventarioSubView() === 'alta'"
+      type="button" (click)="inventarioSubView.set('alta')">➕ Alta</button>
+    <button class="reporte-tab" [class.active]="inventarioSubView() === 'movimientos'"
+      type="button" (click)="inventarioSubView.set('movimientos')">🧾 Movimientos</button>
+    <button class="reporte-tab" [class.active]="inventarioSubView() === 'detalle'"
+      type="button" (click)="inventarioSubView.set('detalle')">🔎 Detalle</button>
+    <button class="reporte-tab" [class.active]="inventarioSubView() === 'equivalencias'"
+      type="button" (click)="inventarioSubView.set('equivalencias')">⚖️ Equivalencias</button>
+  </div>
+
+  <!-- ── EXISTENCIAS ── -->
+  @if (inventarioSubView() === 'existencias') {
+    @if (alertasStock().length > 0) {
+      <div class="inv-alert" role="alert">
+        ⚠️ {{ alertasStock().length }} producto(s) por debajo del mínimo.
+        <button type="button" class="inv-add-btn" style="margin-left:8px" (click)="avisarStockBajo()">🔔 Avisar a Telegram</button>
+      </div>
+    }
+    @if (ingresoOk()) {
+      <div class="inv-ok" role="status">{{ ingresoOk() }}</div>
+    }
+
+    <div class="inv-unidad">
+      <button type="button" [class.active]="existenciaUnidad() === 'piezas'" (click)="existenciaUnidad.set('piezas')">Piezas</button>
+      <button type="button" [class.active]="existenciaUnidad() === 'onzas'" (click)="existenciaUnidad.set('onzas')">Onzas</button>
+      <button type="button" class="inv-add-btn" style="margin-left:auto" (click)="exportarExistencias()" [disabled]="existencias().length === 0">⬇️ Excel</button>
+    </div>
+
+    @if (existenciasLoading()) {
+      <div class="state-panel" role="status"><span class="loader" aria-hidden="true"></span><strong>Cargando existencias…</strong></div>
+    } @else if (existencias().length === 0) {
+      <div class="state-panel">
+        <strong>Sin productos con inventario</strong>
+        <p>Configura el inventario de un producto desde su ficha (Familias › producto › editar).</p>
+      </div>
+    } @else {
+      <ul class="inv-list">
+        @for (e of existencias(); track e.idMaterial) {
+          <li class="inv-item" [class.bajo]="e.bajoMinimo">
+            <div class="inv-item-main">
+              <strong>{{ e.descripcion }}</strong>
+              @if (existenciaUnidad() === 'piezas') {
+                <span class="inv-exist">
+                  {{ e.piezasEnteras }} pza
+                  @if (e.vendePorCopa && e.onzasSobrantes > 0) { <em>+ {{ e.onzasSobrantes.toFixed(1) }} oz</em> }
+                </span>
+              } @else {
+                <span class="inv-exist">{{ e.existenciaOnzas.toFixed(1) }} oz</span>
+              }
+              @if (e.bajoMinimo) { <span class="inv-badge">bajo mínimo ({{ e.stockMinPiezas }})</span> }
+            </div>
+
+            @if (ingresoActivoId() === e.idMaterial) {
+              <div class="inv-ingreso-form">
+                <input type="number" min="1" inputmode="numeric" placeholder="Piezas"
+                  [value]="ingresoPiezas() ?? ''" (input)="setIngresoPiezas($event)" [disabled]="registrandoIngreso()">
+                <button type="button" class="inv-save" (click)="registrarIngreso(e)" [disabled]="registrandoIngreso()">Guardar</button>
+                <button type="button" class="inv-cancel" (click)="cancelarIngreso()" [disabled]="registrandoIngreso()">✕</button>
+              </div>
+              @if (ingresoError()) { <p class="qty-error" role="alert">{{ ingresoError() }}</p> }
+            } @else if (ajusteActivoId() === e.idMaterial) {
+              <p class="inv-help" style="margin:2px 0">Existencia real (conteo físico):</p>
+              <div class="inv-ingreso-form">
+                <input type="number" min="0" inputmode="numeric" placeholder="Piezas reales"
+                  [value]="ajustePiezas() ?? ''" (input)="setAjustePiezas($event)" [disabled]="registrandoAjuste()">
+                @if (e.vendePorCopa) {
+                  <input type="number" min="0" step="0.1" placeholder="+ onzas"
+                    [value]="ajusteOnzas() ?? ''" (input)="setAjusteOnzas($event)" [disabled]="registrandoAjuste()">
+                }
+                <button type="button" class="inv-save" (click)="registrarAjuste(e)" [disabled]="registrandoAjuste()">Fijar</button>
+                <button type="button" class="inv-cancel" (click)="cancelarAjuste()" [disabled]="registrandoAjuste()">✕</button>
+              </div>
+              @if (ajusteError()) { <p class="qty-error" role="alert">{{ ajusteError() }}</p> }
+            } @else {
+              <div class="inv-acciones">
+                <button type="button" class="inv-add-btn" (click)="iniciarIngreso(e)">+ Ingresar</button>
+                <button type="button" class="inv-add-btn alt" (click)="iniciarAjuste(e)">✎ Ajustar</button>
+              </div>
+            }
+          </li>
+        }
+      </ul>
+    }
+  }
+
+  <!-- ── ALTA / INICIO DE INVENTARIO ── -->
+  @else if (inventarioSubView() === 'alta') {
+    @if (!altaProducto()) {
+      <p class="inv-help">Busca cualquier producto del catálogo para darle inventario inicial.</p>
+      <input class="turno-input" type="text" placeholder="Buscar producto (2+ letras)…"
+        [value]="altaBusqueda()" (input)="setAltaBusqueda($event)">
+      @if (altaBusquedaResource.isLoading()) {
+        <div class="state-panel" role="status"><span class="loader" aria-hidden="true"></span><strong>Buscando…</strong></div>
+      } @else if (altaBusquedaResource.value().length > 0) {
+        <ul class="inv-list">
+          @for (p of altaBusquedaResource.value(); track p.id) {
+            <li class="inv-item alta-pick" (click)="seleccionarAltaProducto(p)">
+              <div class="inv-item-main">
+                <strong>{{ p.description }}</strong>
+                <span class="inv-exist">{{ p.price | currency:'MXN':'symbol-narrow':'1.2-2' }}</span>
+              </div>
+              <span class="alta-arrow" aria-hidden="true">→</span>
+            </li>
+          }
+        </ul>
+      }
+    } @else {
+      <div class="alta-form">
+        <div class="alta-head">
+          <strong>{{ altaProducto()!.description }}</strong>
+          <button type="button" class="inv-cancel" (click)="cancelarAlta()">✕ Cambiar</button>
+        </div>
+
+        <label class="cfg-check">
+          <input type="checkbox" [checked]="cfgVendeCopa()" (change)="setCfgVendeCopa($event)" [disabled]="guardandoAlta()">
+          <span>Se vende también por copa/onza</span>
+        </label>
+
+        @if (cfgVendeCopa()) {
+          <label class="turno-label" style="margin-top:8px">Equivalencia (onzas por pieza)</label>
+          <select class="turno-input" [value]="cfgIdEquiv() ?? ''" (change)="setCfgIdEquiv($event)" [disabled]="guardandoAlta()">
+            <option value="">— Selecciona —</option>
+            @for (eq of equivalencias(); track eq.id) {
+              <option [value]="eq.id" [selected]="cfgIdEquiv() === eq.id">{{ eq.nombre }} ({{ eq.onzas.toFixed(1) }} oz)</option>
+            }
+          </select>
+
+          <label class="turno-label" style="margin-top:8px">Precio por copa</label>
+          <input class="turno-input" type="number" min="0" step="0.01" placeholder="0.00"
+            [value]="cfgPrecioCopa() ?? ''" (input)="setCfgPrecioCopa($event)" [disabled]="guardandoAlta()">
+        }
+
+        <label class="turno-label" style="margin-top:8px">Stock mínimo (piezas) para alerta</label>
+        <input class="turno-input" type="number" min="0" step="1" placeholder="0"
+          [value]="cfgStockMin() ?? ''" (input)="setCfgStockMin($event)" [disabled]="guardandoAlta()">
+
+        <label class="turno-label" style="margin-top:8px">Piezas iniciales (existencia actual)</label>
+        <input class="turno-input" type="number" min="0" step="1" placeholder="0"
+          [value]="altaPiezas() ?? ''" (input)="setAltaPiezas($event)" [disabled]="guardandoAlta()">
+
+        @if (altaError()) { <p class="qty-error" role="alert">{{ altaError() }}</p> }
+
+        <button class="confirmar-btn alta-submit" type="button" (click)="guardarAlta()" [disabled]="guardandoAlta()">
+          @if (guardandoAlta()) { Guardando… } @else { Dar de alta inventario }
+        </button>
+      </div>
+    }
+  }
+
+  <!-- ── MOVIMIENTOS (RESUMEN POR PRODUCTO) ── -->
+  @else if (inventarioSubView() === 'movimientos') {
+    <div class="inv-fechas">
+      <label>Desde <input type="date" [value]="movDesde()" (change)="setMovDesde($event)"></label>
+      <label>Hasta <input type="date" [value]="movHasta()" (change)="setMovHasta($event)"></label>
+    </div>
+    <div class="inv-unidad">
+      <button type="button" [class.active]="existenciaUnidad() === 'piezas'" (click)="existenciaUnidad.set('piezas')">Piezas</button>
+      <button type="button" [class.active]="existenciaUnidad() === 'onzas'" (click)="existenciaUnidad.set('onzas')">Onzas</button>
+    </div>
+    @if (resumenLoading()) {
+      <div class="state-panel" role="status"><span class="loader" aria-hidden="true"></span><strong>Cargando resumen…</strong></div>
+    } @else if (resumenView().length === 0) {
+      <div class="state-panel"><strong>Sin movimientos en el rango</strong></div>
+    } @else {
+      <div class="inv-tabla-wrap">
+        <table class="inv-tabla">
+          <thead>
+            <tr><th>Producto</th><th class="num">Ingresos</th><th class="num">Egresos</th><th class="num">Total</th></tr>
+          </thead>
+          <tbody>
+            @for (r of resumenView(); track r.idMaterial) {
+              <tr>
+                <td>{{ r.descripcion }}</td>
+                <td class="num pos">
+                  @if (r.ingresos > 0) {
+                    <button type="button" class="cell-link" (click)="abrirDrill(r, 'INGRESO')">{{ r.ingresos.toFixed(1) }}</button>
+                  } @else { {{ r.ingresos.toFixed(1) }} }
+                </td>
+                <td class="num neg">
+                  @if (r.egresos > 0) {
+                    <button type="button" class="cell-link" (click)="abrirDrill(r, 'EGRESO')">{{ r.egresos.toFixed(1) }}</button>
+                  } @else { {{ r.egresos.toFixed(1) }} }
+                </td>
+                <td class="num" [class.bajo-cero]="r.total < 0">{{ r.total.toFixed(1) }}</td>
+              </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr>
+              <td>TOTALES</td>
+              <td class="num pos">{{ resumenTotales().ingresos.toFixed(1) }}</td>
+              <td class="num neg">{{ resumenTotales().egresos.toFixed(1) }}</td>
+              <td class="num">{{ resumenTotales().total.toFixed(1) }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <p class="inv-help">Valores en {{ existenciaUnidad() === 'onzas' ? 'onzas' : 'piezas' }}.</p>
+    }
+  }
+
+  <!-- ── DETALLE (LÍNEA POR LÍNEA + BÚSQUEDA) ── -->
+  @else if (inventarioSubView() === 'detalle') {
+    <div class="inv-fechas">
+      <label>Desde <input type="date" [value]="movDesde()" (change)="setMovDesde($event)"></label>
+      <label>Hasta <input type="date" [value]="movHasta()" (change)="setMovHasta($event)"></label>
+    </div>
+    <input class="turno-input" type="text" placeholder="Buscar producto…"
+      [value]="movDetalleBusqueda()" (input)="setMovBusqueda($event)">
+    @if (movimientosLoading()) {
+      <div class="state-panel" role="status"><span class="loader" aria-hidden="true"></span><strong>Cargando movimientos…</strong></div>
+    } @else if (movimientos().length === 0) {
+      <div class="state-panel"><strong>Sin movimientos</strong></div>
+    } @else {
+      <ul class="inv-list mov">
+        @for (m of movimientos(); track m.id) {
+          <li class="inv-item">
+            <div class="inv-item-main">
+              <strong>{{ m.descripcion }}</strong>
+              <span class="inv-mov-tag" [class.ingreso]="m.tipo === 'INGRESO'" [class.venta]="m.tipo === 'VENTA'">
+                {{ m.tipo === 'VENTA' ? (m.presentacion === 'COPA' ? 'Copa' : 'Venta') : m.tipo }}
+              </span>
+            </div>
+            <div class="inv-mov-detalle">
+              <span [class.neg]="m.onzas < 0">{{ m.onzas > 0 ? '+' : '' }}{{ m.onzas.toFixed(1) }} oz</span>
+              @if (m.piezas) { <span>({{ m.piezas }} pza)</span> }
+              @if (m.nombreMesa) { <span>· {{ m.nombreMesa }}</span> }
+              <span class="inv-fecha">{{ m.fecha | date:'dd/MM HH:mm' }}</span>
+            </div>
+          </li>
+        }
+      </ul>
+    }
+  }
+
+  <!-- ── EQUIVALENCIAS ── -->
+  @else {
+    <p class="inv-help">Define cuántas onzas contiene cada presentación (la onza es la unidad base).</p>
+    <div class="inv-equiv-form">
+      <input type="text" placeholder="Nombre (ej. 1 Litro)" [value]="equivNombre()" (input)="setEquivNombre($event)" [disabled]="guardandoEquiv()">
+      <input type="number" step="0.001" min="0" placeholder="Onzas" [value]="equivOnzas() ?? ''" (input)="setEquivOnzas($event)" [disabled]="guardandoEquiv()">
+      <button type="button" class="inv-save" (click)="crearEquivalencia()" [disabled]="guardandoEquiv()">Agregar</button>
+    </div>
+    @if (equivError()) { <p class="qty-error" role="alert">{{ equivError() }}</p> }
+    <ul class="inv-list">
+      @for (eq of equivalencias(); track eq.id) {
+        <li class="inv-item">
+          <div class="inv-item-main">
+            <strong>{{ eq.nombre }}</strong>
+            <span class="inv-exist">{{ eq.onzas.toFixed(3) }} oz</span>
+          </div>
+          <button type="button" class="inv-cancel" title="Eliminar" (click)="eliminarEquivalencia(eq)">🗑️</button>
+        </li>
+      }
+    </ul>
+  }
+</section>
+
+<!-- ── Drill-down: detalle de movimientos de un producto ── -->
+@if (drillProducto()) {
+  <div class="qty-overlay" role="dialog" aria-modal="true" aria-label="Detalle de movimientos">
+    <div class="qty-panel drill-panel">
+      <div class="alta-head">
+        <strong>{{ drillTipo() === 'INGRESO' ? '⬆️ Ingresos' : '⬇️ Egresos' }} · {{ drillProducto()!.desc }}</strong>
+        <button type="button" class="inv-cancel" (click)="cerrarDrill()">✕</button>
+      </div>
+      <p class="inv-help">{{ movDesde() }} a {{ movHasta() }}</p>
+
+      @if (drillLoading()) {
+        <div class="state-panel" role="status"><span class="loader" aria-hidden="true"></span><strong>Cargando…</strong></div>
+      } @else if (drillMovs().length === 0) {
+        <div class="state-panel"><strong>Sin movimientos en el rango</strong></div>
+      } @else {
+        <ul class="inv-list mov drill-list">
+          @for (m of drillMovs(); track m.id) {
+            <li class="inv-item">
+              <div class="inv-mov-detalle">
+                <span [class.neg]="m.onzas < 0">{{ m.onzas > 0 ? '+' : '' }}{{ m.onzas.toFixed(1) }} oz</span>
+                @if (m.piezas) { <span>({{ m.piezas }} pza)</span> }
+                @if (m.presentacion === 'COPA') { <span>· Copa</span> }
+                @if (m.nombreMesa) { <span>· {{ m.nombreMesa }}</span> }
+                <span class="inv-fecha">{{ m.fecha | date:'dd/MM HH:mm' }}</span>
+              </div>
+            </li>
+          }
+        </ul>
+        <p class="drill-total">
+          Total {{ drillTipo() === 'INGRESO' ? 'ingresado' : 'egresado' }}: <strong>{{ drillTotalOnzas().toFixed(1) }} oz</strong>
+          ({{ drillMovs().length }} mov.)
+        </p>
+      }
+
+      <button class="qty-cancel" type="button" (click)="cerrarDrill()">Cerrar</button>
+    </div>
+  </div>
+}

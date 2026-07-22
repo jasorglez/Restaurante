@@ -1,7 +1,6 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { HttpClient, httpResource } from '@angular/common/http';
+import { httpResource } from '@angular/common/http';
 import { Component, computed, effect, inject, signal } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
 
@@ -10,14 +9,26 @@ if (pdfFonts && (pdfFonts as any).pdfMake) {
 }
 
 import { environment } from '../environments/environment';
-import { CajaInfo, CajaReporte, EgresoCaja, ResumenCorte, Turno, VentaPorTipo } from './models/caja';
-import { OrdenCocina, MesaListo } from './models/cocina';
-import { Impresora } from './models/impresora';
+import { CajaInfo, EgresoCaja, ResumenCorte, Turno, VentaPorTipo } from './models/caja';
+import { MesaListo } from './models/cocina';
+import { Cocina } from './features/cocina/cocina';
+import { CocinaService } from './features/cocina/cocina.service';
+import { InventarioService } from './features/inventario/inventario.service';
+import { CajaService } from './features/caja/caja.service';
+import { UsuariosService } from './features/usuarios/usuarios.service';
+import { ConfigService } from './features/config/config.service';
+import { MesasService } from './features/mesas/mesas.service';
+import { ProductosService } from './features/productos/productos.service';
+import { CuentaService } from './features/cuenta/cuenta.service';
+import { EmpresaService } from './features/empresa/empresa.service';
+import { AuditoriaService, AuditExtras } from './core/auditoria.service';
+import { Reportes } from './features/reportes/reportes';
+import { Inventario } from './features/inventario/inventario';
+import { Config } from './features/config/config';
 import { Rol, Usuario } from './models/usuario';
 import { CuentaAbierta, Familia, ItemCuenta, Producto } from './models/familia';
 import { Equivalencia, Existencia, MovimientoInv, ProductoInventario, RecetaItem, ResultadoMovimiento, ResumenMov } from './models/inventario';
 import { Mesa } from './models/mesa';
-import { GrupoMesa, ReporteMesa, ResumenDia } from './models/reporte';
 
 type RestaurantModule = 'MESAS' | 'CAJAS' | 'REPORTES' | 'INVENTARIO' | 'COCINA' | 'CONFIG';
 type View = 'menu' | 'mesas' | 'familias' | 'productos' | 'cuenta' | 'cajas' | 'reportes' | 'inventario' | 'cocina' | 'config';
@@ -41,16 +52,27 @@ interface TicketData {
   montoTarjeta: number;
   cambio: number;
   fecha: Date;
+  atendioPor: string | null;   // mesero que abrió la mesa (viene del backend)
+  cobradoPor: string | null;   // usuario logueado que cobró
 }
 
 @Component({
   selector: 'app-root',
-  imports: [CurrencyPipe, DatePipe],
+  imports: [CurrencyPipe, DatePipe, Cocina, Reportes, Inventario, Config],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
 export class App {
-  private readonly http = inject(HttpClient);
+  private readonly cocina = inject(CocinaService);
+  private readonly inventarioSvc = inject(InventarioService);
+  private readonly cajaSvc = inject(CajaService);
+  private readonly usuariosSvc = inject(UsuariosService);
+  private readonly configSvc = inject(ConfigService);
+  private readonly mesasSvc = inject(MesasService);
+  private readonly productosSvc = inject(ProductosService);
+  private readonly cuentaSvc = inject(CuentaService);
+  private readonly empresaSvc = inject(EmpresaService);
+  private readonly auditoriaSvc = inject(AuditoriaService);
 
   // ── Selección de empresa ──────────────────────────────────────────────────
   protected readonly companyId   = signal<number | null>(this.resolveCompanyId());
@@ -71,9 +93,7 @@ export class App {
   protected async cargarEmpresas(): Promise<void> {
     this.cargandoEmpresas.set(true);
     try {
-      const lista = await firstValueFrom(
-        this.http.get<EmpresaItem[]>(`${environment.urlSmp}/Root/lista-publica`),
-      );
+      const lista = await this.empresaSvc.listaPublica();
       this.empresas.set(lista ?? []);
     } finally {
       this.cargandoEmpresas.set(false);
@@ -134,7 +154,7 @@ export class App {
       default: return 'MENU';
     }
   });
-  protected readonly selectedMesa = signal<Mesa | null>(null);
+  protected readonly selectedMesa = this.cuentaSvc.selectedMesa;   // store
   protected readonly openingMesa = signal(false);
   protected readonly mesaActionError = signal('');
 
@@ -207,7 +227,7 @@ export class App {
   protected readonly moverSubfamiliaId = signal<number | null>(null);
   protected readonly famModalResource = httpResource<Familia[]>(
     () => this.editandoProducto() !== null
-      ? `${environment.urlChatBot}/restaurant-publico/familias/${this.companyId()!}`
+      ? this.productosSvc.familiasUrl(this.companyId()!)
       : undefined,
     { defaultValue: [] },
   );
@@ -215,7 +235,7 @@ export class App {
     () => {
       const fam = this.moverFamiliaId();
       return this.editandoProducto() !== null && fam
-        ? `${environment.urlChatBot}/restaurant-publico/subfamilias/${this.companyId()!}/${fam}`
+        ? this.productosSvc.subfamiliasUrl(this.companyId()!, fam)
         : undefined;
     },
     { defaultValue: [] },
@@ -242,7 +262,7 @@ export class App {
   // ── Cajas / Turno ─────────────────────────────────────────────────────────
   protected readonly cajasResource = httpResource<CajaInfo[]>(
     () => this.view() === 'cajas'
-      ? `${environment.urlAdministration}/Restaurant/cajas/${this.companyId()!}`
+      ? this.cajaSvc.cajasUrl(this.companyId()!)
       : undefined,
     { defaultValue: [] },
   );
@@ -252,7 +272,7 @@ export class App {
   protected readonly cajaNombre = signal('');
   protected readonly fondoInicial = signal<number | null>(null);
   protected readonly iniciandoTurno = signal(false);
-  protected readonly turnoActivo = signal<Turno | null>(null);
+  protected readonly turnoActivo = this.cajaSvc.turnoActivo;   // estado en CajaService
   protected readonly turnoError = signal('');
   protected readonly turnoActivoCargando = computed(() => this.turnoActivoResource.isLoading());
 
@@ -284,7 +304,7 @@ export class App {
   protected readonly devCuentaSel = signal<number | null>(null);
   protected readonly cobrosDiaResource = httpResource<any[]>(
     () => this.view() === 'cajas' && this.cajasSubView() === 'devolucion'
-      ? `${environment.urlChatBot}/restaurant-publico/cobros-dia/${this.companyId()!}?fecha=${new Date().toISOString().split('T')[0]}`
+      ? this.cuentaSvc.cobrosDiaUrl(this.companyId()!, new Date().toISOString().split('T')[0])
       : undefined,
     { defaultValue: [] },
   );
@@ -317,9 +337,7 @@ export class App {
     this.devError.set(''); this.devOk.set('');
     try {
       // 1) Validar PIN de supervisor
-      const r: any = await firstValueFrom(this.http.post(
-        `${environment.urlChatBot}/restaurant-publico/pin/validar`,
-        { idCompany: this.companyId()!, pin: this.devPin() }));
+      const r: any = await this.usuariosSvc.validarPin(this.companyId()!, this.devPin());
       if (!r?.ok) { this.devError.set('PIN de supervisor incorrecto.'); return; }
 
       const ref = this.devRef().trim();
@@ -327,24 +345,20 @@ export class App {
       const desc = `Devolución${ref ? ' ticket ' + ref : ''}${motivo ? ': ' + motivo : ''}`;
 
       // 2) Registrar la salida de caja (egreso) → el corte lo resta
-      await firstValueFrom(this.http.post<EgresoCaja>(
-        `${environment.urlAdministration}/Restaurant/turnos/${turno.id}/egresos`,
-        { descripcion: desc, monto }));
+      await this.cajaSvc.registrarEgreso(turno.id, desc, monto);
 
       // 3) Bitácora de autorización (auditoría)
       try {
-        await firstValueFrom(this.http.post(
-          `${environment.urlChatBot}/restaurant-publico/autorizaciones`,
+        await this.cuentaSvc.registrarAutorizacion(
           { idCompany: this.companyId()!, tipo: 'DEVOLUCION', descripcion: ref || null,
-            monto, motivo: motivo || null, autorizadoPor: this.devPor().trim() }));
+            monto, motivo: motivo || null, autorizadoPor: this.devPor().trim() });
       } catch { /* la salida ya quedó registrada */ }
 
       // Si se eligió un cobro del día, marca la venta como cancelada en el reporte.
       const cta = this.devCuentaSel();
       if (cta != null) {
         try {
-          await firstValueFrom(this.http.post(
-            `${environment.urlChatBot}/restaurant-publico/cuentas/${cta}/cancelar-venta?idCompany=${this.companyId()!}`, {}));
+          await this.cuentaSvc.cancelarVenta(cta, this.companyId()!);
         } catch { /* la devolución ya quedó registrada como egreso */ }
       }
       this.auditar('DEVOLUCION', { entidad: 'CAJA', idEntidad: cta, monto, descripcion: desc });
@@ -367,11 +381,29 @@ export class App {
     () => {
       const caja = this.cajaSeleccionada();
       if (!caja || this.view() !== 'cajas') return undefined;
-      return `${environment.urlAdministration}/Restaurant/cajas/${caja.idCaja}/turno-activo`;
+      return this.cajaSvc.turnoActivoUrl(caja.idCaja);
     },
   );
 
   constructor() {
+    // Mantiene sincronizada la empresa activa en el servicio de inventario
+    // (que comparte estado con el modal de producto y las alertas de stock).
+    effect(() => this.inventarioSvc.companyId.set(this.companyId()));
+
+    // Sincroniza el usuario logueado y la empresa hacia el logger de auditoría
+    // (así cualquier dominio puede registrar en la bitácora sin depender de App).
+    effect(() => this.auditoriaSvc.usuario.set(this.usuario()));
+    effect(() => this.auditoriaSvc.companyId.set(this.companyId()));
+    effect(() => this.cajaSvc.companyId.set(this.companyId()));
+    effect(() => this.mesasSvc.companyId.set(this.companyId()));
+    // El store de mesas se carga en el salón y en Caja (para la cola de cobro).
+    effect(() => this.mesasSvc.enVista.set(this.view() === 'mesas' || this.view() === 'cajas'));
+    // Los items de la cuenta se cargan en familias/productos/cuenta.
+    effect(() => {
+      const v = this.view();
+      this.cuentaSvc.enCuentaVista.set(v === 'familias' || v === 'productos' || v === 'cuenta');
+    });
+
     // Si no hay empresa guardada, carga lista y muestra selección
     if (!this.companyId()) {
       void this.cargarEmpresas();
@@ -385,11 +417,6 @@ export class App {
       }
     });
 
-    // Carga el chat de alertas guardado en el input.
-    effect(() => {
-      const v = this.alertaChatsResource.value();
-      if (v?.chatIds != null) this.alertaChats.set(v.chatIds);
-    });
 
     // Suena la campana cuando cocina marca un platillo listo (cuenta nueva en la lista).
     effect(() => {
@@ -398,12 +425,6 @@ export class App {
       this.listosAvisados = new Set(ids);   // solo las vigentes; si vuelve a salir, re-avisa
       if (hayNuevo) this.sonarCampana();
     });
-
-    // ── Instalación PWA ──────────────────────────────────────────────────────
-    // Auto-refresco del tablero de cocina cada 15 s mientras esté visible.
-    setInterval(() => {
-      if (this.view() === 'cocina') this.cocinaTick.update(t => t + 1);
-    }, 15000);
 
     // Auto-refresco de mesas (estados + cronómetro + cola de cobro) cada 20 s.
     setInterval(() => {
@@ -452,7 +473,7 @@ export class App {
       const t = this.turnoActivo();
       const sv = this.cajasSubView();
       if (!t || (sv !== 'corte' && sv !== 'egresos' && sv !== 'devolucion')) return undefined;
-      return `${environment.urlAdministration}/Restaurant/turnos/${t.id}/resumen`;
+      return this.cajaSvc.resumenUrl(t.id);
     },
   );
   // Efectivo disponible en caja (fondo + ventas efectivo − egresos).
@@ -490,432 +511,22 @@ export class App {
     return contado - esperado;
   });
 
-  // ── Reportes ──────────────────────────────────────────────────────────────
-  protected readonly reporteSubView = signal<'mesas' | 'caja' | 'resumen' | 'auditoria'>('mesas');
+  // ── Reportes → extraído a features/reportes (componente <app-reportes>) ──────
 
-  // Auditoría (bitácora de movimientos por usuario) — solo admin.
-  protected readonly auditFiltroUsuario = signal<number | null>(null);   // id_usuario o null = todos
-  protected readonly auditFiltroAccion  = signal<string>('');            // '' = todas
-  protected setAuditUsuario(e: Event): void {
-    const v = (e.target as HTMLSelectElement).value;
-    this.auditFiltroUsuario.set(v === '' ? null : +v);
-  }
-  protected setAuditAccion(e: Event): void { this.auditFiltroAccion.set((e.target as HTMLSelectElement).value); }
-  // Acciones para el select (con su etiqueta bonita).
-  protected readonly accionesAudit = [
-    'LOGIN', 'LOGOUT', 'ABRIR_MESA', 'COBRO', 'COBRO_COMENSAL', 'CANCELAR_ITEM',
-    'CORTESIA', 'DESCUENTO', 'DEVOLUCION', 'EGRESO', 'INGRESO_INV', 'AJUSTE_INV',
-    'ABRIR_TURNO', 'CERRAR_TURNO',
-  ];
-
-  protected readonly auditoriaResource = httpResource<any[]>(
-    () => {
-      if (this.view() !== 'reportes' || this.reporteSubView() !== 'auditoria' || !this.esAdmin()) return undefined;
-      const u = this.auditFiltroUsuario();
-      const a = this.auditFiltroAccion();
-      let url = `${environment.urlChatBot}/restaurant-publico/auditoria/${this.companyId()!}?desde=${this.reporteFecha()}&hasta=${this.reporteFecha()}`;
-      if (u !== null) url += `&idUsuario=${u}`;
-      if (a) url += `&accion=${a}`;
-      return url;
-    },
-    { defaultValue: [] },
-  );
-  protected readonly auditoria = this.auditoriaResource.value;
-  protected etiquetaAccion(a: string): string {
-    const m: Record<string, string> = {
-      LOGIN: '🔑 Entró', LOGOUT: '🚪 Salió', ABRIR_MESA: '🍽️ Abrió mesa',
-      COBRO: '💵 Cobró', COBRO_COMENSAL: '💵 Cobró (persona)', CANCELAR_ITEM: '❌ Canceló',
-      CORTESIA: '🎁 Cortesía', DESCUENTO: '％ Descuento', DEVOLUCION: '↩️ Devolución',
-      EGRESO: '💸 Egreso', INGRESO_INV: '📦 Ingreso inv.', AJUSTE_INV: '✎ Ajuste inv.',
-      ABRIR_TURNO: '▶️ Abrió turno', CERRAR_TURNO: '⏹️ Cerró turno',
-    };
-    return m[a] ?? a;
-  }
-  protected readonly reporteFecha   = signal<string>(new Date().toISOString().split('T')[0]);
-
-  // Dashboard del día
-  protected readonly resumenDiaResource = httpResource<ResumenDia>(
-    () => this.view() === 'reportes' && this.reporteSubView() === 'resumen'
-      ? `${environment.urlChatBot}/restaurant-publico/resumen-dia/${this.companyId()!}?fecha=${this.reporteFecha()}`
-      : undefined,
-  );
-  protected readonly resumenDia        = this.resumenDiaResource.value;
-  protected readonly resumenDiaLoading = this.resumenDiaResource.isLoading;
-
-  // Analítica (horas pico, ventas por mesero, comparativo)
-  protected readonly analiticaResource = httpResource<any>(
-    () => this.view() === 'reportes' && this.reporteSubView() === 'resumen'
-      ? `${environment.urlChatBot}/restaurant-publico/analitica/${this.companyId()!}?fecha=${this.reporteFecha()}`
-      : undefined,
-  );
-  protected readonly analitica = this.analiticaResource.value;
-  // Máximo por hora (para el ancho de las barras).
-  protected readonly maxHora = computed(() => {
-    const h = this.analitica()?.porHora ?? [];
-    return h.reduce((m: number, x: any) => Math.max(m, x.total), 0) || 1;
-  });
-
-  protected readonly reporteMesasResource = httpResource<ReporteMesa[]>(
-    () => {
-      if (this.view() !== 'reportes' || this.reporteSubView() !== 'mesas') return undefined;
-      return `${environment.urlAdministration}/Restaurant/reportes/${this.companyId()!}/mesas?fecha=${this.reporteFecha()}`;
-    },
-    { defaultValue: [] },
-  );
-
-  protected readonly reporteTurnosResource = httpResource<any[]>(
-    () => {
-      if (this.view() !== 'reportes' || this.reporteSubView() !== 'caja') return undefined;
-      return `${environment.urlAdministration}/Restaurant/reportes/${this.companyId()!}/turnos?fecha=${this.reporteFecha()}`;
-    },
-    { defaultValue: [] },
-  );
-
-  // Acepta tanto CajaReporte[] (nuevo backend) como Turno[] (backend viejo) y normaliza
-  protected readonly reporteCajasAgrupadas = computed<CajaReporte[]>(() => {
-    const raw = this.reporteTurnosResource.value();
-    if (!raw.length) return [];
-    // Nuevo formato: cada elemento tiene la propiedad 'turnos'
-    if ('turnos' in raw[0]) return raw as CajaReporte[];
-    // Formato viejo (Turno[]): agrupar por caja, ventas del primer turno de cada caja
-    const mapa = new Map<number, { cajaId: number; turnos: Turno[] }>();
-    for (const t of raw as Turno[]) {
-      if (!mapa.has(t.idCashRegister)) mapa.set(t.idCashRegister, { cajaId: t.idCashRegister, turnos: [] });
-      mapa.get(t.idCashRegister)!.turnos.push(t);
-    }
-    return Array.from(mapa.values()).map(({ cajaId, turnos }) => ({
-      idCashRegister: cajaId,
-      ventasEfectivo: turnos[0].ventasEfectivo || 0,
-      ventasTarjeta:  turnos[0].ventasTarjeta  || 0,
-      ventasCheque:   turnos[0].ventasCheque   || 0,
-      ventasVales:    turnos[0].ventasVales     || 0,
-      ventasMixto:    turnos[0].ventasMixto     || 0,
-      ventasTotal:    turnos[0].ventasTotal     || 0,
-      turnos,
-    }));
-  });
-
-  protected readonly mesasPorGrupo = computed<GrupoMesa[]>(() => {
-    // Recencia por cobro (cerradaAt) o apertura; fallback al id de cuenta.
-    const recencia = (c: ReporteMesa): number => Date.parse(c.cerradaAt ?? c.abiertaAt) || c.idCuenta;
-    const mapa = new Map<string, ReporteMesa[]>();
-    for (const c of this.reporteMesasResource.value()) {
-      const arr = mapa.get(c.nombreMesa) ?? [];
-      arr.push(c);
-      mapa.set(c.nombreMesa, arr);
-    }
-    return Array.from(mapa.entries())
-      .map(([nombreMesa, cuentas]) => ({
-        nombreMesa,
-        cuentas: [...cuentas].sort((a, b) => recencia(b) - recencia(a)),   // más reciente arriba
-        subtotal: cuentas.reduce((s, c) => s + c.total, 0),
-      }))
-      .sort((a, b) => recencia(b.cuentas[0]) - recencia(a.cuentas[0]));      // mesa más reciente primero
-  });
-
-  protected readonly totalReporteMesas = computed(() =>
-    this.reporteMesasResource.value().reduce((s, c) => s + c.total, 0),
-  );
-
-  protected readonly totalReporteCaja = computed(() =>
-    this.reporteCajasAgrupadas().reduce((s, c) => s + (c.ventasTotal || 0), 0),
-  );
-
-  protected setReporteFecha(e: Event): void {
-    this.reporteFecha.set((e.target as HTMLInputElement).value);
-  }
-
-  // ── Inventario ─────────────────────────────────────────────────────────────
-  protected readonly inventarioSubView = signal<InventarioSubView>('existencias');
-  protected readonly existenciaUnidad  = signal<'piezas' | 'onzas'>('piezas');
-
-  private invUrl(path: string): string {
-    return `${environment.urlChatBot}/restaurant-publico/inventario/${path}`;
-  }
-
-  // Existencias
-  protected readonly existenciasResource = httpResource<Existencia[]>(
-    () => this.view() === 'inventario' && this.inventarioSubView() === 'existencias'
-      ? this.invUrl(`${this.companyId()!}/existencias`)
-      : undefined,
-    { defaultValue: [] },
-  );
-  protected readonly existencias        = this.existenciasResource.value;
-  protected readonly existenciasLoading = this.existenciasResource.isLoading;
-  protected readonly alertasStock = computed(() => this.existencias().filter(e => e.bajoMinimo));
-
-  // Movimientos (historial)
-  protected readonly movDesde = signal<string>(
-    new Date(Date.now() - 29 * 864e5).toISOString().split('T')[0],
-  );
-  protected readonly movHasta = signal<string>(new Date().toISOString().split('T')[0]);
-  // Resumen por producto (pestaña "Movimientos")
-  protected readonly resumenResource = httpResource<ResumenMov[]>(
-    () => this.view() === 'inventario' && this.inventarioSubView() === 'movimientos'
-      ? this.invUrl(`${this.companyId()!}/resumen?desde=${this.movDesde()}&hasta=${this.movHasta()}`)
-      : undefined,
-    { defaultValue: [] },
-  );
-  protected readonly resumenLoading = this.resumenResource.isLoading;
-
-  // Filas del resumen ya convertidas a la unidad elegida (piezas u onzas).
-  protected readonly resumenView = computed(() => {
-    const enOnzas = this.existenciaUnidad() === 'onzas';
-    return this.resumenResource.value().map(r => {
-      const ozPieza = r.onzasPorPieza > 0 ? r.onzasPorPieza : 1;
-      const ingresos = enOnzas ? r.ingresosOnzas : r.ingresosPiezas;
-      const egresos  = enOnzas ? r.egresosOnzas  : r.egresosOnzas / ozPieza;
-      return { idMaterial: r.idMaterial, descripcion: r.descripcion, ingresos, egresos, total: ingresos - egresos };
-    });
-  });
-  protected readonly resumenTotales = computed(() => {
-    const rows = this.resumenView();
-    return {
-      ingresos: rows.reduce((s, r) => s + r.ingresos, 0),
-      egresos:  rows.reduce((s, r) => s + r.egresos, 0),
-      total:    rows.reduce((s, r) => s + r.total, 0),
-    };
-  });
-
-  // Drill-down: detalle de ingresos/egresos de un producto (modal)
-  protected readonly drillProducto = signal<{ id: number; desc: string } | null>(null);
-  protected readonly drillTipo     = signal<'INGRESO' | 'EGRESO'>('INGRESO');
-  protected readonly drillResource = httpResource<MovimientoInv[]>(
-    () => {
-      const p = this.drillProducto();
-      return p
-        ? this.invUrl(`${this.companyId()!}/movimientos?idMaterial=${p.id}&desde=${this.movDesde()}&hasta=${this.movHasta()}`)
-        : undefined;
-    },
-    { defaultValue: [] },
-  );
-  protected readonly drillLoading = this.drillResource.isLoading;
-  protected readonly drillMovs = computed(() => {
-    const tipo = this.drillTipo();
-    return this.drillResource.value().filter(m =>
-      tipo === 'INGRESO' ? m.tipo === 'INGRESO' : m.onzas < 0);
-  });
-  protected readonly drillTotalOnzas = computed(() =>
-    this.drillMovs().reduce((s, m) => s + Math.abs(m.onzas), 0));
-
-  protected abrirDrill(r: { idMaterial: number; descripcion: string }, tipo: 'INGRESO' | 'EGRESO'): void {
-    this.drillTipo.set(tipo);
-    this.drillProducto.set({ id: r.idMaterial, desc: r.descripcion });
-  }
-  protected cerrarDrill(): void { this.drillProducto.set(null); }
-
-  // Detalle línea por línea (pestaña "Detalle") con búsqueda por producto
-  protected readonly movDetalleBusqueda = signal('');
-  protected setMovBusqueda(e: Event): void { this.movDetalleBusqueda.set((e.target as HTMLInputElement).value); }
-  protected readonly movimientosResource = httpResource<MovimientoInv[]>(
-    () => this.view() === 'inventario' && this.inventarioSubView() === 'detalle'
-      ? this.invUrl(`${this.companyId()!}/movimientos?desde=${this.movDesde()}&hasta=${this.movHasta()}`)
-      : undefined,
-    { defaultValue: [] },
-  );
-  protected readonly movimientosLoading = this.movimientosResource.isLoading;
-  protected readonly movimientos = computed(() => {
-    const term = this.movDetalleBusqueda().trim().toLowerCase();
-    const all = this.movimientosResource.value();
-    return term ? all.filter(m => m.descripcion.toLowerCase().includes(term)) : all;
-  });
-  protected setMovDesde(e: Event): void { this.movDesde.set((e.target as HTMLInputElement).value); }
-  protected setMovHasta(e: Event): void { this.movHasta.set((e.target as HTMLInputElement).value); }
-
-  // Catálogo de equivalencias (se usa en inventario y al configurar producto)
-  protected readonly equivalenciasResource = httpResource<Equivalencia[]>(
-    () => {
-      const sub = this.inventarioSubView();
-      const enInventario = this.view() === 'inventario' && (sub === 'equivalencias' || sub === 'alta');
-      const configurando = this.editandoProducto() !== null;
-      return enInventario || configurando
-        ? this.invUrl(`equivalencias/${this.companyId()!}`)
-        : undefined;
-    },
-    { defaultValue: [] },
-  );
-  protected readonly equivalencias = this.equivalenciasResource.value;
-
-  protected readonly equivNombre = signal('');
-  protected readonly equivOnzas  = signal<number | null>(null);
-  protected readonly guardandoEquiv = signal(false);
-  protected readonly equivError = signal('');
-  protected setEquivNombre(e: Event): void { this.equivNombre.set((e.target as HTMLInputElement).value); }
-  protected setEquivOnzas(e: Event): void {
-    const v = parseFloat((e.target as HTMLInputElement).value);
-    this.equivOnzas.set(!isNaN(v) && v > 0 ? v : null);
-  }
-
-  protected async crearEquivalencia(): Promise<void> {
-    const nombre = this.equivNombre().trim();
-    const onzas  = this.equivOnzas();
-    if (!nombre) { this.equivError.set('El nombre es obligatorio.'); return; }
-    if (onzas === null) { this.equivError.set('Las onzas deben ser mayores a cero.'); return; }
-    this.guardandoEquiv.set(true);
-    this.equivError.set('');
-    try {
-      await firstValueFrom(this.http.post<Equivalencia>(
-        this.invUrl('equivalencias'),
-        { idCompany: this.companyId()!, nombre, onzas },
-      ));
-      this.equivNombre.set('');
-      this.equivOnzas.set(null);
-      this.equivalenciasResource.reload();
-    } catch {
-      this.equivError.set('No se pudo crear la equivalencia.');
-    } finally {
-      this.guardandoEquiv.set(false);
-    }
-  }
-
-  protected async eliminarEquivalencia(eq: Equivalencia): Promise<void> {
-    try {
-      await firstValueFrom(this.http.delete(
-        this.invUrl(`equivalencias/${eq.id}?idCompany=${this.companyId()!}`),
-      ));
-      this.equivalenciasResource.reload();
-    } catch { /* noop */ }
-  }
-
-  // Ingreso de existencias (siempre en piezas), inline por producto.
-  protected readonly ingresoActivoId  = signal<number | null>(null);
-  protected readonly ingresoPiezas    = signal<number | null>(null);
-  protected readonly registrandoIngreso = signal(false);
-  protected readonly ingresoError     = signal('');
-  protected readonly ingresoOk        = signal('');
-
-  protected iniciarIngreso(mat: Existencia): void {
-    this.ingresoActivoId.set(mat.idMaterial);
-    this.ingresoPiezas.set(null);
-    this.ingresoError.set('');
-    this.ingresoOk.set('');
-  }
-  protected cancelarIngreso(): void {
-    this.ingresoActivoId.set(null);
-    this.ingresoPiezas.set(null);
-    this.ingresoError.set('');
-  }
-  protected setIngresoPiezas(e: Event): void {
-    const v = parseFloat((e.target as HTMLInputElement).value);
-    this.ingresoPiezas.set(!isNaN(v) && v > 0 ? v : null);
-  }
-
-  protected async registrarIngreso(mat: Existencia): Promise<void> {
-    const piezas = this.ingresoPiezas();
-    if (piezas === null) { this.ingresoError.set('Indica las piezas a ingresar.'); return; }
-    this.registrandoIngreso.set(true);
-    this.ingresoError.set('');
-    try {
-      await firstValueFrom(this.http.post<ResultadoMovimiento>(
-        this.invUrl('ingreso'),
-        { idCompany: this.companyId()!, idMaterial: mat.idMaterial, piezas },
-      ));
-      this.ingresoActivoId.set(null);
-      this.ingresoPiezas.set(null);
-      this.ingresoOk.set(`Ingreso registrado: +${piezas} pieza(s) de ${mat.descripcion}.`);
-      this.auditar('INGRESO_INV', { entidad: 'INVENTARIO', idEntidad: mat.idMaterial, monto: piezas, descripcion: `+${piezas} pza · ${mat.descripcion}` });
-      this.existenciasResource.reload();
-    } catch {
-      this.ingresoError.set('No se pudo registrar el ingreso.');
-    } finally {
-      this.registrandoIngreso.set(false);
-    }
-  }
-
-  // Ajuste por conteo físico (inline por producto)
-  protected readonly ajusteActivoId    = signal<number | null>(null);
-  protected readonly ajustePiezas      = signal<number | null>(null);
-  protected readonly ajusteOnzas       = signal<number | null>(null);
-  protected readonly registrandoAjuste = signal(false);
-  protected readonly ajusteError       = signal('');
-
-  protected iniciarAjuste(mat: Existencia): void {
-    this.ajusteActivoId.set(mat.idMaterial);
-    this.ajustePiezas.set(mat.piezasEnteras);
-    this.ajusteOnzas.set(mat.onzasSobrantes || null);
-    this.ajusteError.set('');
-    this.ingresoOk.set('');
-  }
-  protected cancelarAjuste(): void {
-    this.ajusteActivoId.set(null);
-    this.ajustePiezas.set(null);
-    this.ajusteOnzas.set(null);
-    this.ajusteError.set('');
-  }
-  protected setAjustePiezas(e: Event): void {
-    const v = parseFloat((e.target as HTMLInputElement).value);
-    this.ajustePiezas.set(!isNaN(v) && v >= 0 ? v : null);
-  }
-  protected setAjusteOnzas(e: Event): void {
-    const v = parseFloat((e.target as HTMLInputElement).value);
-    this.ajusteOnzas.set(!isNaN(v) && v >= 0 ? v : null);
-  }
-
-  protected async registrarAjuste(mat: Existencia): Promise<void> {
-    const piezas = this.ajustePiezas() ?? 0;
-    const onzas  = this.ajusteOnzas() ?? 0;
-    this.registrandoAjuste.set(true);
-    this.ajusteError.set('');
-    try {
-      await firstValueFrom(this.http.post<ResultadoMovimiento>(
-        this.invUrl('ajuste'),
-        { idCompany: this.companyId()!, idMaterial: mat.idMaterial, piezas, onzasSobrantes: onzas },
-      ));
-      this.ajusteActivoId.set(null);
-      this.ajustePiezas.set(null);
-      this.ajusteOnzas.set(null);
-      this.ingresoOk.set(`Existencia ajustada: ${mat.descripcion} = ${piezas} pza${onzas ? ` + ${onzas} oz` : ''}.`);
-      this.auditar('AJUSTE_INV', { entidad: 'INVENTARIO', idEntidad: mat.idMaterial, descripcion: `${mat.descripcion} = ${piezas} pza${onzas ? ' + ' + onzas + ' oz' : ''}` });
-      this.existenciasResource.reload();
-    } catch {
-      this.ajusteError.set('No se pudo registrar el ajuste.');
-    } finally {
-      this.registrandoAjuste.set(false);
-    }
-  }
-
-  // ── Configuración de inventario del producto (en modal de editar) ───────────
-  protected readonly cfgControla   = signal(false);
-  protected readonly cfgVendeCopa  = signal(false);
-  protected readonly cfgIdEquiv    = signal<number | null>(null);
-  protected readonly cfgPrecioCopa = signal<number | null>(null);
-  protected readonly cfgStockMin   = signal<number | null>(null);
-
-  protected setCfgControla(e: Event): void { this.cfgControla.set((e.target as HTMLInputElement).checked); }
-  protected setCfgVendeCopa(e: Event): void { this.cfgVendeCopa.set((e.target as HTMLInputElement).checked); }
-  protected setCfgIdEquiv(e: Event): void {
-    const v = (e.target as HTMLSelectElement).value;
-    this.cfgIdEquiv.set(v ? +v : null);
-  }
-  protected setCfgPrecioCopa(e: Event): void {
-    const v = parseFloat((e.target as HTMLInputElement).value);
-    this.cfgPrecioCopa.set(!isNaN(v) && v >= 0 ? v : null);
-  }
-  protected setCfgStockMin(e: Event): void {
-    const v = parseInt((e.target as HTMLInputElement).value, 10);
-    this.cfgStockMin.set(!isNaN(v) && v >= 0 ? v : null);
-  }
-
-  private async cargarConfigProducto(idMaterial: number): Promise<void> {
-    this.cfgControla.set(false);
-    this.cfgVendeCopa.set(false);
-    this.cfgIdEquiv.set(null);
-    this.cfgPrecioCopa.set(null);
-    this.cfgStockMin.set(null);
-    try {
-      const cfg = await firstValueFrom(this.http.get<ProductoInventario | null>(
-        this.invUrl(`${this.companyId()!}/producto/${idMaterial}`),
-      ));
-      if (cfg) {
-        this.cfgControla.set(cfg.controlaInventario);
-        this.cfgVendeCopa.set(cfg.vendePorCopa);
-        this.cfgIdEquiv.set(cfg.idEquivalencia);
-        this.cfgPrecioCopa.set(cfg.precioCopa);
-        this.cfgStockMin.set(cfg.stockMinPiezas || null);
-      }
-    } catch { /* sin config previa */ }
-    void this.cargarReceta(idMaterial);
-  }
+  // ── Inventario → vista extraída a features/inventario (<app-inventario>) ─────
+  // El estado compartido con el modal de producto vive en InventarioService;
+  // aquí quedan solo alias para el modal de editar producto y la receta.
+  protected readonly equivalencias = this.inventarioSvc.equivalencias;
+  protected readonly cfgControla   = this.inventarioSvc.cfgControla;
+  protected readonly cfgVendeCopa  = this.inventarioSvc.cfgVendeCopa;
+  protected readonly cfgIdEquiv    = this.inventarioSvc.cfgIdEquiv;
+  protected readonly cfgPrecioCopa = this.inventarioSvc.cfgPrecioCopa;
+  protected readonly cfgStockMin   = this.inventarioSvc.cfgStockMin;
+  protected setCfgControla(e: Event): void { this.inventarioSvc.setCfgControla(e); }
+  protected setCfgVendeCopa(e: Event): void { this.inventarioSvc.setCfgVendeCopa(e); }
+  protected setCfgIdEquiv(e: Event): void { this.inventarioSvc.setCfgIdEquiv(e); }
+  protected setCfgPrecioCopa(e: Event): void { this.inventarioSvc.setCfgPrecioCopa(e); }
+  protected setCfgStockMin(e: Event): void { this.inventarioSvc.setCfgStockMin(e); }
 
   // ── Receta / insumos del platillo ───────────────────────────────────────────
   protected readonly receta = signal<RecetaItem[]>([]);
@@ -925,7 +536,7 @@ export class App {
     () => {
       const term = this.recetaBusqueda().trim();
       if (this.editandoProducto() === null || term.length < 2) return undefined;
-      return `${environment.urlChatBot}/restaurant-publico/productos/${this.companyId()!}/buscar?term=${encodeURIComponent(term)}`;
+      return this.productosSvc.buscarUrl(this.companyId()!, term);
     },
     { defaultValue: [] },
   );
@@ -933,8 +544,7 @@ export class App {
     this.receta.set([]);
     this.recetaBusqueda.set('');
     try {
-      const r = await firstValueFrom(this.http.get<RecetaItem[]>(
-        this.invUrl(`${this.companyId()!}/receta/${idProducto}`)));
+      const r = await this.inventarioSvc.getReceta(idProducto);
       this.receta.set(r ?? []);
     } catch { /* sin receta */ }
   }
@@ -951,26 +561,7 @@ export class App {
     this.receta.update(l => l.filter(r => r.idInsumo !== idInsumo));
   }
   private async guardarReceta(idProducto: number): Promise<void> {
-    await firstValueFrom(this.http.put(
-      this.invUrl('receta'),
-      { idCompany: this.companyId()!, idProducto, lineas: this.receta().filter(r => r.cantidad > 0) },
-    ));
-  }
-
-  private async guardarConfigProducto(idMaterial: number): Promise<void> {
-    await firstValueFrom(this.http.put(
-      this.invUrl('producto'),
-      {
-        idCompany:      this.companyId()!,
-        idMaterial,
-        controlaInventario: this.cfgControla(),
-        vendePorCopa:   this.cfgVendeCopa(),
-        idEquivalencia: this.cfgVendeCopa() ? this.cfgIdEquiv() : null,
-        onzasPorCopa:   1,
-        precioCopa:     this.cfgVendeCopa() ? this.cfgPrecioCopa() : null,
-        stockMinPiezas: this.cfgStockMin() ?? 0,
-      },
-    ));
+    await this.inventarioSvc.guardarReceta(idProducto, this.receta().filter(r => r.cantidad > 0));
   }
 
   // ── Venta: presentación completa / copa ─────────────────────────────────────
@@ -992,77 +583,9 @@ export class App {
     this.prodInvVenta.set(null);
     this.presentacionSel.set('COMPLETA');
     try {
-      const cfg = await firstValueFrom(this.http.get<ProductoInventario | null>(
-        this.invUrl(`${this.companyId()!}/producto/${idMaterial}`),
-      ));
+      const cfg = await this.inventarioSvc.getConfig(idMaterial);
       this.prodInvVenta.set(cfg);
     } catch { /* producto sin inventario */ }
-  }
-
-  // ── Alta / inicio de inventario para cualquier producto ─────────────────────
-  protected readonly altaBusqueda  = signal('');
-  protected readonly altaProducto  = signal<Producto | null>(null);
-  protected readonly altaPiezas    = signal<number | null>(null);
-  protected readonly guardandoAlta = signal(false);
-  protected readonly altaError     = signal('');
-
-  protected readonly altaBusquedaResource = httpResource<Producto[]>(
-    () => {
-      const term = this.altaBusqueda().trim();
-      if (this.view() !== 'inventario' || this.inventarioSubView() !== 'alta' || term.length < 2) return undefined;
-      return `${environment.urlChatBot}/restaurant-publico/productos/${this.companyId()!}/buscar?term=${encodeURIComponent(term)}`;
-    },
-    { defaultValue: [] },
-  );
-  protected setAltaBusqueda(e: Event): void { this.altaBusqueda.set((e.target as HTMLInputElement).value); }
-
-  protected async seleccionarAltaProducto(p: Producto): Promise<void> {
-    this.altaProducto.set(p);
-    this.altaBusqueda.set('');
-    this.altaPiezas.set(null);
-    this.altaError.set('');
-    await this.cargarConfigProducto(p.id);  // precarga cfg* si ya tenía configuración
-    this.cfgControla.set(true);             // al dar de alta siempre se controla
-  }
-
-  protected cancelarAlta(): void {
-    this.altaProducto.set(null);
-    this.altaPiezas.set(null);
-    this.altaError.set('');
-  }
-  protected setAltaPiezas(e: Event): void {
-    const v = parseFloat((e.target as HTMLInputElement).value);
-    this.altaPiezas.set(!isNaN(v) && v > 0 ? v : null);
-  }
-
-  protected async guardarAlta(): Promise<void> {
-    const prod = this.altaProducto();
-    if (!prod) return;
-    if (this.cfgVendeCopa() && this.cfgIdEquiv() === null) {
-      this.altaError.set('Selecciona la equivalencia (onzas por pieza).');
-      return;
-    }
-    this.guardandoAlta.set(true);
-    this.altaError.set('');
-    try {
-      await this.guardarConfigProducto(prod.id);   // crea/actualiza la config (controla = true)
-      const piezas = this.altaPiezas();
-      if (piezas && piezas > 0) {
-        await firstValueFrom(this.http.post<ResultadoMovimiento>(
-          this.invUrl('ingreso'),
-          { idCompany: this.companyId()!, idMaterial: prod.id, piezas },
-        ));
-      }
-      this.ingresoOk.set(`${prod.description}: inventario dado de alta${piezas ? ` (+${piezas} pza)` : ''}.`);
-      this.altaProducto.set(null);
-      this.altaPiezas.set(null);
-      this.inventarioSubView.set('existencias');
-      this.existenciasResource.reload();
-    } catch {
-      this.altaError.set('No se pudo dar de alta el inventario. Intenta de nuevo.');
-    } finally {
-      this.guardandoAlta.set(false);
-    }
   }
 
   // ── Pago ──────────────────────────────────────────────────────────────────
@@ -1083,8 +606,7 @@ export class App {
     const tel = this.clienteTel().trim();
     if (tel.length < 8) return;
     try {
-      const acc: any = await firstValueFrom(this.http.get(
-        `${environment.urlChatBot}/restaurant-publico/loyalty/${this.companyId()!}/${encodeURIComponent(tel)}`));
+      const acc: any = await this.cuentaSvc.consultarPuntos(this.companyId()!, tel);
       this.clientePuntos.set(acc?.totalPoints ?? 0);
     } catch { this.clientePuntos.set(0); }
   }
@@ -1142,26 +664,17 @@ export class App {
   );
   protected readonly appVersion = environment.version;
 
-  // ── Mesas ─────────────────────────────────────────────────────────────────
-  protected readonly mesasTick = signal(0);
-  protected readonly mesasResource = httpResource<Mesa[]>(
-    () => {
-      this.mesasTick();   // auto-refresco de estados/cronómetros
-      // Se carga en el salón y en Caja (para la cola de cobro).
-      return this.view() === 'mesas' || this.view() === 'cajas'
-        ? `${environment.urlAdministration}/Restaurant/mesas/${this.companyId()!}`
-        : undefined;
-    },
-    { defaultValue: [] },
-  );
-  protected readonly mesas = this.mesasResource.value;
+  // ── Mesas → estado en MesasService (store); alias para plantilla/métodos ─────
+  protected readonly mesasTick     = this.mesasSvc.tick;
+  protected readonly mesasResource = this.mesasSvc.mesasResource;
+  protected readonly mesas         = this.mesasSvc.mesas;
 
   // ── Aviso al mesero: platillos listos de cocina, pendientes de entregar ──────
   protected readonly listosResource = httpResource<MesaListo[]>(
     () => {
       this.mesasTick();   // se refresca con el mismo latido que las mesas
       return this.view() === 'mesas'
-        ? `${environment.urlChatBot}/restaurant-publico/cocina/${this.companyId()!}/listos`
+        ? this.cocina.listosUrl(this.companyId()!)
         : undefined;
     },
     { defaultValue: [] },
@@ -1177,8 +690,7 @@ export class App {
     if (mesa.idCuentaActual == null) return;
     this.marcandoEntregado.set(mesa.id);
     try {
-      await firstValueFrom(this.http.post(
-        `${environment.urlChatBot}/restaurant-publico/cocina/${mesa.idCuentaActual}/entregado`, {}));
+      await this.cocina.marcarEntregado(mesa.idCuentaActual);
       this.listosResource.reload();
     } catch { /* reintenta en el siguiente refresco */ }
     finally { this.marcandoEntregado.set(null); }
@@ -1231,30 +743,9 @@ export class App {
     () => this.mesas().filter(m => this.estadoMesa(m) === 'sucia').length,
   );
 
-  // Mesas ocupadas listas para cobrar. Las "por cobrar" primero en ORDEN DE LLEGADA
-  // (la que pidió primero, se cobra primero); el resto por nombre.
-  protected readonly mesasParaCobrar = computed(() =>
-    this.mesas()
-      .filter(m => m.tieneCuentaAbierta)
-      .sort((a, b) => {
-        const pa = this.estadoMesa(a) === 'por_cobrar' ? 0 : 1;
-        const pb = this.estadoMesa(b) === 'por_cobrar' ? 0 : 1;
-        if (pa !== pb) return pa - pb;
-        if (pa === 0) {   // ambas por cobrar → por hora de solicitud (FIFO)
-          const ta = a.porCobrarAt ? Date.parse(a.porCobrarAt) : 0;
-          const tb = b.porCobrarAt ? Date.parse(b.porCobrarAt) : 0;
-          return ta - tb;
-        }
-        return a.nombre.localeCompare(b.nombre, undefined, { numeric: true });
-      }),
-  );
-
-  // Cola de cobro: solo las mesas enviadas a cobrar, en orden de llegada.
-  protected readonly colaCobro = computed(() =>
-    this.mesas()
-      .filter(m => this.estadoMesa(m) === 'por_cobrar')
-      .sort((a, b) => (a.porCobrarAt ? Date.parse(a.porCobrarAt) : 0) - (b.porCobrarAt ? Date.parse(b.porCobrarAt) : 0)),
-  );
+  // Colas de cobro → MesasService (store).
+  protected readonly mesasParaCobrar = this.mesasSvc.mesasParaCobrar;
+  protected readonly colaCobro       = this.mesasSvc.colaCobro;
   protected minutosEsperando(m: Mesa): number {
     if (!m.porCobrarAt) return 0;
     return Math.max(0, Math.floor((Date.now() - Date.parse(m.porCobrarAt)) / 60000));
@@ -1281,7 +772,7 @@ export class App {
 
   protected readonly llevarResource = httpResource<any[]>(
     () => this.view() === 'mesas'
-      ? `${environment.urlChatBot}/restaurant-publico/cuentas/llevar/${this.companyId()!}`
+      ? this.cuentaSvc.llevarUrl(this.companyId()!)
       : undefined,
     { defaultValue: [] },
   );
@@ -1293,10 +784,9 @@ export class App {
   protected async crearLlevar(): Promise<void> {
     this.abriendoLlevar.set(true);
     try {
-      const res: any = await firstValueFrom(this.http.post(
-        `${environment.urlChatBot}/restaurant-publico/cuentas/llevar/abrir`,
+      const res: any = await this.cuentaSvc.abrirLlevar(
         { idCompany: this.companyId()!, tipo: this.llevarTipo(), nombre: this.llevarNombre().trim() || null,
-          tel: this.llevarTel().trim() || null, dir: this.llevarDir().trim() || null }));
+          tel: this.llevarTel().trim() || null, dir: this.llevarDir().trim() || null });
       const nom = this.llevarNombre().trim() || (this.llevarTipo() === 'domicilio' ? 'Domicilio' : 'Para llevar');
       this.selectedMesa.set({
         id: res.idMesa, nombre: `🥡 ${nom}`, capacidad: null, activo: true,
@@ -1334,7 +824,7 @@ export class App {
 
   // Estado efectivo (con fallback si el backend aún no lo envía).
   protected estadoMesa(m: Mesa): string {
-    return m.estado ?? (m.tieneCuentaAbierta ? 'ocupada' : 'libre');
+    return this.mesasSvc.estadoMesa(m);   // store
   }
   protected etiquetaEstado(e: string): string {
     return e === 'por_cobrar' ? 'POR COBRAR'
@@ -1346,10 +836,7 @@ export class App {
     e.stopPropagation();
     if (!mesa.idCuentaActual) return;
     try {
-      await firstValueFrom(this.http.post(
-        `${environment.urlChatBot}/restaurant-publico/cuentas/${mesa.idCuentaActual}/por-cobrar`,
-        { valor },
-      ));
+      await this.cuentaSvc.marcarPorCobrar(mesa.idCuentaActual, valor);
       this.mesasResource.reload();
     } catch { /* reintenta al refrescar */ }
   }
@@ -1357,9 +844,7 @@ export class App {
   protected async liberarMesa(mesa: Mesa, e: Event): Promise<void> {
     e.stopPropagation();
     try {
-      await firstValueFrom(this.http.post(
-        `${environment.urlChatBot}/restaurant-publico/mesas/${mesa.id}/liberar`, {},
-      ));
+      await this.mesasSvc.liberar(mesa.id);
       this.mesasResource.reload();
     } catch { /* reintenta al refrescar */ }
   }
@@ -1389,10 +874,7 @@ export class App {
     this.moviendoMesa.set(true);
     this.moverError.set('');
     try {
-      await firstValueFrom(this.http.post(
-        `${environment.urlChatBot}/restaurant-publico/cuentas/${src.idCuentaActual}/transferir`,
-        { idMesaDestino: destino.id },
-      ));
+      await this.cuentaSvc.transferir(src.idCuentaActual, destino.id);
       this.moverMesa.set(null);
       this.mesasResource.reload();
     } catch (err: any) {
@@ -1406,10 +888,7 @@ export class App {
     this.moviendoMesa.set(true);
     this.moverError.set('');
     try {
-      await firstValueFrom(this.http.post(
-        `${environment.urlChatBot}/restaurant-publico/cuentas/${src.idCuentaActual}/fusionar`,
-        { idCuentaDestino: destino.idCuentaActual },
-      ));
+      await this.cuentaSvc.fusionar(src.idCuentaActual, destino.idCuentaActual);
       this.moverMesa.set(null);
       this.mesasResource.reload();
     } catch (err: any) {
@@ -1420,7 +899,7 @@ export class App {
   // ── Familias ──────────────────────────────────────────────────────────────
   protected readonly familiasResource = httpResource<Familia[]>(
     () => this.view() === 'familias'
-      ? `${environment.urlChatBot}/restaurant-publico/familias/${this.companyId()!}`
+      ? this.productosSvc.familiasUrl(this.companyId()!)
       : undefined,
     { defaultValue: [] },
   );
@@ -1435,7 +914,7 @@ export class App {
     () => {
       const fam = this.selectedFamilia();
       if (!fam || this.view() !== 'productos') return undefined;
-      return `${environment.urlChatBot}/restaurant-publico/subfamilias/${this.companyId()!}/${fam.id}`;
+      return this.productosSvc.subfamiliasUrl(this.companyId()!, fam.id);
     },
     { defaultValue: [] },
   );
@@ -1454,10 +933,10 @@ export class App {
       const q = this.verInactivos() ? '?inactivos=true' : '';
       const sub = this.selectedSubfamilia();
       if (sub) {
-        return `${environment.urlChatBot}/restaurant-publico/productos/${this.companyId()!}/subfamilia/${sub.id}${q}`;
+        return this.productosSvc.porSubfamiliaUrl(this.companyId()!, sub.id, q);
       }
       if (!this.mostrarSubfamilias()) {
-        return `${environment.urlChatBot}/restaurant-publico/productos/${this.companyId()!}/familia/${fam.id}${q}`;
+        return this.productosSvc.porFamiliaUrl(this.companyId()!, fam.id, q);
       }
       return undefined;
     },
@@ -1477,35 +956,23 @@ export class App {
       if (this.view() !== 'productos' && this.view() !== 'familias') return undefined;
       const term = this.prodBusqueda().trim();
       if (term.length < 2) return undefined;
-      return `${environment.urlChatBot}/restaurant-publico/productos/${this.companyId()!}/buscar?term=${encodeURIComponent(term)}`;
+      return this.productosSvc.buscarUrl(this.companyId()!, term);
     },
     { defaultValue: [] },
   );
 
-  // ── Items de la cuenta ────────────────────────────────────────────────────
-  protected readonly itemsResource = httpResource<ItemCuenta[]>(
-    () => {
-      const mesa = this.selectedMesa();
-      const v = this.view();
-      if (!mesa?.idCuentaActual) return undefined;
-      if (v !== 'familias' && v !== 'productos' && v !== 'cuenta') return undefined;
-      return `${environment.urlChatBot}/restaurant-publico/cuentas/${mesa.idCuentaActual}/items`;
-    },
-    { defaultValue: [] },
-  );
-  protected readonly items = this.itemsResource.value;
-  // Productos aún por cobrar (los pagados de una cuenta separada quedan aparte).
-  protected readonly itemsPendientes = computed(() => this.items().filter(i => !i.pagado));
-  protected readonly totalCuenta = computed(() =>
-    this.itemsPendientes().reduce((sum, i) => sum + i.subtotal, 0),
-  );
+  // ── Items de la cuenta → CuentaService (store); alias para plantilla/métodos ─
+  protected readonly itemsResource   = this.cuentaSvc.itemsResource;
+  protected readonly items           = this.cuentaSvc.items;
+  protected readonly itemsPendientes = this.cuentaSvc.itemsPendientes;
+  protected readonly totalCuenta     = this.cuentaSvc.totalCuenta;
 
   // Descuento aplicado (autorizado por supervisor) y total a pagar.
   protected readonly descuentoAplicado = signal<{ monto: number; motivo: string; por: string } | null>(null);
 
   // ── Comensales (cada quien paga lo suyo) ────────────────────────────────────
   // Modo de la cuenta: junta (normal) o separada (por persona). Por defecto junta.
-  protected readonly cuentaSeparada = signal(false);
+  protected readonly cuentaSeparada = this.cuentaSvc.cuentaSeparada;   // store
   protected setCuentaSeparada(v: boolean): void {
     this.cuentaSeparada.set(v);
     if (!v) { this.numComensales.set(1); this.comensalSel.set(1); }
@@ -1515,16 +982,13 @@ export class App {
   private persistModo(): void {
     const id = this.selectedMesa()?.idCuentaActual;
     if (!id) return;
-    firstValueFrom(this.http.post(
-      `${environment.urlChatBot}/restaurant-publico/cuentas/${id}/modo`,
-      { separada: this.cuentaSeparada(), numComensales: this.cuentaSeparada() ? this.numComensales() : null },
-    )).catch(() => { /* no bloquear */ });
+    this.cuentaSvc.guardarModo(id, this.cuentaSeparada(), this.cuentaSeparada() ? this.numComensales() : null)
+      .catch(() => { /* no bloquear */ });
   }
   // Restaura el modo al entrar a una mesa (persistencia).
   private async cargarModoCuenta(idCuenta: number): Promise<void> {
     try {
-      const m: any = await firstValueFrom(this.http.get(
-        `${environment.urlChatBot}/restaurant-publico/cuentas/${idCuenta}/modo`));
+      const m: any = await this.cuentaSvc.getModo(idCuenta);
       this.cuentaSeparada.set(!!m?.separada);
       this.numComensales.set(m?.numComensales && m.numComensales > 0 ? m.numComensales : 1);
     } catch { /* deja junta por defecto */ }
@@ -1542,8 +1006,8 @@ export class App {
   protected confirmarJuntar(): void { this.avisoJuntar.set(false); this.setCuentaSeparada(false); }
   protected cancelarJuntar(): void { this.avisoJuntar.set(false); }
   protected cerrarJuntarBloqueado(): void { this.juntarBloqueado.set(false); }
-  protected readonly numComensales = signal(1);
-  protected readonly comensalSel   = signal(1);   // a quién se le carga el producto que se agrega
+  protected readonly numComensales = this.cuentaSvc.numComensales;   // store
+  protected readonly comensalSel   = this.cuentaSvc.comensalSel;     // store
 
   // Prompt al abrir la mesa: ¿junta o separada? y ¿cuántas personas?
   protected readonly preguntaMesa = signal(false);
@@ -1569,8 +1033,7 @@ export class App {
     const id = this.selectedMesa()?.idCuentaActual;
     if (id) {
       try {
-        await firstValueFrom(this.http.post(
-          `${environment.urlChatBot}/restaurant-publico/cuentas/${id}/cancelar-vacia`, {}));
+        await this.cuentaSvc.cancelarVacia(id);
       } catch { /* si falla, igual regresa */ }
     }
     this.backToMesas();
@@ -1640,9 +1103,7 @@ export class App {
     this.loginProcesando.set(true);
     this.loginError.set('');
     try {
-      const u = await firstValueFrom(this.http.post<Usuario>(
-        `${environment.urlChatBot}/restaurant-publico/usuarios/login`,
-        { idCompany: this.companyId()!, pin }));
+      const u = await this.usuariosSvc.login(this.companyId()!, pin);
       this.usuario.set(u);
       localStorage.setItem(App.LS_USUARIO, JSON.stringify(u));
       this.loginPin.set('');
@@ -1663,9 +1124,7 @@ export class App {
     if (!u) return;
     this.checando.set(true);
     try {
-      const r: any = await firstValueFrom(this.http.post(
-        `${environment.urlChatBot}/restaurant-publico/checador`,
-        { idCompany: this.companyId()!, idUsuario: u.id || null, usuario: u.nombre }));
+      const r: any = await this.usuariosSvc.checar(this.companyId()!, u.id || null, u.nombre);
       this.checarMsg.set(r?.tipo === 'SALIDA' ? '👋 Salida registrada' : '✅ Entrada registrada');
       setTimeout(() => this.checarMsg.set(''), 4000);
     } catch { this.checarMsg.set('No se pudo checar.'); }
@@ -1681,29 +1140,8 @@ export class App {
   }
 
   // Registra un movimiento en la bitácora con el usuario actual (no bloquea si falla).
-  protected auditar(accion: string, extras: {
-    entidad?: string; idEntidad?: number | null; descripcion?: string; monto?: number | null;
-    idMesa?: number | null; nombreMesa?: string | null;
-  } = {}): void {
-    const u = this.usuario();
-    const cid = this.companyId();
-    if (!cid) return;
-    firstValueFrom(this.http.post(
-      `${environment.urlChatBot}/restaurant-publico/auditoria`,
-      {
-        idCompany: cid,
-        idUsuario: u?.id ?? null,
-        usuario: u?.nombre ?? null,
-        rol: u?.rol ?? null,
-        accion,
-        entidad: extras.entidad ?? null,
-        idEntidad: extras.idEntidad ?? null,
-        descripcion: extras.descripcion ?? null,
-        monto: extras.monto ?? null,
-        idMesa: extras.idMesa ?? null,
-        nombreMesa: extras.nombreMesa ?? null,
-      },
-    )).catch(() => { /* la auditoría nunca rompe la operación */ });
+  protected auditar(accion: string, extras: AuditExtras = {}): void {
+    this.auditoriaSvc.auditar(accion, extras);   // logger en AuditoriaService
   }
 
   // Permisos por rol. mesero: mesas/cocina · cajero: + cajas/reportes/inventario · admin: todo
@@ -1731,193 +1169,36 @@ export class App {
       this.view.set('cajas');
     }
     if (module === 'REPORTES') {
-      this.reporteSubView.set('mesas');
-      this.reporteFecha.set(new Date().toISOString().split('T')[0]);
-      this.view.set('reportes');
+      this.view.set('reportes');   // el componente <app-reportes> maneja subvista y fecha
     }
     if (module === 'INVENTARIO') {
-      this.inventarioSubView.set('existencias');
-      this.view.set('inventario');
+      this.view.set('inventario');   // el componente <app-inventario> maneja la subvista
     }
     if (module === 'COCINA') {
-      this.view.set('cocina');
-      this.cocinaTick.update(t => t + 1);   // primera carga inmediata
+      this.view.set('cocina');   // el componente <app-cocina> carga y se refresca solo
     }
     if (module === 'CONFIG') {
-      this.showImpForm.set(false);
-      this.view.set('config');
+      this.view.set('config');   // el componente <app-config> maneja su estado
     }
-  }
-
-  // ── Configuración · Impresoras ──────────────────────────────────────────────
-  protected readonly impresorasResource = httpResource<Impresora[]>(
-    () => this.view() === 'config'
-      ? `${environment.urlAdministration}/Restaurant/impresoras/${this.companyId()!}`
-      : undefined,
-    { defaultValue: [] },
-  );
-  protected readonly impresoras = this.impresorasResource.value;
-  protected readonly impresorasLoading = this.impresorasResource.isLoading;
-
-  protected readonly showImpForm = signal(false);
-  protected readonly impEditId   = signal<number | null>(null);
-  protected readonly impNombre   = signal('');
-  protected readonly impIp       = signal('');
-  protected readonly impPuerto   = signal<number | null>(9100);
-  protected readonly guardandoImp = signal(false);
-  protected readonly impError    = signal('');
-
-  // Modelos recomendados (todos ESC/POS 80mm, puerto 9100). Prefiere la config.
-  protected readonly impPresets: { nombre: string; puerto: number; nota: string }[] = [
-    { nombre: 'Epson TM-T20III (Ethernet)', puerto: 9100, nota: 'Estándar de oro · caja' },
-    { nombre: 'Epson TM-m30 II (Eth/WiFi)', puerto: 9100, nota: 'Compacta · mostrador' },
-    { nombre: 'Star TSP143 IIILAN',          puerto: 9100, nota: 'Confiable · LAN' },
-    { nombre: 'Xprinter XP-N160II (Eth)',    puerto: 9100, nota: 'Económica' },
-    { nombre: '3nStar RPT008 (Ethernet)',    puerto: 9100, nota: 'Económica LATAM' },
-    { nombre: 'Epson TM-U220B (Ethernet)',   puerto: 9100, nota: 'Impacto · cocina (aguanta calor)' },
-    { nombre: 'Otra / genérica ESC-POS',     puerto: 9100, nota: '80mm por red' },
-  ];
-  protected aplicarPreset(e: Event): void {
-    const i = parseInt((e.target as HTMLSelectElement).value, 10);
-    const p = this.impPresets[i];
-    if (!p) return;
-    this.impPuerto.set(p.puerto);
-    if (!this.impNombre().trim()) this.impNombre.set(p.nombre);
-  }
-  protected readonly probandoImp = signal<number | null>(null);
-  protected readonly impTestMsg  = signal<{ id: number; ok: boolean; msg: string } | null>(null);
-
-  protected setImpNombre(e: Event): void { this.impNombre.set((e.target as HTMLInputElement).value); }
-  protected setImpIp(e: Event): void { this.impIp.set((e.target as HTMLInputElement).value); }
-  protected setImpPuerto(e: Event): void {
-    const v = parseInt((e.target as HTMLInputElement).value, 10);
-    this.impPuerto.set(!isNaN(v) && v > 0 ? v : null);
-  }
-
-  protected nuevaImpresora(): void {
-    this.impEditId.set(null);
-    this.impNombre.set('');
-    this.impIp.set('');
-    this.impPuerto.set(9100);
-    this.impError.set('');
-    this.showImpForm.set(true);
-  }
-  protected editarImpresora(i: Impresora): void {
-    this.impEditId.set(i.id);
-    this.impNombre.set(i.nombre);
-    this.impIp.set(i.ipAddress);
-    this.impPuerto.set(i.puerto);
-    this.impError.set('');
-    this.showImpForm.set(true);
-  }
-  protected cerrarImpForm(): void { this.showImpForm.set(false); }
-
-  protected async guardarImpresora(): Promise<void> {
-    const nombre = this.impNombre().trim();
-    const ip = this.impIp().trim();
-    if (!nombre) { this.impError.set('El nombre es obligatorio.'); return; }
-    if (!ip) { this.impError.set('La dirección IP es obligatoria.'); return; }
-
-    this.guardandoImp.set(true);
-    this.impError.set('');
-    const id = this.impEditId();
-    const body = { id: id ?? 0, idCompany: this.companyId()!, nombre, ipAddress: ip, puerto: this.impPuerto() ?? 9100, activo: true };
-    const url = `${environment.urlAdministration}/Restaurant/impresoras`;
-    try {
-      if (id === null) await firstValueFrom(this.http.post(url, body));
-      else await firstValueFrom(this.http.put(`${url}/${id}`, body));
-      this.showImpForm.set(false);
-      this.impresorasResource.reload();
-    } catch {
-      this.impError.set('No se pudo guardar la impresora.');
-    } finally {
-      this.guardandoImp.set(false);
-    }
-  }
-
-  protected async eliminarImpresora(i: Impresora): Promise<void> {
-    try {
-      await firstValueFrom(this.http.delete(`${environment.urlAdministration}/Restaurant/impresoras/${i.id}`));
-      this.impresorasResource.reload();
-    } catch { /* noop */ }
-  }
-
-  protected async probarImpresora(i: Impresora): Promise<void> {
-    this.probandoImp.set(i.id);
-    this.impTestMsg.set(null);
-    try {
-      await firstValueFrom(this.http.post(
-        `${environment.urlChatBot}/restaurant-publico/impresoras/test`,
-        { ip: i.ipAddress, puerto: i.puerto, nombre: i.nombre },
-      ));
-      this.impTestMsg.set({ id: i.id, ok: true, msg: 'Ticket de prueba enviado ✓' });
-    } catch (err: any) {
-      this.impTestMsg.set({ id: i.id, ok: false, msg: err?.error?.error ?? 'No se pudo conectar con la impresora.' });
-    } finally {
-      this.probandoImp.set(null);
-    }
-  }
-
-  // ── Configuración · Alertas Telegram (solo admin) ───────────────────────────
-  protected readonly alertaChats = signal('');
-  protected readonly guardandoAlertaChats = signal(false);
-  protected readonly alertaChatsMsg = signal('');
-  protected setAlertaChats(e: Event): void { this.alertaChats.set((e.target as HTMLInputElement).value); }
-  protected readonly alertaChatsResource = httpResource<any>(
-    () => this.view() === 'config' && this.esAdmin()
-      ? `${environment.urlChatBot}/restaurant-publico/alertas/${this.companyId()!}/chats`
-      : undefined,
-  );
-
-  protected async guardarAlertaChats(): Promise<void> {
-    this.guardandoAlertaChats.set(true);
-    this.alertaChatsMsg.set('');
-    try {
-      await firstValueFrom(this.http.post(
-        `${environment.urlChatBot}/restaurant-publico/alertas/${this.companyId()!}/chats`,
-        { chatIds: this.alertaChats() }));
-      this.alertaChatsMsg.set('Guardado ✓');
-    } catch { this.alertaChatsMsg.set('No se pudo guardar.'); }
-    finally { this.guardandoAlertaChats.set(false); }
   }
 
   // Envía una alerta a Telegram (no bloquea si falla).
   private enviarAlerta(mensaje: string): void {
-    firstValueFrom(this.http.post(
-      `${environment.urlChatBot}/restaurant-publico/alertas`,
-      { idCompany: this.companyId()!, mensaje })).catch(() => { /* opcional */ });
-  }
-  protected avisarStockBajo(): void {
-    const bajos = this.alertasStock();
-    if (!bajos.length) return;
-    const lista = bajos.map(e => `• ${e.descripcion}: ${e.piezasEnteras} pza (mín ${e.stockMinPiezas})`).join('\n');
-    this.enviarAlerta(`⚠️ ${this.companyName()} · Stock bajo:\n${lista}`);
-    this.ingresoOk.set('Alerta de stock enviada a Telegram.');
+    this.configSvc.enviarAlerta(this.companyId()!, mensaje);
   }
 
   // ── Configuración · Usuarios (solo admin) ───────────────────────────────────
   protected readonly usuariosResource = httpResource<Usuario[]>(
     () => {
       const enConfig = this.view() === 'config';
-      const enAudit  = this.view() === 'reportes' && this.reporteSubView() === 'auditoria';
+      const enAudit  = this.view() === 'reportes';   // carga usuarios para el filtro de auditoría
       return (enConfig || enAudit) && this.esAdmin()
-        ? `${environment.urlChatBot}/restaurant-publico/usuarios/${this.companyId()!}`
+        ? this.usuariosSvc.listUrl(this.companyId()!)
         : undefined;
     },
     { defaultValue: [] },
   );
   protected readonly usuarios = this.usuariosResource.value;
-
-  protected readonly showUserForm = signal(false);
-  protected readonly userEditId  = signal<number | null>(null);
-  protected readonly userNombre  = signal('');
-  protected readonly userPin     = signal('');
-  protected readonly userRol     = signal<Rol>('mesero');
-  protected readonly guardandoUser = signal(false);
-  protected readonly userError   = signal('');
-  protected setUserNombre(e: Event): void { this.userNombre.set((e.target as HTMLInputElement).value); }
-  protected setUserPin(e: Event): void { this.userPin.set((e.target as HTMLInputElement).value); }
-  protected setUserRol(e: Event): void { this.userRol.set((e.target as HTMLSelectElement).value as Rol); }
 
   // ── Mostrar/ocultar claves (botón 👁 junto a cada campo de PIN/contraseña) ──
   private readonly clavesVisibles = signal<ReadonlySet<string>>(new Set<string>());
@@ -1928,98 +1209,7 @@ export class App {
     this.clavesVisibles.set(s);
   }
 
-  protected nuevoUsuario(): void {
-    this.userEditId.set(null); this.userNombre.set(''); this.userPin.set('');
-    this.userRol.set('mesero'); this.userError.set(''); this.showUserForm.set(true);
-  }
-  protected editarUsuario(u: Usuario): void {
-    this.userEditId.set(u.id); this.userNombre.set(u.nombre); this.userPin.set('');
-    this.userRol.set(u.rol); this.userError.set(''); this.showUserForm.set(true);
-  }
-  protected cerrarUserForm(): void { this.showUserForm.set(false); }
-
-  protected async guardarUsuario(): Promise<void> {
-    const nombre = this.userNombre().trim();
-    if (!nombre) { this.userError.set('El nombre es obligatorio.'); return; }
-    const id = this.userEditId();
-    if (id === null && this.userPin().trim().length < 4) { this.userError.set('El PIN debe tener 4+ dígitos.'); return; }
-    this.guardandoUser.set(true);
-    this.userError.set('');
-    const body = { idCompany: this.companyId()!, nombre, pin: this.userPin().trim() || null, rol: this.userRol() };
-    const base = `${environment.urlChatBot}/restaurant-publico/usuarios`;
-    try {
-      if (id === null) await firstValueFrom(this.http.post(base, body));
-      else await firstValueFrom(this.http.put(`${base}/${id}`, body));
-      this.showUserForm.set(false);
-      this.usuariosResource.reload();
-    } catch (err: any) {
-      this.userError.set(err?.error?.error ?? 'No se pudo guardar el usuario.');
-    } finally {
-      this.guardandoUser.set(false);
-    }
-  }
-
-  protected async eliminarUsuario(u: Usuario): Promise<void> {
-    try {
-      await firstValueFrom(this.http.delete(
-        `${environment.urlChatBot}/restaurant-publico/usuarios/${u.id}?idCompany=${this.companyId()!}`));
-      this.usuariosResource.reload();
-    } catch { /* noop */ }
-  }
-
-  // ── Configuración · PIN de supervisor ───────────────────────────────────────
-  protected readonly pinActual = signal('');
-  protected readonly pinNuevo  = signal('');
-  protected readonly guardandoPin = signal(false);
-  protected readonly pinMsg    = signal<{ ok: boolean; msg: string } | null>(null);
-  protected setPinActual(e: Event): void { this.pinActual.set((e.target as HTMLInputElement).value); }
-  protected setPinNuevo(e: Event): void { this.pinNuevo.set((e.target as HTMLInputElement).value); }
-
-  protected async guardarPin(): Promise<void> {
-    this.guardandoPin.set(true);
-    this.pinMsg.set(null);
-    try {
-      await firstValueFrom(this.http.post(
-        `${environment.urlChatBot}/restaurant-publico/pin/cambiar`,
-        { idCompany: this.companyId()!, pinActual: this.pinActual(), pinNuevo: this.pinNuevo() }));
-      this.pinMsg.set({ ok: true, msg: 'PIN actualizado correctamente ✓' });
-      this.pinActual.set('');
-      this.pinNuevo.set('');
-    } catch (err: any) {
-      this.pinMsg.set({ ok: false, msg: err?.error?.error ?? 'No se pudo cambiar el PIN.' });
-    } finally {
-      this.guardandoPin.set(false);
-    }
-  }
-
-  // ── Cocina (KDS) ────────────────────────────────────────────────────────────
-  protected readonly cocinaTick = signal(0);
-  protected readonly cocinaResource = httpResource<OrdenCocina[]>(
-    () => {
-      this.cocinaTick();   // dependencia para el auto-refresco
-      return this.view() === 'cocina'
-        ? `${environment.urlChatBot}/restaurant-publico/cocina/${this.companyId()!}`
-        : undefined;
-    },
-    { defaultValue: [] },
-  );
-  protected readonly cocinaLoading = this.cocinaResource.isLoading;
-  protected readonly marcandoListo = signal<number | null>(null);
-
-  protected semaforoOrden(min: number): 'ok' | 'warn' | 'late' {
-    return min < 7 ? 'ok' : min < 15 ? 'warn' : 'late';
-  }
-
-  protected async marcarOrdenLista(o: OrdenCocina): Promise<void> {
-    this.marcandoListo.set(o.idCuenta);
-    try {
-      await firstValueFrom(this.http.post(
-        `${environment.urlChatBot}/restaurant-publico/cocina/${o.idCuenta}/listo`, {},
-      ));
-      this.cocinaResource.reload();
-    } catch { /* reintenta en el siguiente refresco */ }
-    finally { this.marcandoListo.set(null); }
-  }
+  // ── Cocina (KDS) → extraído a features/cocina (componente <app-cocina>) ──────
 
   protected setCajaNombre(e: Event): void {
     this.cajaNombre.set((e.target as HTMLInputElement).value);
@@ -2037,19 +1227,7 @@ export class App {
     this.iniciandoTurno.set(true);
     this.turnoError.set('');
     try {
-      const turno = await firstValueFrom(
-        this.http.post<Turno>(
-          `${environment.urlAdministration}/Restaurant/turnos`,
-          {
-            idCompany:      this.companyId()!,
-            idCashRegister: caja.idCaja,
-            idBranch:       caja.idBranch,
-            cajero:         this.cajaNombre().trim() || null,
-            fondoInicial:   this.fondoInicial() ?? 0,
-          },
-        ),
-      );
-      this.turnoActivo.set(turno);
+      const turno = await this.cajaSvc.abrirTurno(caja, this.cajaNombre().trim() || null, this.fondoInicial() ?? 0);
       this.auditar('ABRIR_TURNO', { entidad: 'TURNO', idEntidad: turno.id, monto: this.fondoInicial() ?? 0, descripcion: `Fondo ${this.fondoInicial() ?? 0}` });
     } catch {
       this.turnoError.set('No se pudo iniciar el turno. Intenta de nuevo.');
@@ -2094,12 +1272,7 @@ export class App {
     this.registrandoEgreso.set(true);
     this.egresoError.set('');
     try {
-      const egreso = await firstValueFrom(
-        this.http.post<EgresoCaja>(
-          `${environment.urlAdministration}/Restaurant/turnos/${turno.id}/egresos`,
-          { descripcion: this.egresoDesc().trim() || null, monto },
-        ),
-      );
+      const egreso = await this.cajaSvc.registrarEgreso(turno.id, this.egresoDesc().trim() || null, monto);
       this.egresosLista.update(list => [egreso, ...list]);
       this.auditar('EGRESO', { entidad: 'CAJA', monto, descripcion: this.egresoDesc().trim() || 'Egreso' });
       this.egresoDesc.set('');
@@ -2141,12 +1314,7 @@ export class App {
     this.cerrandoTurno.set(true);
     this.cerrarError.set('');
     try {
-      const result = await firstValueFrom(
-        this.http.put<Turno>(
-          `${environment.urlAdministration}/Restaurant/turnos/${turno.id}/cerrar`,
-          { efectivoContado: this.efectivoContado() ?? 0, notas: null },
-        ),
-      );
+      const result = await this.cajaSvc.cerrarTurno(turno.id, this.efectivoContado() ?? 0);
       this.corteResultado.set(result);
       this.auditar('CERRAR_TURNO', { entidad: 'TURNO', idEntidad: turno.id, monto: this.efectivoContado() ?? 0, descripcion: `Contado ${this.efectivoContado() ?? 0}` });
       const esp = snapshotResumen?.totales.efectivoEsperado ?? 0;
@@ -2162,7 +1330,7 @@ export class App {
           },
         });
       }
-      this.turnoActivo.set(null);
+      // turnoActivo lo limpia CajaService.cerrarTurno
     } catch {
       this.cerrarError.set('No se pudo cerrar el turno. Intenta de nuevo.');
     } finally {
@@ -2265,164 +1433,7 @@ export class App {
     pdfMake.createPdf(docDef).open();
   }
 
-  // ── Exportar a Excel (CSV) ──────────────────────────────────────────────────
-  private descargarCsv(nombre: string, encabezados: string[], filas: (string | number)[][]): void {
-    const esc = (v: string | number) => {
-      const s = String(v ?? '');
-      return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-    };
-    const bom = '﻿';   // para que Excel respete acentos
-    const cont = bom + [encabezados, ...filas].map(r => r.map(esc).join(',')).join('\r\n');
-    const blob = new Blob([cont], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${nombre}_${this.reporteFecha()}.csv`;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
-
-  protected exportarAuditoria(): void {
-    const rows = this.auditoria().map((a: any) => [
-      new Date(a.fecha).toLocaleString('es-MX'), a.usuario || 'Admin', a.accion,
-      a.nombreMesa || '', a.descripcion || '', a.monto ?? '',
-    ]);
-    this.descargarCsv('auditoria', ['Fecha', 'Usuario', 'Acción', 'Mesa', 'Detalle', 'Monto'], rows);
-  }
-
-  protected exportarExistencias(): void {
-    const rows = this.existencias().map(e => [
-      e.descripcion, e.piezasEnteras, e.onzasSobrantes, e.existenciaOnzas, e.stockMinPiezas, e.bajoMinimo ? 'SÍ' : '',
-    ]);
-    this.descargarCsv('inventario', ['Producto', 'Piezas', 'Oz sobrantes', 'Total oz', 'Stock mín', 'Bajo mínimo'], rows);
-  }
-
-  protected exportarReporteMesas(): void {
-    const rows: (string | number)[][] = [];
-    for (const g of this.mesasPorGrupo()) {
-      for (const c of g.cuentas) {
-        for (const it of c.items) {
-          rows.push([g.nombreMesa, it.descripcion ?? 'Item', it.cantidad, it.precioUnitario, it.subtotal]);
-        }
-      }
-    }
-    this.descargarCsv('ventas_mesas', ['Mesa', 'Producto', 'Cantidad', 'Unitario', 'Subtotal'], rows);
-  }
-
-  protected async imprimirReporte(): Promise<void> {
-    const fecha = this.reporteFecha();
-    const subView = this.reporteSubView();
-
-    const logo = await this.logoToDataUrl();
-
-    if (subView === 'mesas') {
-      const grupos = this.mesasPorGrupo();
-      const docDef: any = {
-        pageSize: 'A4',
-        pageMargins: [20, 20, 20, 20],
-        content: [
-          ...(logo ? [{ image: logo, width: 60, height: 60, alignment: 'center', margin: [0, 0, 0, 12] }] : []),
-          { text: this.companyName(), alignment: 'center', fontSize: 16, bold: true, margin: [0, 0, 0, 4] },
-          { text: 'Reporte de Mesas', alignment: 'center', fontSize: 14, bold: true, margin: [0, 0, 0, 2] },
-          { text: `Fecha: ${new Date(fecha).toLocaleDateString('es-MX')}`, alignment: 'center', fontSize: 10, color: '#666', margin: [0, 0, 0, 16] },
-          ...grupos.flatMap(g => [
-            { text: `Mesa: ${g.nombreMesa}`, fontSize: 12, bold: true, margin: [0, 12, 0, 8], color: '#147a4b' },
-            {
-              table: {
-                widths: ['*', 60, 60, 80],
-                body: [
-                  [{ text: 'Descripción', bold: true, fontSize: 9 }, { text: 'Qty', bold: true, fontSize: 9, alignment: 'center' }, { text: 'Unitario', bold: true, fontSize: 9, alignment: 'right' }, { text: 'Subtotal', bold: true, fontSize: 9, alignment: 'right' }],
-                  ...g.cuentas.flatMap(c => c.items.map(item => [
-                    { text: item.descripcion ?? 'Item', fontSize: 9 },
-                    { text: String(item.cantidad), fontSize: 9, alignment: 'center' },
-                    { text: `$${item.precioUnitario.toFixed(2)}`, fontSize: 9, alignment: 'right' },
-                    { text: `$${item.subtotal.toFixed(2)}`, fontSize: 9, alignment: 'right' }
-                  ])),
-                  [{ text: `Subtotal mesa: $${g.subtotal.toFixed(2)}`, colSpan: 4, bold: true, fontSize: 10, alignment: 'right' }]
-                ]
-              },
-              margin: [0, 0, 0, 8]
-            }
-          ]),
-          { text: '─'.repeat(80), margin: [0, 12, 0, 8] },
-          {
-            table: {
-              widths: ['*', 120],
-              body: [
-                [{ text: 'TOTAL GENERAL:', bold: true, fontSize: 12 }, { text: `$${this.totalReporteMesas().toFixed(2)}`, bold: true, fontSize: 12, alignment: 'right', color: '#147a4b' }]
-              ]
-            }
-          }
-        ]
-      };
-      pdfMake.createPdf(docDef).open();
-    } else {
-      const cajas = this.reporteCajasAgrupadas();
-      const fmt   = (n: number) => `$${n.toFixed(2)}`;
-      const hora  = (d: string) => new Date(d).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
-      const docDef: any = {
-        pageSize: 'A4',
-        pageMargins: [20, 20, 20, 20],
-        content: [
-          ...(logo ? [{ image: logo, width: 60, height: 60, alignment: 'center', margin: [0, 0, 0, 12] }] : []),
-          { text: this.companyName(), alignment: 'center', fontSize: 16, bold: true, margin: [0, 0, 0, 4] },
-          { text: 'Reporte de Caja', alignment: 'center', fontSize: 14, bold: true, margin: [0, 0, 0, 2] },
-          { text: `Fecha: ${new Date(fecha).toLocaleDateString('es-MX')}`, alignment: 'center', fontSize: 10, color: '#666', margin: [0, 0, 0, 16] },
-          ...cajas.flatMap((caja: CajaReporte) => [
-            { text: `Caja ${caja.idCashRegister}`, fontSize: 11, bold: true, color: '#147a4b', margin: [0, 8, 0, 4] },
-            {
-              table: {
-                widths: ['*', 100],
-                body: [
-                  [{ text: 'Tipo de Venta', bold: true, fontSize: 9 }, { text: 'Monto', bold: true, fontSize: 9, alignment: 'right' }],
-                  ...(caja.ventasEfectivo > 0 ? [[{ text: 'Efectivo', fontSize: 9 }, { text: fmt(caja.ventasEfectivo), fontSize: 9, alignment: 'right' }]] : []),
-                  ...(caja.ventasTarjeta > 0  ? [[{ text: 'Tarjeta',  fontSize: 9 }, { text: fmt(caja.ventasTarjeta),  fontSize: 9, alignment: 'right' }]] : []),
-                  ...(caja.ventasCheque > 0   ? [[{ text: 'Cheque',   fontSize: 9 }, { text: fmt(caja.ventasCheque),   fontSize: 9, alignment: 'right' }]] : []),
-                  ...(caja.ventasVales > 0    ? [[{ text: 'Vales',    fontSize: 9 }, { text: fmt(caja.ventasVales),    fontSize: 9, alignment: 'right' }]] : []),
-                  ...(caja.ventasMixto > 0    ? [[{ text: 'Mixto',    fontSize: 9 }, { text: fmt(caja.ventasMixto),    fontSize: 9, alignment: 'right' }]] : []),
-                  [{ text: 'TOTAL CAJA:', bold: true, fontSize: 10 }, { text: fmt(caja.ventasTotal), bold: true, fontSize: 10, alignment: 'right', color: '#147a4b' }]
-                ]
-              },
-              margin: [0, 0, 0, 6]
-            },
-            { text: 'Turnos del día:', fontSize: 9, bold: true, margin: [0, 4, 0, 2] },
-            {
-              table: {
-                widths: [30, '*', 45, 45, 70],
-                body: [
-                  [
-                    { text: '#',       bold: true, fontSize: 8 },
-                    { text: 'Cajero',  bold: true, fontSize: 8 },
-                    { text: 'Apertura',bold: true, fontSize: 8, alignment: 'center' },
-                    { text: 'Cierre',  bold: true, fontSize: 8, alignment: 'center' },
-                    { text: 'Fondo',   bold: true, fontSize: 8, alignment: 'right' }
-                  ],
-                  ...caja.turnos.map((t: Turno) => [
-                    { text: String(t.id), fontSize: 8 },
-                    { text: t.cajero || '—', fontSize: 8 },
-                    { text: hora(t.fechaInicio), fontSize: 8, alignment: 'center' },
-                    { text: t.fechaCierre ? hora(t.fechaCierre) : 'Abierto', fontSize: 8, alignment: 'center' },
-                    { text: fmt(t.fondoInicial), fontSize: 8, alignment: 'right' }
-                  ])
-                ]
-              },
-              margin: [0, 0, 0, 16]
-            }
-          ]),
-          { text: '═'.repeat(60), margin: [0, 4, 0, 8] },
-          {
-            table: {
-              widths: ['*', 120],
-              body: [
-                [{ text: 'TOTAL GENERAL DEL DÍA:', bold: true, fontSize: 11 }, { text: fmt(this.totalReporteCaja()), bold: true, fontSize: 11, alignment: 'right', color: '#147a4b' }]
-              ]
-            }
-          }
-        ]
-      };
-      pdfMake.createPdf(docDef).open();
-    }
-  }
+  // exportarExistencias → movido al componente <app-inventario>
 
   protected loadMesas(): void { this.mesasResource.reload(); }
 
@@ -2449,12 +1460,7 @@ export class App {
     this.creandoMesa.set(true);
     this.crearMesaError.set('');
     try {
-      await firstValueFrom(
-        this.http.post(
-          `${environment.urlAdministration}/Restaurant/mesas`,
-          { idCompany: this.companyId()!, nombre, capacidad: this.nuevaMesaCapacidad() },
-        ),
-      );
+      await this.mesasSvc.crear(this.companyId()!, nombre, this.nuevaMesaCapacidad());
       this.showNuevaMesa.set(false);
       this.mesasResource.reload();
     } catch {
@@ -2524,12 +1530,7 @@ export class App {
     this.creandoAgrupador.set(true);
     this.crearAgrupadorError.set('');
     try {
-      const fam = await firstValueFrom(
-        this.http.post<Familia>(
-          `${environment.urlChatBot}/restaurant-publico/familias`,
-          { idCompany: this.companyId()!, description: nombre },
-        ),
-      );
+      const fam = await this.productosSvc.crearFamilia(this.companyId()!, nombre);
       this.agrupadorParent.set(fam);
       this.familiasResource.reload();
       // Paso 2: preguntar si la familia tiene subagrupadores (subfamilias).
@@ -2550,12 +1551,7 @@ export class App {
     this.creandoAgrupador.set(true);
     this.crearAgrupadorError.set('');
     try {
-      const sub = await firstValueFrom(
-        this.http.post<Familia>(
-          `${environment.urlChatBot}/restaurant-publico/subfamilias`,
-          { idCompany: this.companyId()!, idFamilia: parent.id, description: nombre },
-        ),
-      );
+      const sub = await this.productosSvc.crearSubfamilia(this.companyId()!, parent.id, nombre);
       this.subfamiliasCreadas.update(list => [...list, sub]);
       this.nuevaSubfamiliaNombre.set('');
       this.subfamiliasResource.reload();
@@ -2594,12 +1590,7 @@ export class App {
     this.guardandoFamilia.set(true);
     this.editarFamiliaError.set('');
     try {
-      await firstValueFrom(
-        this.http.put<Familia>(
-          `${environment.urlChatBot}/restaurant-publico/familias/${familia.id}`,
-          { idCompany: this.companyId()!, description: nombre },
-        ),
-      );
+      await this.productosSvc.editarFamilia(familia.id, this.companyId()!, nombre);
       // Refleja el nombre nuevo si la familia editada está seleccionada.
       if (this.selectedFamilia()?.id === familia.id) {
         this.selectedFamilia.set({ ...familia, description: nombre });
@@ -2656,20 +1647,15 @@ export class App {
     this.creandoProducto.set(true);
     this.crearProductoError.set('');
     try {
-      await firstValueFrom(
-        this.http.post<Producto>(
-          `${environment.urlChatBot}/restaurant-publico/productos`,
-          {
-            idCompany:     this.companyId()!,
-            idFamilia:     fam.id,
-            idSubfamilia:  this.selectedSubfamilia()?.id ?? null,
-            identificador: this.prodIdentificador().trim() || null,
-            description:   desc,
-            ventaMN:       precio,
-            costoMN:       this.prodCosto(),
-          },
-        ),
-      );
+      await this.productosSvc.crearProducto({
+        idCompany:     this.companyId()!,
+        idFamilia:     fam.id,
+        idSubfamilia:  this.selectedSubfamilia()?.id ?? null,
+        identificador: this.prodIdentificador().trim() || null,
+        description:   desc,
+        ventaMN:       precio,
+        costoMN:       this.prodCosto(),
+      });
       this.showNuevoProducto.set(false);
       this.productosResource.reload();
     } catch {
@@ -2690,7 +1676,8 @@ export class App {
     this.moverSubfamiliaId.set(this.selectedSubfamilia()?.id ?? null);
     this.prodActivo.set(!this.verInactivos());   // si estás viendo inactivos, el producto está inactivo
     this.editandoProducto.set(prod);
-    void this.cargarConfigProducto(prod.id);
+    void this.inventarioSvc.cargarConfigProducto(prod.id);   // cfg del producto (servicio)
+    void this.cargarReceta(prod.id);                         // receta (queda en App)
   }
 
   protected setEditProdDescripcion(e: Event): void {
@@ -2715,14 +1702,9 @@ export class App {
     this.guardandoProducto.set(true);
     this.editProductoError.set('');
     try {
-      await firstValueFrom(
-        this.http.put(
-          `${environment.urlChatBot}/restaurant-publico/productos/${prod.id}`,
-          { idCompany: this.companyId()!, description: desc, ventaMN: precio },
-        ),
-      );
+      await this.productosSvc.editarProducto(prod.id, this.companyId()!, desc, precio);
       // Guardar configuración de inventario (no bloquea si falla).
-      try { await this.guardarConfigProducto(prod.id); }
+      try { await this.inventarioSvc.guardarConfigProducto(prod.id); }
       catch { /* config opcional */ }
       // Guardar receta / insumos (no bloquea si falla).
       try { await this.guardarReceta(prod.id); }
@@ -2735,20 +1717,14 @@ export class App {
          subDestino !== (this.selectedSubfamilia()?.id ?? null));
       if (cambioFamilia) {
         try {
-          await firstValueFrom(this.http.put(
-            `${environment.urlChatBot}/restaurant-publico/productos/${prod.id}/mover`,
-            { idCompany: this.companyId()!, idFamilia: famDestino, idSubfamilia: subDestino },
-          ));
+          await this.productosSvc.moverProducto(prod.id, this.companyId()!, famDestino, subDestino);
         } catch { /* si falla el movimiento, el resto ya se guardó */ }
       }
       // Activar / desactivar si cambió respecto al listado actual.
       const activoActual = !this.verInactivos();
       if (this.prodActivo() !== activoActual) {
         try {
-          await firstValueFrom(this.http.put(
-            `${environment.urlChatBot}/restaurant-publico/productos/${prod.id}/activo`,
-            { idCompany: this.companyId()!, activo: this.prodActivo() },
-          ));
+          await this.productosSvc.activarProducto(prod.id, this.companyId()!, this.prodActivo());
         } catch { /* no bloquea */ }
       }
       this.editandoProducto.set(null);
@@ -2786,12 +1762,7 @@ export class App {
     this.guardandoMesa.set(true);
     this.editMesaError.set('');
     try {
-      await firstValueFrom(
-        this.http.put(
-          `${environment.urlAdministration}/Restaurant/mesas/${mesa.id}`,
-          { id: mesa.id, idCompany: this.companyId()!, nombre, capacidad: this.editMesaCapacidad(), activo: true },
-        ),
-      );
+      await this.mesasSvc.editar(mesa.id, this.companyId()!, nombre, this.editMesaCapacidad());
       this.editandoMesa.set(null);
       this.mesasResource.reload();
     } catch {
@@ -2815,12 +1786,7 @@ export class App {
   private async openFreeMesa(mesa: Mesa): Promise<void> {
     this.openingMesa.set(true);
     try {
-      const cuenta = await firstValueFrom(
-        this.http.post<CuentaAbierta>(
-          `${environment.urlChatBot}/restaurant-publico/cuentas/abrir`,
-          { idCompany: this.companyId()!, idMesa: mesa.id },
-        ),
-      );
+      const cuenta = await this.cuentaSvc.abrir(this.companyId()!, mesa.id);
       this.selectedMesa.set({
         ...mesa,
         tieneCuentaAbierta: true,
@@ -2936,12 +1902,10 @@ export class App {
     this.agregandoItem.set(true);
     this.addError.set('');
     try {
-      await firstValueFrom(
-        this.http.post(
-          `${environment.urlChatBot}/restaurant-publico/cuentas/${mesa.idCuentaActual}/items`,
-          { idMaterial: producto.id, descripcion, cantidad, precio, presentacion, comensal: this.cuentaSeparada() ? this.comensalSel() : 1 },
-        ),
-      );
+      await this.cuentaSvc.agregarItem(mesa.idCuentaActual, {
+        idMaterial: producto.id, descripcion, cantidad, precio, presentacion,
+        comensal: this.cuentaSeparada() ? this.comensalSel() : 1,
+      });
       this.selectedProducto.set(null);
       this.prodNota.set('');
       this.cantidadCustom.set(null);
@@ -2974,12 +1938,8 @@ export class App {
     if (!mesa?.idCuentaActual) return;
     this.eliminandoId.set(item.id);
     try {
-      await firstValueFrom(
-        this.http.delete(
-          `${environment.urlChatBot}/restaurant-publico/cuentas/${mesa.idCuentaActual}/items/${item.id}`,
-          { body: { cantidad: item.cantidad, precio: item.precioUnitario } },
-        ),
-      );
+      await this.cuentaSvc.eliminarItem(mesa.idCuentaActual, item.id,
+        { cantidad: item.cantidad, precio: item.precioUnitario });
       this.itemsResource.reload();
     } finally {
       this.eliminandoId.set(null);
@@ -3044,9 +2004,7 @@ export class App {
     if (!this.authPor().trim()) { this.authError.set('Indica quién autoriza.'); return; }
     // Valida el PIN de supervisor en el backend (por empresa).
     try {
-      const r: any = await firstValueFrom(this.http.post(
-        `${environment.urlChatBot}/restaurant-publico/pin/validar`,
-        { idCompany: this.companyId()!, pin: this.authPin() }));
+      const r: any = await this.usuariosSvc.validarPin(this.companyId()!, this.authPin());
       if (!r?.ok) { this.authError.set('PIN de supervisor incorrecto.'); return; }
     } catch {
       this.authError.set('No se pudo validar el PIN. Intenta de nuevo.'); return;
@@ -3054,7 +2012,6 @@ export class App {
 
     const mesa = this.selectedMesa();
     const idCuenta = mesa?.idCuentaActual;
-    const base = `${environment.urlChatBot}/restaurant-publico/cuentas/${idCuenta}`;
     const motivo = this.authMotivo().trim();
     const por = this.authPor().trim();
 
@@ -3069,19 +2026,19 @@ export class App {
         this.auditar('DESCUENTO', { entidad: 'CUENTA', idEntidad: idCuenta, monto, nombreMesa: nm, descripcion: `${motivo || 'Descuento'} · autoriza ${por}` });
         this.authAccion.set(null);
       } else if (acc.tipo === 'cortesia' && acc.item && idCuenta) {
-        await firstValueFrom(this.http.post(`${base}/items/${acc.item.id}/cortesia`, {
+        await this.cuentaSvc.cortesiaItem(idCuenta, acc.item.id, {
           idCompany: this.companyId()!, tipo: 'CORTESIA', descripcion: acc.item.descripcion, motivo, autorizadoPor: por,
-        }));
+        });
         this.auditar('CORTESIA', { entidad: 'CUENTA', idEntidad: idCuenta, monto: acc.item.subtotal, nombreMesa: nm, descripcion: `${acc.item.descripcion} · autoriza ${por}` });
         this.itemsResource.reload();
         this.authAccion.set(null);
       } else if (acc.tipo === 'cancelar' && acc.item && idCuenta) {
-        await firstValueFrom(this.http.delete(`${base}/items/${acc.item.id}`,
-          { body: { cantidad: acc.item.cantidad, precio: acc.item.precioUnitario } }));
-        await firstValueFrom(this.http.post(`${base}/autorizacion`, {
+        await this.cuentaSvc.eliminarItem(idCuenta, acc.item.id,
+          { cantidad: acc.item.cantidad, precio: acc.item.precioUnitario });
+        await this.cuentaSvc.autorizacion(idCuenta, {
           idCompany: this.companyId()!, tipo: 'CANCELACION', descripcion: acc.item.descripcion,
           monto: acc.item.subtotal, motivo, autorizadoPor: por,
-        }));
+        });
         this.auditar('CANCELAR_ITEM', { entidad: 'CUENTA', idEntidad: idCuenta, monto: acc.item.subtotal, nombreMesa: nm, descripcion: `${acc.item.descripcion} · autoriza ${por}` });
         this.itemsResource.reload();
         this.authAccion.set(null);
@@ -3196,15 +2153,14 @@ export class App {
     this.cobrando.set(true);
     this.cobroError.set('');
     try {
-      const base = `${environment.urlChatBot}/restaurant-publico/cuentas/${mesa.idCuentaActual}`;
       const refTarjeta = tipo === 'EFECTIVO' ? null : (this.referenciaTarjeta().trim() || null);
       if (comensal != null) {
-        const res: any = await firstValueFrom(this.http.post(`${base}/cobrar-comensal`, {
+        const res: any = await this.cuentaSvc.cobrarComensal(mesa.idCuentaActual, {
           idCompany: this.companyId()!, tipoPago: tipo, comensal, referenciaTarjeta: refTarjeta,
-        }));
+        });
         this.cuentaCerradaComensal.set(!!res?.cuentaCerrada);
       } else {
-        await firstValueFrom(this.http.post(`${base}/cobrar`, {
+        await this.cuentaSvc.cobrar(mesa.idCuentaActual, {
           idCompany: this.companyId()!,
           tipoPago: tipo,
           descuento: desc?.monto ?? 0,
@@ -3212,7 +2168,7 @@ export class App {
           descuentoAutorizadoPor: desc?.por ?? null,
           referenciaTarjeta: refTarjeta,
           telefonoCliente: this.clienteTel().trim() || null,
-        }));
+        });
         this.cuentaCerradaComensal.set(true);
       }
 
@@ -3227,6 +2183,8 @@ export class App {
         montoTarjeta: tarjetaPagada,
         cambio: snapshotCambio,
         fecha: new Date(),
+        atendioPor: mesa.meseroApertura ?? null,   // mesero que abrió (backend)
+        cobradoPor: this.usuario()?.nombre ?? null, // usuario logueado que cobra
       });
 
       this.showPayment.set(false);
@@ -3263,7 +2221,9 @@ export class App {
         { text: t.companyName, alignment: 'center', fontSize: 9, margin: [0, 2, 0, 6] },
         { text: '─'.repeat(32), alignment: 'center', fontSize: 7, margin: [0, 0, 0, 4] },
         { text: `Mesa: ${t.mesaNombre}`, fontSize: 8, margin: [0, 0, 0, 2] },
-        { text: `Ticket #${t.idCuenta} · ${new Date(t.fecha).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`, fontSize: 7, color: '#666', margin: [0, 0, 0, 8] },
+        { text: `Ticket #${t.idCuenta} · ${new Date(t.fecha).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`, fontSize: 7, color: '#666', margin: [0, 0, 0, (t.atendioPor || t.cobradoPor) ? 2 : 8] },
+        ...(t.atendioPor ? [{ text: `Atendió: ${t.atendioPor}`, fontSize: 7, margin: [0, 0, 0, 1] }] : []),
+        ...(t.cobradoPor ? [{ text: `Cobró: ${t.cobradoPor}`, fontSize: 7, margin: [0, 0, 0, 8] }] : []),
         {
           table: {
             widths: ['*', 40, 40],
@@ -3347,6 +2307,8 @@ export class App {
       <div class="c b big">${this.esc(t.companyName)}</div>
       <div class="c sm">${this.esc(t.mesaNombre)} · Ticket #${t.idCuenta}</div>
       <div class="c sm">${new Date(t.fecha).toLocaleString('es-MX')}</div>
+      ${t.atendioPor ? `<div class="c sm">Atendió: ${this.esc(t.atendioPor)}</div>` : ''}
+      ${t.cobradoPor ? `<div class="c sm">Cobró: ${this.esc(t.cobradoPor)}</div>` : ''}
       <div class="ln"></div>
       <table>${filas}</table>
       <div class="ln"></div>

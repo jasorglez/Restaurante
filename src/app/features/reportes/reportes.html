@@ -1,0 +1,350 @@
+<section class="tables-view reporte-view" aria-labelledby="reporte-title">
+
+  <!-- Toolbar -->
+  <div class="tables-toolbar">
+    <button class="back-button" type="button" (click)="back.emit()">
+      <span aria-hidden="true">←</span> Menú
+    </button>
+    <div class="tables-heading">
+      <p class="eyebrow">PUNTO DE VENTA</p>
+      <h2 id="reporte-title">Reportes</h2>
+    </div>
+    <button class="refresh-button no-print" type="button"
+      (click)="reporteSubView() === 'mesas' ? reporteMesasResource.reload() : reporteSubView() === 'caja' ? reporteTurnosResource.reload() : resumenDiaResource.reload()"
+      title="Actualizar">↺</button>
+  </div>
+
+  <!-- Filtro fecha + tabs -->
+  <div class="reporte-controls no-print">
+    <input class="reporte-fecha-input" type="date"
+      [value]="reporteFecha()" (change)="setReporteFecha($event)">
+    <div class="reporte-tabs">
+      <button class="reporte-tab" [class.active]="reporteSubView() === 'resumen'"
+        type="button" (click)="reporteSubView.set('resumen')">📊 Resumen</button>
+      <button class="reporte-tab" [class.active]="reporteSubView() === 'mesas'"
+        type="button" (click)="reporteSubView.set('mesas')">🍽️ Mesas</button>
+      <button class="reporte-tab" [class.active]="reporteSubView() === 'caja'"
+        type="button" (click)="reporteSubView.set('caja')">🏧 Caja</button>
+      @if (esAdmin()) {
+        <button class="reporte-tab" [class.active]="reporteSubView() === 'auditoria'"
+          type="button" (click)="reporteSubView.set('auditoria')">🕵️ Auditoría</button>
+      }
+    </div>
+    @if (reporteSubView() !== 'resumen' && reporteSubView() !== 'auditoria') {
+      <div style="display:flex;gap:8px">
+        @if (reporteSubView() === 'mesas') {
+          <button class="nueva-mesa-btn no-print" type="button" (click)="exportarReporteMesas()">⬇️ Excel</button>
+        }
+        <button class="nueva-mesa-btn no-print" type="button" (click)="imprimirReporte()">🖨️ Imprimir</button>
+      </div>
+    } @else { <span></span> }
+  </div>
+
+  <!-- ── Resumen del día (dashboard) ────────────────────────────────────── -->
+  @if (reporteSubView() === 'resumen') {
+    @if (resumenDiaLoading()) {
+      <div class="state-panel"><span class="loader"></span><strong>Cargando resumen…</strong></div>
+    } @else if (!resumenDia()) {
+      <div class="state-panel"><strong>Sin datos para esta fecha</strong></div>
+    } @else {
+      <div class="dash-grid">
+        <div class="dash-kpi big">
+          <span class="dash-label">Ventas del día</span>
+          <strong class="dash-value">{{ resumenDia()!.totalVentas | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+        </div>
+        <div class="dash-kpi">
+          <span class="dash-label">Cuentas</span>
+          <strong class="dash-value">{{ resumenDia()!.cuentasCerradas }}</strong>
+        </div>
+        <div class="dash-kpi">
+          <span class="dash-label">Ticket promedio</span>
+          <strong class="dash-value">{{ resumenDia()!.ticketPromedio | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+        </div>
+        <div class="dash-kpi">
+          <span class="dash-label">💵 Efectivo</span>
+          <strong class="dash-value">{{ resumenDia()!.ventasEfectivo | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+        </div>
+        <div class="dash-kpi">
+          <span class="dash-label">💳 Tarjeta</span>
+          <strong class="dash-value">{{ resumenDia()!.ventasTarjeta | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+        </div>
+        <div class="dash-kpi">
+          <span class="dash-label">Otros</span>
+          <strong class="dash-value">{{ resumenDia()!.ventasOtros | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+        </div>
+      </div>
+
+      <!-- ── Corte del día: ventas − egresos − devoluciones = neto ── -->
+      <div class="corte-dia">
+        <h3 class="dash-sub" style="margin-top:4px">🧾 Corte del día</h3>
+        <div class="corte-dia-row"><span>Ventas del día</span><strong>{{ resumenDia()!.totalVentas | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong></div>
+        <div class="corte-dia-row sub"><span>💵 Efectivo</span><span>{{ resumenDia()!.ventasEfectivo | currency:'MXN':'symbol-narrow':'1.2-2' }}</span></div>
+        <div class="corte-dia-row sub"><span>💳 Tarjeta</span><span>{{ resumenDia()!.ventasTarjeta | currency:'MXN':'symbol-narrow':'1.2-2' }}</span></div>
+        <div class="corte-dia-row sub"><span>Otros</span><span>{{ resumenDia()!.ventasOtros | currency:'MXN':'symbol-narrow':'1.2-2' }}</span></div>
+        <div class="corte-dia-row neg"><span>− Egresos (retiros/gastos)</span><strong>{{ resumenDia()!.totalEgresos | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong></div>
+        <div class="corte-dia-row neg"><span>− Devoluciones</span><strong>{{ resumenDia()!.totalDevoluciones | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong></div>
+        <div class="corte-dia-row total"><span>= Neto en efectivo</span><strong>{{ resumenDia()!.netoEfectivo | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong></div>
+        <p class="inv-help" style="margin-top:6px">Neto = ventas en efectivo − egresos − devoluciones (sin contar el fondo de caja).</p>
+      </div>
+
+      @if (resumenDia()!.mesaMayorNombre) {
+        <p class="dash-highlight">🏆 Mesa con mayor consumo: <strong>{{ resumenDia()!.mesaMayorNombre }}</strong>
+          ({{ resumenDia()!.mesaMayorTotal | currency:'MXN':'symbol-narrow':'1.2-2' }})</p>
+      }
+
+      @if (resumenDia()!.topPlatillos.length > 0) {
+        <h3 class="dash-sub">Productos más vendidos</h3>
+        <ul class="inv-list">
+          @for (p of resumenDia()!.topPlatillos; track p.descripcion) {
+            <li class="inv-item">
+              <div class="inv-item-main">
+                <strong>{{ p.descripcion }}</strong>
+                <span class="inv-exist">{{ p.cantidad }} u · {{ p.total | currency:'MXN':'symbol-narrow':'1.2-2' }}</span>
+              </div>
+            </li>
+          }
+        </ul>
+      }
+
+      <!-- ── Analítica ── -->
+      @if (analitica(); as an) {
+        <div class="analitica-comp">
+          <div class="comp-card">
+            <span class="dash-label">Hoy</span>
+            <strong class="dash-value">{{ an.totalHoy | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+            @if (an.totalAyer > 0) {
+              <span class="comp-delta" [class.up]="an.deltaPct >= 0" [class.down]="an.deltaPct < 0">
+                {{ an.deltaPct >= 0 ? '▲' : '▼' }} {{ an.deltaPct }}% vs ayer
+              </span>
+            }
+          </div>
+          <div class="comp-card">
+            <span class="dash-label">Ayer</span>
+            <strong class="dash-value" style="color:#6b7c73">{{ an.totalAyer | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+          </div>
+        </div>
+
+        @if (an.porUsuario?.length) {
+          <h3 class="dash-sub">Ventas por mesero/usuario</h3>
+          <ul class="inv-list">
+            @for (u of an.porUsuario; track u.usuario) {
+              <li class="inv-item">
+                <div class="inv-item-main">
+                  <strong>{{ u.usuario }}</strong>
+                  <span class="inv-exist">{{ u.num }} cobros · {{ u.total | currency:'MXN':'symbol-narrow':'1.2-2' }}</span>
+                </div>
+              </li>
+            }
+          </ul>
+        }
+
+        @if (an.propinasPorUsuario?.length) {
+          <h3 class="dash-sub">💵 Propinas por mesero · Total {{ an.totalPropinas | currency:'MXN':'symbol-narrow':'1.2-2' }}</h3>
+          <ul class="inv-list">
+            @for (u of an.propinasPorUsuario; track u.usuario) {
+              <li class="inv-item">
+                <div class="inv-item-main">
+                  <strong>{{ u.usuario }}</strong>
+                  <span class="inv-exist">{{ u.total | currency:'MXN':'symbol-narrow':'1.2-2' }}</span>
+                </div>
+              </li>
+            }
+          </ul>
+        }
+
+        @if (an.porHora?.length) {
+          <h3 class="dash-sub">Ventas por hora (horas pico)</h3>
+          <div class="horas-chart">
+            @for (h of an.porHora; track h.hora) {
+              <div class="hora-row">
+                <span class="hora-lbl">{{ h.hora }}:00</span>
+                <div class="hora-bar-wrap">
+                  <div class="hora-bar" [style.width.%]="(h.total / maxHora()) * 100"></div>
+                </div>
+                <span class="hora-val">{{ h.total | currency:'MXN':'symbol-narrow':'1.0-0' }}</span>
+              </div>
+            }
+          </div>
+        }
+      }
+    }
+  }
+
+  <!-- ── Auditoría (solo admin) ─────────────────────────────────────────── -->
+  @if (reporteSubView() === 'auditoria') {
+    <div class="audit-filtros">
+      <select class="turno-input" [value]="auditFiltroUsuario() ?? ''" (change)="setAuditUsuario($event)">
+        <option value="">👤 Todos los usuarios</option>
+        @for (u of usuarios(); track u.id) {
+          <option [value]="u.id" [selected]="auditFiltroUsuario() === u.id">{{ u.nombre }}</option>
+        }
+      </select>
+      <select class="turno-input" [value]="auditFiltroAccion()" (change)="setAuditAccion($event)">
+        <option value="">⚡ Todas las acciones</option>
+        @for (a of accionesAudit; track a) {
+          <option [value]="a" [selected]="auditFiltroAccion() === a">{{ etiquetaAccion(a) }}</option>
+        }
+      </select>
+      <button type="button" class="inv-add-btn" (click)="exportarAuditoria()" [disabled]="auditoria().length === 0">⬇️ Excel</button>
+    </div>
+    @if (auditoriaResource.isLoading()) {
+      <div class="state-panel"><span class="loader"></span><strong>Cargando bitácora…</strong></div>
+    } @else if (auditoria().length === 0) {
+      <div class="state-panel"><strong>Sin movimientos en esta fecha</strong></div>
+    } @else {
+      <ul class="inv-list">
+        @for (a of auditoria(); track a.id) {
+          <li class="inv-item">
+            <div class="inv-item-main">
+              <strong>{{ etiquetaAccion(a.accion) }}</strong>
+              <span class="inv-badge">{{ a.usuario || 'Admin' }}</span>
+              @if (a.monto) { <span class="inv-exist">{{ a.monto | currency:'MXN':'symbol-narrow':'1.2-2' }}</span> }
+            </div>
+            <div class="inv-mov-detalle">
+              @if (a.nombreMesa) { <span>{{ a.nombreMesa }}</span> }
+              @if (a.descripcion) { <span>· {{ a.descripcion }}</span> }
+              <span class="inv-fecha">{{ a.fecha | date:'dd/MM HH:mm' }}</span>
+            </div>
+          </li>
+        }
+      </ul>
+    }
+  }
+
+  <!-- ── Reporte Mesas ──────────────────────────────────────────────────── -->
+  @if (reporteSubView() === 'mesas') {
+
+    <div class="reporte-print-header">
+      <h2>{{ companyName() }}</h2>
+      <p>Reporte de Mesas · {{ reporteFecha() | date:'dd/MM/yyyy' }}</p>
+    </div>
+
+    @if (reporteMesasResource.isLoading()) {
+      <div class="state-panel"><span class="loader"></span><strong>Cargando…</strong></div>
+    } @else if (reporteMesasResource.error()) {
+      <div class="state-panel error-panel"><strong>Error al cargar el reporte</strong></div>
+    } @else if (mesasPorGrupo().length === 0) {
+      <div class="state-panel"><strong>Sin ventas para esta fecha</strong></div>
+    } @else {
+
+      @for (grupo of mesasPorGrupo(); track grupo.nombreMesa) {
+        <div class="reporte-grupo">
+          <div class="reporte-grupo-header">
+            <span>{{ grupo.nombreMesa }}</span>
+            <span>{{ grupo.subtotal | currency:'MXN':'symbol-narrow':'1.2-2' }}</span>
+          </div>
+          <table class="reporte-table">
+            <thead>
+              <tr>
+                <th>Cuenta</th>
+                <th>Apertura</th>
+                <th>Cierre</th>
+                <th>Min.</th>
+                <th>Productos</th>
+                <th class="text-right">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (c of grupo.cuentas; track c.idCuenta) {
+                <tr>
+                  <td>#{{ c.idCuenta }}</td>
+                  <td>{{ c.abiertaAt | date:'HH:mm' }}</td>
+                  <td>{{ c.cerradaAt ? (c.cerradaAt | date:'HH:mm') : '—' }}</td>
+                  <td>{{ c.minutosAtencion }}</td>
+                  <td>{{ c.numItems }}</td>
+                  <td class="text-right">{{ c.total | currency:'MXN':'symbol-narrow':'1.2-2' }}</td>
+                </tr>
+                @if (c.items.length > 0) {
+                  <tr class="reporte-items-row">
+                    <td colspan="6">
+                      <span class="reporte-items-list">
+                        @for (it of c.items; track $index) {
+                          {{ it.cantidad }}× {{ it.descripcion }}{{ $last ? '' : ' · ' }}
+                        }
+                      </span>
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+            <tfoot>
+              <tr class="reporte-subtotal">
+                <td colspan="5">Subtotal {{ grupo.nombreMesa }}</td>
+                <td class="text-right">{{ grupo.subtotal | currency:'MXN':'symbol-narrow':'1.2-2' }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      }
+
+      <div class="reporte-grand-total">
+        <span>TOTAL DEL DÍA</span>
+        <strong>{{ totalReporteMesas() | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+      </div>
+
+    }
+
+  <!-- ── Reporte Caja ────────────────────────────────────────────────────── -->
+  } @else {
+
+    <div class="reporte-print-header">
+      <h2>{{ companyName() }}</h2>
+      <p>Reporte de Caja · {{ reporteFecha() | date:'dd/MM/yyyy' }}</p>
+    </div>
+
+    @if (reporteTurnosResource.isLoading()) {
+      <div class="state-panel"><span class="loader"></span><strong>Cargando…</strong></div>
+    } @else if (reporteTurnosResource.error()) {
+      <div class="state-panel error-panel"><strong>Error al cargar el reporte</strong></div>
+    } @else if (reporteCajasAgrupadas().length === 0) {
+      <div class="state-panel"><strong>Sin turnos para esta fecha</strong></div>
+    } @else {
+
+      <table class="reporte-table reporte-table-full">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Cajero</th>
+            <th>Apertura</th>
+            <th>Cierre</th>
+            <th>Fondo</th>
+            <th>Efectivo</th>
+            <th>Tarjeta</th>
+            <th>Otros</th>
+            <th class="text-right">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (caja of reporteCajasAgrupadas(); track caja.idCashRegister) {
+            <tr class="caja-group-header">
+              <td colspan="4">Caja {{ caja.idCashRegister }} · {{ (caja.turnos?.length ?? 0) }} turno(s)</td>
+              <td>—</td>
+              <td>{{ (caja.ventasEfectivo ?? 0) | currency:'MXN':'symbol-narrow':'1.2-2' }}</td>
+              <td>{{ (caja.ventasTarjeta ?? 0) | currency:'MXN':'symbol-narrow':'1.2-2' }}</td>
+              <td>{{ ((caja.ventasCheque ?? 0) + (caja.ventasVales ?? 0) + (caja.ventasMixto ?? 0)) | currency:'MXN':'symbol-narrow':'1.2-2' }}</td>
+              <td class="text-right">{{ (caja.ventasTotal ?? 0) | currency:'MXN':'symbol-narrow':'1.2-2' }}</td>
+            </tr>
+            @for (t of (caja.turnos ?? []); track t.id) {
+              <tr class="turno-sub-row" [class.turno-abierto]="!t.fechaCierre">
+                <td>{{ t.id }}</td>
+                <td>↳ {{ t.cajero || '—' }}</td>
+                <td>{{ t.fechaInicio | date:'HH:mm' }}</td>
+                <td>{{ t.fechaCierre ? (t.fechaCierre | date:'HH:mm') : 'Abierto' }}</td>
+                <td>{{ t.fondoInicial | currency:'MXN':'symbol-narrow':'1.2-2' }}</td>
+                <td colspan="4" class="turno-sub-nota">ventas agrupadas en la caja</td>
+              </tr>
+            }
+          }
+        </tbody>
+        <tfoot>
+          <tr class="reporte-grand-total-row">
+            <td colspan="8">TOTAL DEL DÍA</td>
+            <td class="text-right">{{ totalReporteCaja() | currency:'MXN':'symbol-narrow':'1.2-2' }}</td>
+          </tr>
+        </tfoot>
+      </table>
+
+    }
+  }
+
+</section>

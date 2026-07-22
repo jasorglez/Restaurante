@@ -1,0 +1,178 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Estilos de la vista Configuración (ViewEncapsulation.None → globales).
+ * NOTA (deuda técnica): clases compartidas copiadas de app.scss (inv-*, turno-*,
+ * cfg-inv, clave-*, confirmar-btn, qty-*). Consolidar a shared global con build.
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+.dash-sub { margin: 12px 0 6px; font-size: 1.05rem; }
+.inv-help { margin: 8px 0; font-size: 13px; color: #6b7c73; }
+.inv-ok {
+  margin: 8px 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #eef7f1;
+  color: #147a4b;
+  font-weight: 600;
+}
+
+/* ── Listas / items ─────────────────────────────────────────────────────────── */
+.inv-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.inv-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid #e6ecea;
+  border-radius: 12px;
+  background: #fff;
+  &.bajo { border-color: #f0b429; background: #fffdf5; }
+}
+.inv-item-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  strong { flex: 1; }
+}
+.inv-exist { font-weight: 700; color: #147a4b; }
+.inv-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #fdecc8;
+  color: #8a5a00;
+}
+.inv-badge[data-rol="admin"]  { background: #efeafc; color: #5b3fb0; }
+.inv-badge[data-rol="cajero"] { background: #eef3fc; color: #2b4d86; }
+.inv-badge[data-rol="mesero"] { background: #e6f5ed; color: #147a4b; }
+.inv-acciones { display: flex; gap: 8px; flex-wrap: wrap; }
+.inv-add-btn {
+  align-self: flex-start;
+  padding: 6px 12px;
+  border: 1px dashed #147a4b;
+  border-radius: 8px;
+  background: #fff;
+  color: #147a4b;
+  font-weight: 600;
+  cursor: pointer;
+}
+.inv-add-btn.alt { border-style: solid; border-color: #b06c19; color: #b06c19; }
+.inv-cancel {
+  padding: 8px 12px;
+  border: 1px solid #d9e2dd;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+}
+
+/* ── Formularios ────────────────────────────────────────────────────────────── */
+.cfg-inv {
+  margin: 8px 0 4px;
+  padding: 10px 12px;
+  border: 1px solid #e6ecea;
+  border-radius: 12px;
+  background: #f9fbfa;
+}
+.turno-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #556259;
+}
+.turno-input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid #dfe5df;
+  border-radius: 14px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #17211b;
+  background: #f5f7f4;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 120ms ease;
+  &:focus { border-color: #147a4b; background: #fff; }
+  &:disabled { opacity: 0.6; }
+  &::placeholder { color: #a8b9ae; font-weight: 400; }
+}
+.qty-error {
+  color: #a03822;
+  font-size: 0.83rem;
+  font-weight: 700;
+  margin: -10px 0 14px;
+}
+.confirmar-btn {
+  width: 100%;
+  padding: 16px;
+  border-radius: 14px;
+  font-size: 1rem;
+  margin-bottom: 12px;
+  background: #147a4b;
+  color: #fff;
+  border: 1px solid #147a4b;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: normal;
+}
+.confirmar-btn:hover:not(:disabled) { background: #0f5e38; }
+.qty-cancel {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid #e0e6e1;
+  border-radius: 14px;
+  background: #fff;
+  color: #667269;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.qty-cancel:hover:not(:disabled) { background: #f5f7f4; }
+.qty-cancel:disabled { opacity: 0.5; }
+.desc-aplicar {
+  width: 100%;
+  padding: 10px;
+  margin: 4px 0 8px;
+  border: 1.5px dashed #315da8;
+  border-radius: 10px;
+  background: #eef3fc;
+  color: #2b4d86;
+  font-weight: 700;
+  cursor: pointer;
+}
+.desc-aplicar:hover:not(:disabled) { background: #e2ecfa; }
+
+/* ── Campo de clave con botón 👁 ────────────────────────────────────────────── */
+.clave-wrap {
+  position: relative;
+  display: block;
+  width: 100%;
+  input { padding-right: 46px; }
+}
+.clave-ojo {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1.15rem;
+  line-height: 1;
+  opacity: 0.65;
+  transition: opacity 120ms ease;
+  &:hover  { opacity: 1; }
+  &:active { transform: translateY(1px); }
+}

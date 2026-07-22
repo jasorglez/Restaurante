@@ -1,0 +1,75 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Estilos propios del tablero de cocina (KDS).
+ * El layout de vista (.tables-view, .tables-toolbar, .back-button, .state-panel,
+ * .loader, …) viene de la capa SHARED global: shared/styles/_layout.scss.
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+.kds-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+  margin-top: 8px;
+}
+.kds-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #e6ecea;
+  border-left: 6px solid #9aa7a0;
+  border-radius: 14px;
+  background: #fff;
+  padding: 14px;
+  box-shadow: 0 8px 22px -12px rgb(24 40 30 / 25%);
+}
+.kds-card.sem-ok   { border-left-color: #23a565; }
+.kds-card.sem-warn { border-left-color: #e8a30c; background: #fffdf5; }
+.kds-card.sem-late { border-left-color: #c0392b; background: #fff6f5; animation: kdsPulse 1.6s ease-in-out infinite; }
+@keyframes kdsPulse { 50% { box-shadow: 0 0 0 3px rgb(192 57 43 / 22%); } }
+
+.kds-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  strong { font-size: 1.15rem; }
+}
+.kds-time {
+  font-weight: 800;
+  font-size: 0.85rem;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #eef1f0;
+  color: #47554d;
+}
+.sem-warn .kds-time { background: #fdecc8; color: #8a5a00; }
+.sem-late .kds-time { background: #fdecec; color: #c0392b; }
+
+.kds-items {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  li { display: flex; gap: 8px; align-items: baseline; }
+}
+.kds-qty { font-weight: 800; color: #147a4b; min-width: 26px; }
+.kds-desc { flex: 1; em { color: #6b7c73; font-style: normal; } }
+
+.kds-listo {
+  margin-top: auto;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background: #147a4b;
+  color: #fff;
+  font-weight: 800;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.kds-listo:hover:not(:disabled) { background: #0f5e38; }
+.kds-listo:disabled { opacity: 0.6; cursor: wait; }
+
+@media (max-width: 760px) {
+  .kds-grid { grid-template-columns: 1fr; }
+}

@@ -11,4 +11,5 @@ export interface Mesa {
   minutosAbierta?: number;
   sucia?: boolean;
   porCobrarAt?: string | null;   // cuándo se envió a cobrar (cola de caja)
+  meseroApertura?: string | null; // nombre del usuario que abrió/atendió la mesa (para el ticket)
 }

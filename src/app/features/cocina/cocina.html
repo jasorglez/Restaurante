@@ -1,0 +1,40 @@
+<section class="tables-view" aria-labelledby="cocina-title">
+  <div class="tables-toolbar">
+    <button class="back-button" type="button" (click)="back.emit()">
+      <span aria-hidden="true">←</span> Menú
+    </button>
+    <div class="tables-heading">
+      <p class="eyebrow">PUNTO DE VENTA · EN VIVO</p>
+      <h2 id="cocina-title">Cocina</h2>
+    </div>
+    <button class="refresh-button" type="button" title="Actualizar" (click)="cocinaResource.reload()">↻</button>
+  </div>
+
+  @if (cocinaLoading() && cocinaResource.value().length === 0) {
+    <div class="state-panel" role="status"><span class="loader" aria-hidden="true"></span><strong>Cargando órdenes…</strong></div>
+  } @else if (cocinaResource.value().length === 0) {
+    <div class="state-panel"><strong>Sin órdenes pendientes 🎉</strong><p>Las nuevas órdenes aparecerán aquí automáticamente.</p></div>
+  } @else {
+    <div class="kds-grid">
+      @for (o of cocinaResource.value(); track o.idCuenta) {
+        <div class="kds-card" [class]="'sem-' + semaforoOrden(o.minutos)">
+          <div class="kds-head">
+            <strong>{{ o.nombreMesa }}</strong>
+            <span class="kds-time">⏱ {{ o.minutos }} min</span>
+          </div>
+          <ul class="kds-items">
+            @for (it of o.items; track $index) {
+              <li>
+                <span class="kds-qty">{{ it.cantidad }}×</span>
+                <span class="kds-desc">{{ it.descripcion }}@if (it.presentacion === 'COPA') { <em> (Copa)</em> }</span>
+              </li>
+            }
+          </ul>
+          <button class="kds-listo" type="button" (click)="marcarOrdenLista(o)" [disabled]="marcandoListo() === o.idCuenta">
+            @if (marcandoListo() === o.idCuenta) { … } @else { ✓ Listo }
+          </button>
+        </div>
+      }
+    </div>
+  }
+</section>

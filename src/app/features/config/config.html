@@ -1,0 +1,168 @@
+<section class="tables-view" aria-labelledby="config-title">
+  <div class="tables-toolbar">
+    <button class="back-button" type="button" (click)="back.emit()">
+      <span aria-hidden="true">←</span> Menú
+    </button>
+    <div class="tables-heading">
+      <p class="eyebrow">PUNTO DE VENTA</p>
+      <h2 id="config-title">Configuración</h2>
+    </div>
+    <button class="refresh-button" type="button" title="Actualizar" (click)="impresorasResource.reload()">↻</button>
+  </div>
+
+  <h3 class="dash-sub">🖨️ Impresoras de red (ESC/POS)</h3>
+  <p class="inv-help">El servidor envía los tickets a la IP:puerto de cada mini-printer. Usa “Probar” para verificar la conexión.</p>
+
+  @if (impresorasLoading()) {
+    <div class="state-panel" role="status"><span class="loader" aria-hidden="true"></span><strong>Cargando…</strong></div>
+  } @else {
+    <ul class="inv-list">
+      @for (imp of impresoras(); track imp.id) {
+        <li class="inv-item" [class.bajo]="!imp.activo">
+          <div class="inv-item-main">
+            <strong>{{ imp.nombre }}</strong>
+            <span class="inv-exist">{{ imp.ipAddress }}:{{ imp.puerto }}</span>
+            @if (!imp.activo) { <span class="inv-badge">inactiva</span> }
+          </div>
+          @if (impTestMsg()?.id === imp.id) {
+            <p [class]="impTestMsg()!.ok ? 'inv-ok' : 'qty-error'" style="margin:2px 0">{{ impTestMsg()!.msg }}</p>
+          }
+          <div class="inv-acciones">
+            <button type="button" class="inv-add-btn" (click)="probarImpresora(imp)" [disabled]="probandoImp() === imp.id">
+              @if (probandoImp() === imp.id) { Probando… } @else { 🖨️ Probar }
+            </button>
+            <button type="button" class="inv-add-btn alt" (click)="editarImpresora(imp)">✎ Editar</button>
+            <button type="button" class="inv-cancel" title="Eliminar" (click)="eliminarImpresora(imp)">🗑️</button>
+          </div>
+        </li>
+      } @empty {
+        <div class="state-panel"><strong>Sin impresoras configuradas</strong></div>
+      }
+    </ul>
+
+    @if (!showImpForm()) {
+      <button type="button" class="desc-aplicar" style="border-style:solid" (click)="nuevaImpresora()">＋ Agregar impresora</button>
+    } @else {
+      <div class="cfg-inv" style="margin-top:12px">
+        <strong>{{ impEditId() === null ? 'Nueva impresora' : 'Editar impresora' }}</strong>
+
+        <label class="turno-label" style="margin-top:8px">Modelo recomendado (opcional)</label>
+        <select class="turno-input" (change)="aplicarPreset($event)" [disabled]="guardandoImp()">
+          <option value="">— Elige un modelo para autollenar —</option>
+          @for (p of impPresets; track p.nombre; let i = $index) {
+            <option [value]="i">{{ p.nombre }} · {{ p.nota }}</option>
+          }
+        </select>
+
+        <label class="turno-label" style="margin-top:8px">Nombre</label>
+        <input class="turno-input" type="text" placeholder="Ej. Cocina, Caja, Barra"
+          [value]="impNombre()" (input)="setImpNombre($event)" [disabled]="guardandoImp()">
+        <label class="turno-label" style="margin-top:8px">Dirección IP</label>
+        <input class="turno-input" type="text" inputmode="decimal" placeholder="192.168.1.50"
+          [value]="impIp()" (input)="setImpIp($event)" [disabled]="guardandoImp()">
+        <label class="turno-label" style="margin-top:8px">Puerto</label>
+        <input class="turno-input" type="number" min="1" placeholder="9100"
+          [value]="impPuerto() ?? ''" (input)="setImpPuerto($event)" [disabled]="guardandoImp()">
+        @if (impError()) { <p class="qty-error" role="alert">{{ impError() }}</p> }
+        <button class="confirmar-btn alta-submit" type="button" (click)="guardarImpresora()" [disabled]="guardandoImp()">
+          @if (guardandoImp()) { Guardando… } @else { Guardar }
+        </button>
+        <button class="qty-cancel" type="button" (click)="cerrarImpForm()" [disabled]="guardandoImp()">Cancelar</button>
+      </div>
+    }
+  }
+
+  <!-- ── Usuarios (solo admin) ── -->
+  @if (esAdmin()) {
+    <h3 class="dash-sub" style="margin-top:22px">👥 Usuarios y roles</h3>
+    <p class="inv-help">Cada quien entra con su PIN. Mesero: mesas/cocina · Cajero: + cajas/reportes/inventario · Admin: todo.</p>
+    <ul class="inv-list">
+      @for (u of usuarios(); track u.id) {
+        <li class="inv-item">
+          <div class="inv-item-main">
+            <strong>{{ u.nombre }}</strong>
+            <span class="inv-badge" [attr.data-rol]="u.rol">{{ u.rol }}</span>
+          </div>
+          <div class="inv-acciones">
+            <button type="button" class="inv-add-btn" (click)="editarUsuario(u)">✎ Editar</button>
+            <button type="button" class="inv-cancel" title="Eliminar" (click)="eliminarUsuario(u)">🗑️</button>
+          </div>
+        </li>
+      } @empty {
+        <div class="state-panel"><strong>Aún no hay usuarios</strong><p>Crea el primero abajo. (Mientras tanto, el PIN de supervisor entra como admin.)</p></div>
+      }
+    </ul>
+    @if (!showUserForm()) {
+      <button type="button" class="desc-aplicar" style="border-style:solid" (click)="nuevoUsuario()">＋ Agregar usuario</button>
+    } @else {
+      <div class="cfg-inv" style="margin-top:12px">
+        <strong>{{ userEditId() === null ? 'Nuevo usuario' : 'Editar usuario' }}</strong>
+        <label class="turno-label" style="margin-top:8px">Nombre</label>
+        <input class="turno-input" type="text" placeholder="Ej. María, Juan…"
+          [value]="userNombre()" (input)="setUserNombre($event)" [disabled]="guardandoUser()">
+        <label class="turno-label" style="margin-top:8px">PIN {{ userEditId() !== null ? '(deja vacío para no cambiarlo)' : '(4+ dígitos)' }}</label>
+        <div class="clave-wrap">
+          <input class="turno-input" [type]="verClave('user') ? 'text' : 'password'" inputmode="numeric" autocomplete="off" placeholder="PIN"
+            [value]="userPin()" (input)="setUserPin($event)" [disabled]="guardandoUser()">
+          <button class="clave-ojo" type="button" (click)="toggleClave('user')"
+            [attr.aria-label]="verClave('user') ? 'Ocultar PIN' : 'Mostrar PIN'"
+            [attr.title]="verClave('user') ? 'Ocultar' : 'Mostrar'">{{ verClave('user') ? '🙈' : '👁️' }}</button>
+        </div>
+        <label class="turno-label" style="margin-top:8px">Rol</label>
+        <select class="turno-input" [value]="userRol()" (change)="setUserRol($event)" [disabled]="guardandoUser()">
+          <option value="mesero">Mesero (mesas / cocina)</option>
+          <option value="cajero">Cajero (+ cajas / reportes / inventario)</option>
+          <option value="admin">Admin (todo)</option>
+        </select>
+        @if (userError()) { <p class="qty-error" role="alert">{{ userError() }}</p> }
+        <button class="confirmar-btn alta-submit" type="button" (click)="guardarUsuario()" [disabled]="guardandoUser()">
+          @if (guardandoUser()) { Guardando… } @else { Guardar }
+        </button>
+        <button class="qty-cancel" type="button" (click)="cerrarUserForm()" [disabled]="guardandoUser()">Cancelar</button>
+      </div>
+    }
+  }
+
+  <!-- ── PIN de supervisor ── -->
+  <h3 class="dash-sub" style="margin-top:22px">🔐 PIN de supervisor</h3>
+  <p class="inv-help">Se pide para cortesías y descuentos. Válido por empresa.</p>
+  <div class="cfg-inv">
+    <label class="turno-label">PIN actual</label>
+    <div class="clave-wrap">
+      <input class="turno-input" [type]="verClave('pinActual') ? 'text' : 'password'" autocomplete="off" placeholder="PIN actual"
+        [value]="pinActual()" (input)="setPinActual($event)" [disabled]="guardandoPin()">
+      <button class="clave-ojo" type="button" (click)="toggleClave('pinActual')"
+        [attr.aria-label]="verClave('pinActual') ? 'Ocultar PIN' : 'Mostrar PIN'"
+        [attr.title]="verClave('pinActual') ? 'Ocultar' : 'Mostrar'">{{ verClave('pinActual') ? '🙈' : '👁️' }}</button>
+    </div>
+    <label class="turno-label" style="margin-top:8px">Nuevo PIN (mín. 4)</label>
+    <div class="clave-wrap">
+      <input class="turno-input" [type]="verClave('pinNuevo') ? 'text' : 'password'" autocomplete="off" placeholder="Nuevo PIN"
+        [value]="pinNuevo()" (input)="setPinNuevo($event)" [disabled]="guardandoPin()">
+      <button class="clave-ojo" type="button" (click)="toggleClave('pinNuevo')"
+        [attr.aria-label]="verClave('pinNuevo') ? 'Ocultar PIN' : 'Mostrar PIN'"
+        [attr.title]="verClave('pinNuevo') ? 'Ocultar' : 'Mostrar'">{{ verClave('pinNuevo') ? '🙈' : '👁️' }}</button>
+    </div>
+    @if (pinMsg()) {
+      <p [class]="pinMsg()!.ok ? 'inv-ok' : 'qty-error'" style="margin:8px 0">{{ pinMsg()!.msg }}</p>
+    }
+    <button class="confirmar-btn alta-submit" type="button" (click)="guardarPin()"
+      [disabled]="guardandoPin() || !pinActual() || !pinNuevo()">
+      @if (guardandoPin()) { Guardando… } @else { Cambiar PIN }
+    </button>
+  </div>
+
+  <!-- ── Alertas Telegram (solo admin) ── -->
+  @if (esAdmin()) {
+    <h3 class="dash-sub" style="margin-top:22px">🔔 Alertas a Telegram</h3>
+    <p class="inv-help">Chat ID(s) de Telegram que recibirán avisos (corte de caja, stock bajo). Sepáralos con coma. Obtén el chat ID escribiéndole al bot.</p>
+    <div class="cfg-inv">
+      <input class="turno-input" type="text" placeholder="Ej. 123456789, -100987654"
+        [value]="alertaChats()" (input)="setAlertaChats($event)" [disabled]="guardandoAlertaChats()">
+      @if (alertaChatsMsg()) { <p class="inv-ok" style="margin:8px 0">{{ alertaChatsMsg() }}</p> }
+      <button class="confirmar-btn alta-submit" type="button" (click)="guardarAlertaChats()" [disabled]="guardandoAlertaChats()">
+        @if (guardandoAlertaChats()) { Guardando… } @else { Guardar chats }
+      </button>
+    </div>
+  }
+</section>

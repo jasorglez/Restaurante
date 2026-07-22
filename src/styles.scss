@@ -1,3 +1,6 @@
+// Capa SHARED: primitivos de layout compartidos por App y todos los features.
+@use './app/shared/styles/layout';
+
 *,
 *::before,
 *::after {
