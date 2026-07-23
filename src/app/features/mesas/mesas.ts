@@ -638,7 +638,7 @@ export class Mesas {
   private async openFreeMesa(mesa: Mesa): Promise<void> {
     this.openingMesa.set(true);
     try {
-      const cuenta = await this.cuentaSvc.abrir(this.companyId(), mesa.id);
+      const cuenta = await this.cuentaSvc.abrir(this.companyId(), mesa.id, this.auditoriaSvc.usuario()?.nombre ?? null);
       this.selectedMesa.set({
         ...mesa,
         tieneCuentaAbierta: true,

@@ -97,8 +97,8 @@ export class CuentaService {
 
   // ── Operaciones de cuenta/pago ──
   /** Abre una cuenta para una mesa. */
-  abrir(companyId: number, idMesa: number): Promise<CuentaAbierta> {
-    return firstValueFrom(this.http.post<CuentaAbierta>(this.abrirUrl(), { idCompany: companyId, idMesa }));
+  abrir(companyId: number, idMesa: number, mesero: string | null): Promise<CuentaAbierta> {
+    return firstValueFrom(this.http.post<CuentaAbierta>(this.abrirUrl(), { idCompany: companyId, idMesa, mesero }));
   }
   /** Agrega un producto a la cuenta. */
   agregarItem(idCuenta: number, body: object): Promise<unknown> {

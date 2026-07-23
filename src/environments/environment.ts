@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '2.51 (23 Julio 2026) Avisos en tiempo real (SignalR): cocina listo, mesero envía a caja, caja cobra — ya no depende del refresco automático',
+  version: '2.52 (23 Julio 2026) Ticket: "Atendió" ya manda el mesero que abrió la mesa (requiere columna mesero_apertura en administration)',
 }; 
