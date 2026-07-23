@@ -135,6 +135,16 @@
         </div>
       </div>
       <div class="topbar-actions">
+        @if (!connectivitySvc.online() || usandoCache() || pendientesSync() > 0) {
+          <div class="offline-chip" role="status">
+            @if (!connectivitySvc.online() || usandoCache()) {
+              <span>📡 Sin conexión — datos guardados</span>
+            }
+            @if (pendientesSync() > 0) {
+              <span class="offline-chip-count">{{ pendientesSync() }} por sincronizar</span>
+            }
+          </div>
+        }
         @if (usuario()) {
           <div class="user-chip" [attr.data-rol]="usuario()!.rol" title="Rol: {{ usuario()!.rol }}">
             <span class="user-ini">{{ usuario()!.nombre.charAt(0) }}</span>
@@ -718,7 +728,7 @@
         </div>
       } @else if (mostrarSubfamilias()) {
         <div class="families-grid">
-          @for (sub of subfamiliasResource.value(); track sub.id) {
+          @for (sub of subfamilias(); track sub.id) {
             <button class="family-button" type="button" (click)="selectSubfamilia(sub)">
               <span class="family-icon" aria-hidden="true">{{ sub.description.charAt(0) }}</span>
               <strong>{{ sub.description }}</strong>
@@ -736,7 +746,7 @@
         </div>
       } @else {
         <div class="products-grid">
-          @for (prod of productosResource.value(); track prod.id) {
+          @for (prod of productos(); track prod.id) {
             <div class="product-card-wrap">
               <button class="product-button" type="button" (click)="selectProducto(prod)">
                 <strong>{{ prod.description }}</strong>
@@ -1364,6 +1374,18 @@
           <button class="agregar-btn" type="button" (click)="imprimirComandaTablet()" title="Imprimir comanda a cocina">
             👨‍🍳 Comanda
           </button>
+          @if (estadoMesa(selectedMesa()!) === 'por_cobrar') {
+            <button class="agregar-btn" type="button" (click)="enviarACaja()" [disabled]="enviandoACaja()"
+              title="Cancelar el aviso a caja">
+              ↩ Aviso enviado
+            </button>
+          } @else {
+            <button class="agregar-btn" type="button" (click)="enviarACaja()"
+              [disabled]="enviandoACaja() || !itemsPendientes().length"
+              title="Avisa a caja que esta cuenta ya se puede cobrar">
+              💲 Enviar a caja
+            </button>
+          }
           <button class="cobrar-btn" type="button" (click)="iniciarCobro()">
             Cobrar
           </button>

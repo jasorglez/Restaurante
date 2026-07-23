@@ -3,6 +3,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Mesa } from '../../models/mesa';
+import { ultimoValorConCache } from '../../shared/util/resource-fallback';
 
 /**
  * Store del dominio Mesas: estado (lista de mesas + estado de cada mesa + cola de
@@ -24,15 +25,14 @@ export class MesasService {
   refrescar(): void { this.tick.update(t => t + 1); }
 
   /** Lista de mesas (se carga en salón y en Caja, para la cola de cobro). */
-  readonly mesasResource = httpResource<Mesa[]>(
-    () => {
-      this.tick();
-      const id = this.companyId();
-      return this.enVista() && id != null ? this.listUrl(id) : undefined;
-    },
-    { defaultValue: [] },
-  );
-  readonly mesas   = this.mesasResource.value;
+  private readonly url = computed(() => {
+    this.tick();
+    const id = this.companyId();
+    return this.enVista() && id != null ? this.listUrl(id) : undefined;
+  });
+  readonly mesasResource = httpResource<Mesa[]>(() => this.url(), { defaultValue: [] });
+  /** Si se cae la red, sigue mostrando la última lista buena (memoria + localStorage). */
+  readonly mesas   = ultimoValorConCache(this.mesasResource, this.url, []);
   readonly loading = this.mesasResource.isLoading;
   reload(): void { this.mesasResource.reload(); }
 

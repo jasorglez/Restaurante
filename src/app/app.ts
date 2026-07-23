@@ -22,6 +22,7 @@ import { ProductosService } from './features/productos/productos.service';
 import { CuentaService } from './features/cuenta/cuenta.service';
 import { EmpresaService } from './features/empresa/empresa.service';
 import { AuditoriaService, AuditExtras } from './core/auditoria.service';
+import { ConnectivityService } from './core/connectivity.service';
 import { Reportes } from './features/reportes/reportes';
 import { Inventario } from './features/inventario/inventario';
 import { Config } from './features/config/config';
@@ -29,6 +30,7 @@ import { Rol, Usuario } from './models/usuario';
 import { CuentaAbierta, Familia, ItemCuenta, Producto } from './models/familia';
 import { Equivalencia, Existencia, MovimientoInv, ProductoInventario, RecetaItem, ResultadoMovimiento, ResumenMov } from './models/inventario';
 import { Mesa } from './models/mesa';
+import { ultimoValorConCache, ultimoValorValido } from './shared/util/resource-fallback';
 
 type RestaurantModule = 'MESAS' | 'CAJAS' | 'REPORTES' | 'INVENTARIO' | 'COCINA' | 'CONFIG';
 type View = 'menu' | 'mesas' | 'familias' | 'productos' | 'cuenta' | 'cajas' | 'reportes' | 'inventario' | 'cocina' | 'config';
@@ -73,6 +75,7 @@ export class App {
   private readonly cuentaSvc = inject(CuentaService);
   private readonly empresaSvc = inject(EmpresaService);
   private readonly auditoriaSvc = inject(AuditoriaService);
+  protected readonly connectivitySvc = inject(ConnectivityService);
 
   // ── Selección de empresa ──────────────────────────────────────────────────
   protected readonly companyId   = signal<number | null>(this.resolveCompanyId());
@@ -426,6 +429,17 @@ export class App {
       if (hayNuevo) this.sonarCampana();
     });
 
+    // Suena la campana en caja cuando el mesero envía una mesa a cobrar (mismo
+    // aviso que cocina→mesero, pero en sentido mesero→caja). Solo mientras se
+    // está viendo el módulo de Cajas (igual que cocina solo avisa en 'mesas').
+    effect(() => {
+      if (this.view() !== 'cajas') return;
+      const ids = this.mesasSvc.colaCobro().map(m => m.id);
+      const hayNueva = ids.some(id => !this.porCobrarAvisadas.has(id));
+      this.porCobrarAvisadas = new Set(ids);
+      if (hayNueva) this.sonarCampana();
+    });
+
     // Auto-refresco de mesas (estados + cronómetro + cola de cobro) cada 20 s.
     setInterval(() => {
       if (this.view() === 'mesas' || this.view() === 'cajas') this.mesasTick.update(t => t + 1);
@@ -664,6 +678,18 @@ export class App {
   );
   protected readonly appVersion = environment.version;
 
+  // ── Conectividad (offline Nivel 1/2) ────────────────────────────────────────
+  // Si alguno de estos recursos está fallando, se está mostrando la última copia
+  // buena guardada (ver shared/util/resource-fallback.ts) en vez de datos frescos.
+  protected readonly usandoCache = computed(() =>
+    !!this.mesasSvc.mesasResource.error() ||
+    !!this.familiasResource.error() ||
+    !!this.subfamiliasResource.error() ||
+    !!this.productosResource.error() ||
+    !!this.cuentaSvc.itemsResource.error(),
+  );
+  protected readonly pendientesSync = this.cuentaSvc.pendientesCount;
+
   // ── Mesas → estado en MesasService (store); alias para plantilla/métodos ─────
   protected readonly mesasTick     = this.mesasSvc.tick;
   protected readonly mesasResource = this.mesasSvc.mesasResource;
@@ -697,6 +723,7 @@ export class App {
   }
   // Cuentas ya avisadas (para sonar la campana solo cuando aparece una NUEVA).
   private listosAvisados = new Set<number>();
+  private porCobrarAvisadas = new Set<number>();
   private sonarCampana(): void {
     try {
       const Ctx = (window as any).AudioContext || (window as any).webkitAudioContext;
@@ -841,6 +868,36 @@ export class App {
     } catch { /* reintenta al refrescar */ }
   }
 
+  // ── Enviar a caja (desde la vista de cuenta, sin volver al salón) ───────────
+  // Mismo endpoint que el botón 💲 del salón; además actualiza `selectedMesa` al
+  // toque (el store no se refresca solo con el reload de la lista general) para
+  // que el botón cambie de inmediato, y avisa por bitácora.
+  protected readonly enviandoACaja = signal(false);
+  protected async enviarACaja(): Promise<void> {
+    const mesa = this.selectedMesa();
+    if (!mesa?.idCuentaActual) return;
+    const yaEnviada = this.estadoMesa(mesa) === 'por_cobrar';
+    this.enviandoACaja.set(true);
+    try {
+      await this.cuentaSvc.marcarPorCobrar(mesa.idCuentaActual, !yaEnviada);
+      this.selectedMesa.set({
+        ...mesa,
+        estado: yaEnviada ? 'ocupada' : 'por_cobrar',
+        porCobrarAt: yaEnviada ? null : new Date().toISOString(),
+      });
+      this.mesasResource.reload();
+      if (!yaEnviada) {
+        this.auditar('ENVIAR_A_COBRAR', {
+          entidad: 'CUENTA', idEntidad: mesa.idCuentaActual, idMesa: mesa.id, nombreMesa: mesa.nombre,
+        });
+      }
+    } catch {
+      this.mesaActionError.set('No se pudo avisar a caja. Intenta de nuevo.');
+    } finally {
+      this.enviandoACaja.set(false);
+    }
+  }
+
   protected async liberarMesa(mesa: Mesa, e: Event): Promise<void> {
     e.stopPropagation();
     try {
@@ -897,51 +954,49 @@ export class App {
   }
 
   // ── Familias ──────────────────────────────────────────────────────────────
-  protected readonly familiasResource = httpResource<Familia[]>(
-    () => this.view() === 'familias'
-      ? this.productosSvc.familiasUrl(this.companyId()!)
-      : undefined,
-    { defaultValue: [] },
+  private readonly familiasUrl = computed(() => this.view() === 'familias'
+    ? this.productosSvc.familiasUrl(this.companyId()!)
+    : undefined,
   );
-  protected readonly familias = this.familiasResource.value;
+  protected readonly familiasResource = httpResource<Familia[]>(() => this.familiasUrl(), { defaultValue: [] });
+  // Si se cae la red, sigue mostrando el último catálogo bueno (memoria + localStorage).
+  protected readonly familias = ultimoValorConCache(this.familiasResource, this.familiasUrl, []);
   protected readonly familiasLoading = this.familiasResource.isLoading;
   protected readonly familiasError = computed(() =>
     this.familiasResource.error() ? 'No fue posible cargar las familias del menú.' : '',
   );
 
   // ── Subfamilias ───────────────────────────────────────────────────────────
-  protected readonly subfamiliasResource = httpResource<Familia[]>(
-    () => {
-      const fam = this.selectedFamilia();
-      if (!fam || this.view() !== 'productos') return undefined;
-      return this.productosSvc.subfamiliasUrl(this.companyId()!, fam.id);
-    },
-    { defaultValue: [] },
-  );
+  private readonly subfamiliasUrl = computed(() => {
+    const fam = this.selectedFamilia();
+    if (!fam || this.view() !== 'productos') return undefined;
+    return this.productosSvc.subfamiliasUrl(this.companyId()!, fam.id);
+  });
+  protected readonly subfamiliasResource = httpResource<Familia[]>(() => this.subfamiliasUrl(), { defaultValue: [] });
+  protected readonly subfamilias = ultimoValorConCache(this.subfamiliasResource, this.subfamiliasUrl, []);
 
   protected readonly mostrarSubfamilias = computed(() => {
     if (this.selectedSubfamilia()) return false;
-    return !this.subfamiliasResource.isLoading() && this.subfamiliasResource.value().length > 1;
+    return !this.subfamiliasResource.isLoading() && this.subfamilias().length > 1;
   });
 
   // ── Productos ─────────────────────────────────────────────────────────────
-  protected readonly productosResource = httpResource<Producto[]>(
-    () => {
-      if (this.view() !== 'productos') return undefined;
-      const fam = this.selectedFamilia();
-      if (!fam || this.subfamiliasResource.isLoading()) return undefined;
-      const q = this.verInactivos() ? '?inactivos=true' : '';
-      const sub = this.selectedSubfamilia();
-      if (sub) {
-        return this.productosSvc.porSubfamiliaUrl(this.companyId()!, sub.id, q);
-      }
-      if (!this.mostrarSubfamilias()) {
-        return this.productosSvc.porFamiliaUrl(this.companyId()!, fam.id, q);
-      }
-      return undefined;
-    },
-    { defaultValue: [] },
-  );
+  private readonly productosUrl = computed(() => {
+    if (this.view() !== 'productos') return undefined;
+    const fam = this.selectedFamilia();
+    if (!fam || this.subfamiliasResource.isLoading()) return undefined;
+    const q = this.verInactivos() ? '?inactivos=true' : '';
+    const sub = this.selectedSubfamilia();
+    if (sub) {
+      return this.productosSvc.porSubfamiliaUrl(this.companyId()!, sub.id, q);
+    }
+    if (!this.mostrarSubfamilias()) {
+      return this.productosSvc.porFamiliaUrl(this.companyId()!, fam.id, q);
+    }
+    return undefined;
+  });
+  protected readonly productosResource = httpResource<Producto[]>(() => this.productosUrl(), { defaultValue: [] });
+  protected readonly productos = ultimoValorConCache(this.productosResource, this.productosUrl, []);
   protected readonly productosLoading = computed(
     () => this.subfamiliasResource.isLoading() || this.productosResource.isLoading(),
   );
@@ -1902,14 +1957,14 @@ export class App {
     this.agregandoItem.set(true);
     this.addError.set('');
     try {
-      await this.cuentaSvc.agregarItem(mesa.idCuentaActual, {
+      const resultado = await this.cuentaSvc.agregarItemConCola(mesa.idCuentaActual, {
         idMaterial: producto.id, descripcion, cantidad, precio, presentacion,
         comensal: this.cuentaSeparada() ? this.comensalSel() : 1,
       });
       this.selectedProducto.set(null);
       this.prodNota.set('');
       this.cantidadCustom.set(null);
-      this.itemsResource.reload();
+      if (resultado === 'sincronizado') this.itemsResource.reload();
     } catch {
       this.addError.set('No se pudo agregar el producto. Intenta de nuevo.');
     } finally {
@@ -1938,9 +1993,9 @@ export class App {
     if (!mesa?.idCuentaActual) return;
     this.eliminandoId.set(item.id);
     try {
-      await this.cuentaSvc.eliminarItem(mesa.idCuentaActual, item.id,
+      const resultado = await this.cuentaSvc.eliminarItemConCola(mesa.idCuentaActual, item.id,
         { cantidad: item.cantidad, precio: item.precioUnitario });
-      this.itemsResource.reload();
+      if (resultado === 'sincronizado') this.itemsResource.reload();
     } finally {
       this.eliminandoId.set(null);
     }
