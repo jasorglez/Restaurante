@@ -91,3 +91,171 @@
   .tables-heading .eyebrow { font-size: 0.6rem; }
   .back-button, .refresh-button { min-height: 42px; padding: 0 12px; font-size: 0.85rem; }
 }
+
+
+/* ── Primitivos compartidos por App (Cajas/nota de corte) y el componente Mesas
+ *    (ticket, pago, botones de acción). Movidos aquí desde app.scss para que
+ *    ambos scopes los compartan sin duplicar. ─────────────────────────────── */
+
+/* .state-panel → capa shared (shared/styles/_layout.scss) */
+.error-panel strong { color: #9c351f; }
+.action-error {
+  margin: -10px 0 18px;
+  color: #a03822;
+  font-weight: 800;
+  text-align: center;
+}
+.agregar-btn {
+  padding: 16px;
+  border: 2px solid #d0ddd4;
+  border-radius: 16px;
+  background: #fff;
+  color: #33463a;
+  font-size: 0.95rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 150ms ease;
+}
+.agregar-btn:hover { border-color: #147a4b; color: #147a4b; }
+.cobrar-btn {
+  padding: 16px;
+  border: none;
+  border-radius: 16px;
+  background: #147a4b;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: 150ms ease;
+  box-shadow: 0 8px 22px rgb(20 122 75 / 28%);
+}
+.cobrar-btn:hover { background: #0f5e38; }
+.buscar-input {
+  width: 100%;
+  padding: 14px 44px 14px 44px;
+  border: 1px solid #d8e4db;
+  border-radius: 16px;
+  background: #fff;
+  color: #173c28;
+  font-size: 1rem;
+  box-shadow: 0 6px 18px rgb(23 75 47 / 6%);
+  transition: 130ms ease;
+
+  &::-webkit-search-cancel-button { display: none; }
+  &:focus { outline: none; border-color: #159357; box-shadow: 0 8px 22px rgb(21 147 87 / 15%); }
+}
+
+.turno-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.monto-row {
+  display: flex;
+  align-items: center;
+  border: 2px solid #cce4d4;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #f0faf4;
+}
+
+.monto-currency {
+  padding: 0 12px;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #147a4b;
+  border-right: 2px solid #cce4d4;
+  line-height: 48px;
+  background: #e6f5ed;
+}
+
+.monto-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 12px 14px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #17211b;
+  outline: none;
+  width: 100%;
+
+  &:disabled { opacity: 0.6; }
+  &::placeholder { color: #a8b9ae; }
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button { -webkit-appearance: none; }
+}
+
+.ticket-logo {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 10px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: #147a4b;
+  color: #fff;
+  font-family: Georgia, serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.ticket-empresa {
+  margin: 0 0 4px;
+  font-size: 1.05rem;
+  font-weight: 900;
+  font-family: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.ticket-sub {
+  margin: 0 0 6px;
+  color: #555;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+}
+
+.ticket-divider {
+  margin: 8px 0;
+  color: #888;
+  font-size: 0.8rem;
+  overflow: hidden;
+}
+
+.ticket-info {
+  text-align: left;
+  margin: 8px 0;
+
+  > div {
+    display: flex;
+    justify-content: space-between;
+    padding: 2px 0;
+    font-size: 0.82rem;
+
+    span:first-child { color: #555; }
+  }
+}
+
+.ticket-thanks {
+  margin: 4px 0;
+  font-style: italic;
+  color: #555;
+  font-size: 0.82rem;
+}
+
+/* Botón instalar PWA */
+.instalar-btn {
+  padding: 12px 22px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--brand), var(--brand-2));
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 12px 26px -10px var(--brand, #147a4b);
+  margin-bottom: 10px;
+}
+.instalar-btn:hover { filter: brightness(1.05); }
