@@ -1,3 +1,8 @@
+/* Colores de marca: genuinamente globales (este archivo se carga desde
+ * src/styles.scss, no aislado a ningún componente) para que cualquier feature
+ * (Mesas, Reportes, …) pueda usar var(--brand) sin importar dónde viva. */
+:root { --brand: #147a4b; --brand-2: #1fa968; --brand-warm: #b06c19; }
+
 /* ─────────────────────────────────────────────────────────────────────────────
  * Capa SHARED · primitivos de layout de vista
  *

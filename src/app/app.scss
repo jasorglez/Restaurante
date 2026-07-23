@@ -1200,7 +1200,7 @@ footer {
 /* ============================================================================
    MENÚ PRINCIPAL 2.0  (paleta verde compartida → resto del sistema homogéneo)
    ========================================================================== */
-:root { --brand: #147a4b; --brand-2: #1fa968; --brand-warm: #b06c19; }
+/* :root --brand/--brand-2/--brand-warm → capa shared (shared/styles/_layout.scss) */
 
 .inventario { --accent: #6d4bd1; --soft: #efeafc; }
 
