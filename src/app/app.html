@@ -78,10 +78,19 @@
       <p class="login-empresa">{{ companyName() }}</p>
       <h2 class="login-titulo">Ingresa tu PIN</h2>
 
-      <div class="pin-dots" aria-hidden="true">
-        @for (i of [0,1,2,3,4,5]; track i) {
-          <span class="pin-dot" [class.on]="loginPin().length > i"></span>
+      <div class="pin-dots-row">
+        @if (verClave('login')) {
+          <span class="pin-dots-text">{{ loginPin() || '····' }}</span>
+        } @else {
+          <div class="pin-dots" aria-hidden="true">
+            @for (i of [0,1,2,3,4,5]; track i) {
+              <span class="pin-dot" [class.on]="loginPin().length > i"></span>
+            }
+          </div>
         }
+        <button class="pin-eye" type="button" (click)="toggleClave('login')"
+          [attr.aria-label]="verClave('login') ? 'Ocultar PIN' : 'Mostrar PIN'"
+          [attr.title]="verClave('login') ? 'Ocultar' : 'Mostrar'">{{ verClave('login') ? '🙈' : '👁️' }}</button>
       </div>
       @if (loginError()) { <p class="qty-error" role="alert">{{ loginError() }}</p> }
 

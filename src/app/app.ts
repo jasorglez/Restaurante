@@ -440,6 +440,17 @@ export class App {
       if (hayNueva) this.sonarCampana();
     });
 
+    // Suena la campana al mesero cuando caja termina de cobrar una mesa (queda
+    // "sucia", pendiente de limpiar). Mismo patrón que los dos avisos de arriba,
+    // solo mientras se está viendo el salón.
+    effect(() => {
+      if (this.view() !== 'mesas') return;
+      const ids = this.mesas().filter(m => this.estadoMesa(m) === 'sucia').map(m => m.id);
+      const hayNueva = ids.some(id => !this.cobradasAvisadas.has(id));
+      this.cobradasAvisadas = new Set(ids);
+      if (hayNueva) this.sonarCampana();
+    });
+
     // Auto-refresco de mesas (estados + cronómetro + cola de cobro) cada 20 s.
     setInterval(() => {
       if (this.view() === 'mesas' || this.view() === 'cajas') this.mesasTick.update(t => t + 1);
@@ -724,6 +735,7 @@ export class App {
   // Cuentas ya avisadas (para sonar la campana solo cuando aparece una NUEVA).
   private listosAvisados = new Set<number>();
   private porCobrarAvisadas = new Set<number>();
+  private cobradasAvisadas = new Set<number>();
   private sonarCampana(): void {
     try {
       const Ctx = (window as any).AudioContext || (window as any).webkitAudioContext;
