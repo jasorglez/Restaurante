@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '2.49 (22 Julio 2026) Campana al mesero cuando caja cobra una mesa (queda sucia); ojito para ver el PIN en el teclado numérico del login',
+  version: '2.50 (23 Julio 2026) Fix: diálogos (pago, junta/separada, transferir, etc.) y botón "Nuevo pedido" sin estilo tras extraer Mesas a su propio componente',
 }; 
