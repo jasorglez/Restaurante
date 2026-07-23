@@ -7,6 +7,7 @@ import { Familia, ItemCuenta, Producto } from '../../models/familia';
 import { ProductoInventario, RecetaItem } from '../../models/inventario';
 import { Mesa } from '../../models/mesa';
 import { AuditExtras, AuditoriaService } from '../../core/auditoria.service';
+import { RealtimeService } from '../../core/realtime.service';
 import { logoToDataUrl } from '../../shared/util/logo';
 import { sonarCampana } from '../../shared/util/campana';
 import { CocinaService } from '../cocina/cocina.service';
@@ -56,6 +57,7 @@ export class Mesas {
   private readonly usuariosSvc  = inject(UsuariosService);
   private readonly cocina       = inject(CocinaService);
   private readonly auditoriaSvc = inject(AuditoriaService);
+  private readonly realtimeSvc  = inject(RealtimeService);
 
   /** Empresa activa y datos de la empresa (los pasa el componente padre). */
   readonly companyId   = input.required<number>();
@@ -496,6 +498,23 @@ export class Mesas {
       const hayNueva = ids.some(id => !this.cobradasAvisadas.has(id));
       this.cobradasAvisadas = new Set(ids);
       if (hayNueva) sonarCampana();
+    });
+
+    // ── Tiempo real (SignalR): adelanta el refresco en vez de esperar al
+    // siguiente polling. El polling sigue activo como respaldo si el socket
+    // no está conectado. Cada evento trae idCompany — se ignora si es de otra
+    // empresa (el socket es compartido por todo el sistema, no por empresa).
+    effect(() => {
+      const e = this.realtimeSvc.ultimaOrdenLista();
+      if (e && e.idCompany === this.companyId()) this.listosResource.reload();
+    });
+    effect(() => {
+      const e = this.realtimeSvc.ultimaPorCobrar();
+      if (e && e.idCompany === this.companyId()) this.mesasSvc.reload();
+    });
+    effect(() => {
+      const e = this.realtimeSvc.ultimaCobrada();
+      if (e && e.idCompany === this.companyId()) this.mesasSvc.reload();
     });
   }
 

@@ -22,6 +22,7 @@ import { CuentaService } from './features/cuenta/cuenta.service';
 import { EmpresaService } from './features/empresa/empresa.service';
 import { AuditoriaService, AuditExtras } from './core/auditoria.service';
 import { ConnectivityService } from './core/connectivity.service';
+import { RealtimeService } from './core/realtime.service';
 import { Reportes } from './features/reportes/reportes';
 import { Inventario } from './features/inventario/inventario';
 import { Config } from './features/config/config';
@@ -57,6 +58,7 @@ export class App {
   private readonly empresaSvc = inject(EmpresaService);
   private readonly auditoriaSvc = inject(AuditoriaService);
   protected readonly connectivitySvc = inject(ConnectivityService);
+  private readonly realtimeSvc = inject(RealtimeService);
 
   // ── Selección de empresa ──────────────────────────────────────────────────
   protected readonly companyId   = signal<number | null>(this.resolveCompanyId());
@@ -277,6 +279,9 @@ export class App {
     effect(() => this.mesasSvc.companyId.set(this.companyId()));
     // El store de mesas se carga en el salón y en Caja (para la cola de cobro).
     effect(() => this.mesasSvc.enVista.set(this.view() === 'mesas' || this.view() === 'cajas'));
+    // Conecta el socket de avisos en tiempo real en cuanto se conoce la empresa
+    // (una sola vez; conectar() es idempotente). El polling sigue de respaldo.
+    effect(() => { if (this.companyId()) this.realtimeSvc.conectar(); });
 
     // Si no hay empresa guardada, carga lista y muestra selección
     if (!this.companyId()) {

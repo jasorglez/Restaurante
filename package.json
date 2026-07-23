@@ -32,6 +32,7 @@
     "@angular/forms": "^22.0.2",
     "@angular/platform-browser": "^22.0.2",
     "@angular/router": "^22.0.2",
+    "@microsoft/signalr": "^10.0.0",
     "pdfmake": "^0.3.11",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
