@@ -259,3 +259,161 @@
   margin-bottom: 10px;
 }
 .instalar-btn:hover { filter: brightness(1.05); }
+
+/* ── Diálogos genéricos (overlay + panel) y campos de formulario compartidos
+ *    por App (Cajas, login) y el componente Mesas (pago, junta/separada,
+ *    transferir/unir, para llevar, auth) — y también por Inventario (alta,
+ *    drill-down). Sin esto, cualquier diálogo fuera de App queda sin su
+ *    overlay/posición y aparece suelto en el flujo normal de la página. ── */
+.confirmar-btn {
+  width: 100%;
+  height: auto;
+  padding: 16px;
+  border-radius: 14px;
+  font-size: 1rem;
+  margin-bottom: 12px;
+  background: #147a4b;
+  color: #fff;
+  border-color: #147a4b;
+}
+.confirmar-btn:hover:not(:disabled) { background: #0f5e38; }
+
+.qty-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / 45%);
+  display: grid;
+  place-items: center;
+  z-index: 100;
+  padding: 20px;
+}
+.qty-panel {
+  width: min(480px, 100%);
+  padding: 28px 28px 36px;
+  background: #fff;
+  border-radius: 28px;
+  box-shadow: 0 12px 40px rgb(0 0 0 / 22%);
+  text-align: center;
+}
+.qty-error {
+  color: #a03822;
+  font-size: 0.83rem;
+  font-weight: 700;
+  margin: -10px 0 14px;
+}
+.qty-cancel {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid #e0e6e1;
+  border-radius: 14px;
+  background: #fff;
+  color: #667269;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 120ms ease;
+}
+.qty-cancel:hover:not(:disabled) { background: #f5f7f4; }
+.qty-cancel:disabled { opacity: 0.5; }
+
+.turno-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #556259;
+}
+.turno-input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid #dfe5df;
+  border-radius: 14px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #17211b;
+  background: #f5f7f4;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 120ms ease;
+
+  &:focus { border-color: #147a4b; background: #fff; }
+  &:disabled { opacity: 0.6; }
+  &::placeholder { color: #a8b9ae; font-weight: 400; }
+}
+
+/* Campo de clave/PIN con botón 👁 para mostrar/ocultar */
+.clave-wrap {
+  position: relative;
+  display: block;
+  width: 100%;
+
+  input { padding-right: 46px; }   /* deja espacio para el botón del ojo */
+}
+.clave-ojo {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1.15rem;
+  line-height: 1;
+  opacity: 0.65;
+  transition: opacity 120ms ease;
+
+  &:hover  { opacity: 1; }
+  &:active { transform: translateY(1px); }
+}
+
+/* ── Inventario: usados tanto por el módulo Inventario como por el modal de
+ *    editar producto (dentro de Mesas). ── */
+.inv-ok {
+  margin: 8px 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #eef7f1;
+  color: #147a4b;
+  font-weight: 600;
+}
+.inv-exist { font-weight: 700; color: #147a4b; em { color: #6b7c73; font-style: normal; font-weight: 500; } }
+.inv-cancel {
+  padding: 8px 12px;
+  border: 1px solid #d9e2dd;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+}
+.inv-help {
+  margin: 8px 0;
+  font-size: 13px;
+  color: #6b7c73;
+}
+.alta-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  strong { font-size: 16px; }
+}
+.drill-panel {
+  max-width: 480px;
+  width: 92vw;
+  max-height: 80vh;
+  overflow-y: auto;
+  text-align: left;
+}
+
+@media (max-width: 760px) {
+  .qty-panel { padding: 22px 18px 28px; border-radius: 22px; }
+}
+@media (max-width: 480px), (orientation: portrait) and (max-width: 600px) {
+  .qty-panel { width: min(94vw, 440px); }
+  .qty-overlay { padding: 12px; }
+  .drill-panel { width: 94vw; max-height: 86vh; }
+}
