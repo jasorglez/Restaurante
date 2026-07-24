@@ -58,7 +58,8 @@ export class App {
   private readonly empresaSvc = inject(EmpresaService);
   private readonly auditoriaSvc = inject(AuditoriaService);
   protected readonly connectivitySvc = inject(ConnectivityService);
-  private readonly realtimeSvc = inject(RealtimeService);
+  protected readonly realtimeSvc = inject(RealtimeService);
+  protected readonly mostrarDebugRealtime = signal(false);
 
   // ── Selección de empresa ──────────────────────────────────────────────────
   protected readonly companyId   = signal<number | null>(this.resolveCompanyId());

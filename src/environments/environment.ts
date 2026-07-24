@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '2.52 (23 Julio 2026) Ticket: "Atendió" ya manda el mesero que abrió la mesa (requiere columna mesero_apertura en administration)',
+  version: '2.53 (23 Julio 2026) Diagnóstico visible de avisos en tiempo real (chip ⚠️ + panel de log) para ver por qué no llegan los avisos SignalR',
 }; 

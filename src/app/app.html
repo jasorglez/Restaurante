@@ -154,6 +154,12 @@
             }
           </div>
         }
+        @if (realtimeSvc.error()) {
+          <button type="button" class="offline-chip" role="status" style="background:#fde3e3;color:#9c1c1c;border:none;cursor:pointer"
+            title="Toca para ver el detalle" (click)="mostrarDebugRealtime.set(true)">
+            <span>⚠️ Avisos en tiempo real sin conectar</span>
+          </button>
+        }
         @if (usuario()) {
           <div class="user-chip" [attr.data-rol]="usuario()!.rol" title="Rol: {{ usuario()!.rol }}">
             <span class="user-ini">{{ usuario()!.nombre.charAt(0) }}</span>
@@ -865,4 +871,25 @@
 <!-- ── Toast checador ──────────────────────────────────────────────────────── -->
 @if (checarMsg()) {
   <div class="checar-toast">{{ checarMsg() }}</div>
+}
+
+<!-- ── Diagnóstico SignalR (avisos en tiempo real) ─────────────────────────── -->
+@if (mostrarDebugRealtime()) {
+  <div class="qty-overlay" role="dialog" aria-modal="true" aria-label="Diagnóstico de avisos en tiempo real">
+    <div class="qty-panel drill-panel">
+      <div class="alta-head">
+        <strong>{{ realtimeSvc.conectado() ? '🟢 Conectado' : '🔴 Sin conectar' }} — avisos en tiempo real</strong>
+        <button type="button" class="inv-cancel" (click)="mostrarDebugRealtime.set(false)">✕</button>
+      </div>
+      <p class="inv-help">Si esto dice "Sin conectar" o el log muestra "fallo al conectar", los avisos instantáneos a caja/cocina no van a llegar (el sistema sigue funcionando con el refresco automático de 15-20s como respaldo).</p>
+      <ul class="ayuda-lista" style="max-height:40vh;overflow-y:auto;font-family:monospace;font-size:12px">
+        @for (linea of realtimeSvc.log(); track $index) {
+          <li>{{ linea }}</li>
+        } @empty {
+          <li>Sin actividad registrada todavía.</li>
+        }
+      </ul>
+      <button class="qty-cancel" type="button" (click)="mostrarDebugRealtime.set(false)">Cerrar</button>
+    </div>
+  </div>
 }
