@@ -34,7 +34,7 @@
             <span class="user-ini">{{ usuario()!.nombre.charAt(0) }}</span>
             <span class="user-nom">{{ usuario()!.nombre }}</span>
           </div>
-          <button class="cambiar-empresa-header" type="button" title="Checar entrada/salida" (click)="checar()" [disabled]="checando()">🕐</button>
+          <app-checador />
           <button class="cambiar-empresa-header" type="button" title="Cerrar sesión" (click)="cerrarSesion()">⎋</button>
         }
         <button class="cambiar-empresa-header" type="button" title="Cambiar empresa" (click)="auth.cambiarEmpresa()">
@@ -237,9 +237,4 @@
   </footer>
 </main>
 
-
-<!-- ── Toast checador ──────────────────────────────────────────────────────── -->
-@if (checarMsg()) {
-  <div class="checar-toast">{{ checarMsg() }}</div>
-}
 

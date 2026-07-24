@@ -428,6 +428,23 @@
   overflow-y: auto;
   text-align: left;
 }
+/* Botón circular del header (checar, cerrar sesión, cambiar empresa…) */
+.cambiar-empresa-header {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: #e6f5ed;
+  color: #147a4b;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background 120ms ease;
+
+  &:hover { background: #d0ebe0; }
+}
+
 /* Aviso de sin conexión / cambios pendientes de sincronizar / SignalR (header) */
 .offline-chip {
   display: flex; align-items: center; gap: 8px;

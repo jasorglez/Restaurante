@@ -14,6 +14,7 @@ import { UsuariosService } from './features/usuarios/usuarios.service';
 import { MesasService } from './features/mesas/mesas.service';
 import { ProductosService } from './features/productos/productos.service';
 import { CuentaService } from './features/cuenta/cuenta.service';
+import { EmpresaService } from './features/empresa/empresa.service';
 import { AuditoriaService, AuditExtras } from './core/auditoria.service';
 import { ConnectivityService } from './core/connectivity.service';
 import { RealtimeService } from './core/realtime.service';
@@ -26,15 +27,12 @@ import { Caja } from './features/caja/caja';
 import { Auth } from './features/auth/auth';
 import { PwaInstall } from './features/pwa-install/pwa-install';
 import { RealtimeDebug } from './features/realtime-debug/realtime-debug';
+import { Checador } from './features/checador/checador';
 import { Usuario } from './models/usuario';
-
-interface CompanyInfo { name: string; picture: string | null; picture2: string | null; }
-
-const LS_EMPRESA = 'pv_empresa_id';
 
 @Component({
   selector: 'app-root',
-  imports: [Cocina, Reportes, Inventario, Config, Mesas, Caja, Auth, PwaInstall, RealtimeDebug],
+  imports: [Cocina, Reportes, Inventario, Config, Mesas, Caja, Auth, PwaInstall, RealtimeDebug, Checador],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
@@ -44,23 +42,17 @@ export class App {
   protected readonly mesasSvc = inject(MesasService);
   private readonly productosSvc = inject(ProductosService);
   private readonly cuentaSvc = inject(CuentaService);
+  private readonly empresaSvc = inject(EmpresaService);
   private readonly auditoriaSvc = inject(AuditoriaService);
   protected readonly connectivitySvc = inject(ConnectivityService);
   private readonly realtimeSvc = inject(RealtimeService);
   protected readonly navSvc = inject(NavigationService);
 
-  // ── Selección de empresa (pantalla → <app-auth>) ──────────────────────────
-  protected readonly companyId = signal<number | null>(this.resolveCompanyId());
-
-  private resolveCompanyId(): number | null {
-    const param = new URLSearchParams(window.location.search).get('empresa');
-    if (param) {
-      const n = parseInt(param, 10);
-      if (!isNaN(n)) { localStorage.setItem(LS_EMPRESA, String(n)); return n; }
-    }
-    const stored = localStorage.getItem(LS_EMPRESA);
-    return stored ? parseInt(stored, 10) : null;
-  }
+  // ── Empresa activa (empresaSvc: companyId + companyName/companyLogo) ───────
+  // Pantalla de selección/cambio → <app-auth>.
+  protected readonly companyId   = this.empresaSvc.companyId;
+  protected readonly companyName = this.empresaSvc.companyName;
+  protected readonly companyLogo = this.empresaSvc.companyLogo;
 
   constructor() {
     // Mantiene sincronizada la empresa activa en el servicio de inventario
@@ -97,18 +89,6 @@ export class App {
     }, 20000);
   }
 
-  // ── Empresa ───────────────────────────────────────────────────────────────
-  protected readonly companyResource = httpResource<CompanyInfo>(
-    () => this.companyId()
-      ? `${environment.urlSmp}/Root/${this.companyId()}/pdf-info`
-      : undefined,
-  );
-  protected readonly companyName = computed(
-    () => this.companyResource.value()?.name?.trim() || 'Cargando empresa…',
-  );
-  protected readonly companyLogo = computed(
-    () => this.companyResource.value()?.picture ?? null,
-  );
   protected readonly appVersion = environment.version;
 
   // ── Conectividad (offline Nivel 1/2) ────────────────────────────────────────
@@ -126,21 +106,6 @@ export class App {
   // ── Usuarios / sesión / roles → viven en UsuariosService (usuario/esAdmin/puedeVer) ──
   protected readonly usuario = this.usuariosSvc.usuario;
   protected readonly esAdmin = this.usuariosSvc.esAdmin;
-
-  // ── Checador (entrada / salida) ─────────────────────────────────────────────
-  protected readonly checando = signal(false);
-  protected readonly checarMsg = signal('');
-  protected async checar(): Promise<void> {
-    const u = this.usuario();
-    if (!u) return;
-    this.checando.set(true);
-    try {
-      const r: any = await this.usuariosSvc.checar(this.companyId()!, u.id || null, u.nombre);
-      this.checarMsg.set(r?.tipo === 'SALIDA' ? '👋 Salida registrada' : '✅ Entrada registrada');
-      setTimeout(() => this.checarMsg.set(''), 4000);
-    } catch { this.checarMsg.set('No se pudo checar.'); }
-    finally { this.checando.set(false); }
-  }
 
   protected cerrarSesion(): void {
     this.auditar('LOGOUT', {});

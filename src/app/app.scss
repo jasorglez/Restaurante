@@ -94,21 +94,7 @@ h1 {
   gap: 12px;
 }
 
-.cambiar-empresa-header {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: none;
-  background: #e6f5ed;
-  color: #147a4b;
-  font-size: 1.1rem;
-  cursor: pointer;
-  display: grid;
-  place-items: center;
-  transition: background 120ms ease;
-
-  &:hover { background: #d0ebe0; }
-}
+/* .cambiar-empresa-header → capa shared (shared/styles/_layout.scss) */
 
 .content {
   width: min(1180px, calc(100% - 48px));
@@ -557,19 +543,4 @@ footer {
 /* Filtros de auditoría */
 
 /* Analítica */
-
-/* Toast checador */
-.checar-toast {
-  position: fixed;
-  left: 50%;
-  bottom: 24px;
-  transform: translateX(-50%);
-  background: #147a4b;
-  color: #fff;
-  padding: 12px 22px;
-  border-radius: 999px;
-  font-weight: 800;
-  box-shadow: 0 10px 30px -8px rgb(20 122 75 / 50%);
-  z-index: 9999;
-}
 

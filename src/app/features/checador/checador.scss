@@ -1,0 +1,14 @@
+/* Toast checador */
+.checar-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  background: #147a4b;
+  color: #fff;
+  padding: 12px 22px;
+  border-radius: 999px;
+  font-weight: 800;
+  box-shadow: 0 10px 30px -8px rgb(20 122 75 / 50%);
+  z-index: 9999;
+}

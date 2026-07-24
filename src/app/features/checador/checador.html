@@ -1,0 +1,5 @@
+<button class="cambiar-empresa-header" type="button" title="Checar entrada/salida" (click)="checar()" [disabled]="checando()">🕐</button>
+
+@if (checarMsg()) {
+  <div class="checar-toast">{{ checarMsg() }}</div>
+}
