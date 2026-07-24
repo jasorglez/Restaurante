@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '2.63 (24 Julio 2026) refactor: empresa activa (companyId/nombre/logo) a EmpresaService, checador a componente propio — app.ts en 134 líneas (885 originalmente)',
+  version: '2.64 (24 Julio 2026) refactor: quita el wrapper auditar() de app.ts (llamada única, inline directo) — app.ts en 129 líneas (885 originalmente)',
 }; 

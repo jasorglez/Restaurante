@@ -15,7 +15,7 @@ import { MesasService } from './features/mesas/mesas.service';
 import { ProductosService } from './features/productos/productos.service';
 import { CuentaService } from './features/cuenta/cuenta.service';
 import { EmpresaService } from './features/empresa/empresa.service';
-import { AuditoriaService, AuditExtras } from './core/auditoria.service';
+import { AuditoriaService } from './core/auditoria.service';
 import { ConnectivityService } from './core/connectivity.service';
 import { RealtimeService } from './core/realtime.service';
 import { NavigationService } from './core/navigation.service';
@@ -108,14 +108,9 @@ export class App {
   protected readonly esAdmin = this.usuariosSvc.esAdmin;
 
   protected cerrarSesion(): void {
-    this.auditar('LOGOUT', {});
+    this.auditoriaSvc.auditar('LOGOUT', {});
     this.usuariosSvc.logout();
     this.navSvc.backToMenu();
-  }
-
-  // Registra un movimiento en la bitácora con el usuario actual (no bloquea si falla).
-  protected auditar(accion: string, extras: AuditExtras = {}): void {
-    this.auditoriaSvc.auditar(accion, extras);   // logger en AuditoriaService
   }
 
   // ── Configuración · Usuarios (solo admin) ───────────────────────────────────
