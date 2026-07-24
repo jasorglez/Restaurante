@@ -1282,10 +1282,12 @@ export class Mesas {
   // ── Pago ──
   protected setTipoPago(tipo: TipoPago): void {
     this.tipoPago.set(tipo);
-    this.montoPagado.set(null);
+    const total = this.totalAPagar();
+    const montoDefault = tipo === 'EFECTIVO' && total > 0 ? total : null;
+    this.montoPagado.set(montoDefault);
     this.montoTarjeta.set(null);
     if (tipo === 'EFECTIVO') this.referenciaTarjeta.set('');
-    if (this.montoPagadoEl)  this.montoPagadoEl.value  = '';
+    if (this.montoPagadoEl)  this.montoPagadoEl.value  = montoDefault !== null ? montoDefault.toFixed(2) : '';
     if (this.montoTarjetaEl) this.montoTarjetaEl.value = '';
   }
   /** Llena "¿Con cuánto paga?" con el total exacto — evita teclear cuando el cliente paga justo. */
@@ -1313,7 +1315,11 @@ export class Mesas {
   }
   protected abrirPago(): void {
     this.tipoPago.set('EFECTIVO');
-    this.montoPagado.set(null);
+    // Por default el monto ya viene igual al total (pago exacto, sin cambio) para
+    // que "Confirmar cobro" quede activo de inmediato; si el cliente paga con un
+    // billete más grande, el cajero sobreescribe el campo (queda seleccionado).
+    const total = this.totalAPagar();
+    this.montoPagado.set(total > 0 ? total : null);
     this.montoTarjeta.set(null);
     this.referenciaTarjeta.set('');
     this.propina.set(null);
@@ -1325,6 +1331,7 @@ export class Mesas {
     this.showPayment.set(true);
     setTimeout(() => {
       const el = document.getElementById('monto-pagado-input') as HTMLInputElement | null;
+      if (el) { el.value = total > 0 ? total.toFixed(2) : ''; this.montoPagadoEl = el; }
       el?.focus();
       el?.select();
     }, 60);
