@@ -21,6 +21,14 @@ export class CajaService {
   /** Turno abierto actualmente (o null). Estado central del dominio caja. */
   readonly turnoActivo = signal<Turno | null>(null);
 
+  /**
+   * Bandera de un solo uso: cuando <app-caja> se remonta (p. ej. al volver del
+   * cobro rápido de una mesa vía <app-mesas>), si está en true abre directo en
+   * la sub-vista "cobrar" en vez de "inicio". La fija App antes de cambiar la
+   * vista; Caja la consume y la apaga en su constructor.
+   */
+  readonly abrirEnCobro = signal(false);
+
   /** Abre un turno en la caja indicada y lo deja como turno activo. */
   async abrirTurno(caja: CajaInfo, cajero: string | null, fondoInicial: number): Promise<Turno> {
     const turno = await firstValueFrom(this.http.post<Turno>(this.turnosUrl(), {

@@ -1,0 +1,482 @@
+<section class="tables-view" aria-labelledby="cajas-title">
+  <div class="tables-toolbar">
+    <button class="back-button" type="button" (click)="back.emit()">
+      <span aria-hidden="true">←</span> Menú
+    </button>
+    <div class="tables-heading">
+      <p class="eyebrow">PUNTO DE VENTA</p>
+      <h2 id="cajas-title">Cajas</h2>
+    </div>
+    <span></span>
+  </div>
+
+  @if (corteResultado()) {
+    <!-- ── Nota de corte ──────────────────────────────────────────────── -->
+    <div class="tables-toolbar corte-toolbar no-print">
+      <span></span>
+      <div class="tables-heading"><h2>Nota de Corte</h2></div>
+      <button class="refresh-button" type="button" (click)="imprimirCorte()" title="Imprimir">🖨️</button>
+    </div>
+
+    <div class="nota-corte-wrap">
+      <div class="nota-corte">
+        <div class="ticket-logo">R</div>
+        <h2 class="ticket-empresa">{{ companyName() }}</h2>
+        <p class="ticket-sub">CORTE DE CAJA</p>
+        <div class="ticket-divider">══════════════════════</div>
+
+        <div class="ticket-info">
+          <div><span>Caja</span><span>{{ cajaSeleccionada()?.description ?? 'Caja ' + corteResultado()!.idCashRegister }}</span></div>
+          @if (corteResultado()!.cajero) {
+            <div><span>Cajero</span><span>{{ corteResultado()!.cajero }}</span></div>
+          }
+          <div><span>Turno #</span><span>{{ corteResultado()!.id }}</span></div>
+          <div><span>Apertura</span><span>{{ corteResultado()!.fechaInicio | date:'dd/MM/yyyy HH:mm' }}</span></div>
+          <div><span>Cierre</span><span>{{ corteResultado()!.fechaCierre | date:'dd/MM/yyyy HH:mm' }}</span></div>
+        </div>
+
+        <div class="ticket-divider">──────────────────────</div>
+        <p class="nota-sub">VENTAS</p>
+
+        @if (corteResumenSnapshot()) {
+          @if ((corteResumenSnapshot()!.totales.efectivo) > 0) {
+            <div class="nota-row"><span>💵 Efectivo</span><span>{{ corteResumenSnapshot()!.totales.efectivo | currency:'MXN':'symbol-narrow':'1.2-2' }}</span></div>
+          }
+          @if ((corteResumenSnapshot()!.totales.tarjeta) > 0) {
+            <div class="nota-row"><span>💳 Tarjeta</span><span>{{ corteResumenSnapshot()!.totales.tarjeta | currency:'MXN':'symbol-narrow':'1.2-2' }}</span></div>
+          }
+          @if ((corteResumenSnapshot()!.totales.cheque) > 0) {
+            <div class="nota-row"><span>📄 Cheques</span><span>{{ corteResumenSnapshot()!.totales.cheque | currency:'MXN':'symbol-narrow':'1.2-2' }}</span></div>
+          }
+          @if ((corteResumenSnapshot()!.totales.vales) > 0) {
+            <div class="nota-row"><span>🎟️ Vales</span><span>{{ corteResumenSnapshot()!.totales.vales | currency:'MXN':'symbol-narrow':'1.2-2' }}</span></div>
+          }
+          @if ((corteResumenSnapshot()!.totales.mixto) > 0) {
+            <div class="nota-row"><span>🔀 Mixto</span><span>{{ corteResumenSnapshot()!.totales.mixto | currency:'MXN':'symbol-narrow':'1.2-2' }}</span></div>
+          }
+          <div class="nota-row nota-total"><span>TOTAL VENTAS</span><strong>{{ corteResumenSnapshot()!.totales.totalVentas | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong></div>
+
+          <div class="ticket-divider">──────────────────────</div>
+          <p class="nota-sub">CAJA</p>
+          <div class="nota-row"><span>Fondo inicial</span><span>+ {{ corteResultado()!.fondoInicial | currency:'MXN':'symbol-narrow':'1.2-2' }}</span></div>
+          <div class="nota-row"><span>Ventas efectivo</span><span>+ {{ corteResumenSnapshot()!.totales.efectivo | currency:'MXN':'symbol-narrow':'1.2-2' }}</span></div>
+          @if (corteResumenSnapshot()!.totales.totalEgresos > 0) {
+            <div class="nota-row egreso-nota"><span>Egresos</span><span>− {{ corteResumenSnapshot()!.totales.totalEgresos | currency:'MXN':'symbol-narrow':'1.2-2' }}</span></div>
+          }
+          <div class="nota-row nota-total"><span>EFECTIVO ESPERADO</span><strong>{{ corteResumenSnapshot()!.totales.efectivoEsperado | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong></div>
+          @if (corteResultado()!.efectivoContado !== null) {
+            <div class="nota-row"><span>Efectivo contado</span><span>{{ corteResultado()!.efectivoContado | currency:'MXN':'symbol-narrow':'1.2-2' }}</span></div>
+            <div class="nota-row" [class.nota-faltante]="(corteResultado()!.diferencia ?? 0) < 0"
+                                  [class.nota-sobrante]="(corteResultado()!.diferencia ?? 0) >= 0">
+              <span>{{ (corteResultado()!.diferencia ?? 0) >= 0 ? 'SOBRANTE' : 'FALTANTE' }}</span>
+              <strong>{{ ((corteResultado()!.diferencia ?? 0) < 0 ? (corteResultado()!.diferencia ?? 0) * -1 : (corteResultado()!.diferencia ?? 0)) | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+            </div>
+          }
+        }
+
+        <div class="ticket-divider">══════════════════════</div>
+        <p class="ticket-thanks">Corte registrado correctamente</p>
+        <div class="ticket-divider">══════════════════════</div>
+
+        <div class="nota-btns no-print">
+          <button class="cobrar-btn" type="button" (click)="imprimirCorte()">🖨️ Imprimir</button>
+          <button class="agregar-btn" type="button" (click)="backToCajas()">Nuevo turno →</button>
+        </div>
+      </div>
+    </div>
+
+  } @else if (turnoActivo() && cajasSubView() === 'inicio') {
+    <!-- ── Cola de cobro (avisos al cajero) ────────────────────────────── -->
+    @if (colaCobro().length > 0) {
+      <div class="cola-cobro" (click)="abrirCobrarMesa()">
+        <div class="cola-cobro-head">
+          🔔 <strong>{{ colaCobro().length }}</strong> mesa(s) esperando cobro
+        </div>
+        <ol class="cola-cobro-list">
+          @for (m of colaCobro(); track m.id) {
+            <li>
+              <span class="cola-mesa">{{ m.nombre }}</span>
+              <span class="cola-total">{{ (m.totalActual ?? 0) | currency:'MXN':'symbol-narrow':'1.2-2' }}</span>
+              <span class="cola-espera">hace {{ minutosEsperando(m) }} min</span>
+            </li>
+          }
+        </ol>
+        <span class="cola-cobro-cta">Ir a cobrar →</span>
+      </div>
+    }
+
+    <!-- ── Turno activo – opciones ─────────────────────────────────────── -->
+    <div class="turno-activo">
+      <div class="turno-check">▶</div>
+      <h3 class="turno-titulo">Turno activo</h3>
+      <div class="turno-info">
+        <div><span>Caja</span><strong>{{ cajaSeleccionada()?.description ?? 'Caja ' + turnoActivo()!.idCashRegister }}</strong></div>
+        @if (turnoActivo()!.cajero) {
+          <div><span>Cajero</span><strong>{{ turnoActivo()!.cajero }}</strong></div>
+        }
+        <div><span>Fondo inicial</span><strong>{{ turnoActivo()!.fondoInicial | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong></div>
+        <div><span>Turno #</span><strong>{{ turnoActivo()!.id }}</strong></div>
+      </div>
+      <div class="turno-acciones">
+        <button class="turno-accion-btn cobrar-mesa-btn" type="button" (click)="abrirCobrarMesa()">
+          💰 Cobrar mesa @if (mesasPorCobrar() > 0) { <span class="nav-badge">{{ mesasPorCobrar() }}</span> }
+        </button>
+        <button class="turno-accion-btn egresos" type="button" (click)="abrirEgresos()">
+          💸 Egresos
+        </button>
+        <button class="turno-accion-btn devolucion" type="button" (click)="abrirDevolucion()">
+          ↩️ Devolución
+        </button>
+        <button class="turno-accion-btn corte" type="button" (click)="abrirCorte()">
+          📊 Corte de Caja
+        </button>
+      </div>
+    </div>
+
+  } @else if (turnoActivo() && cajasSubView() === 'cobrar') {
+    <!-- ── Cobrar mesa (acceso rápido del cajero) ──────────────────────── -->
+    <div class="tables-toolbar corte-toolbar">
+      <button class="back-button" type="button" (click)="cajasSubView.set('inicio')">
+        <span aria-hidden="true">←</span> Turno
+      </button>
+      <div class="tables-heading"><h2>Cobrar mesa</h2></div>
+      <button class="refresh-button" type="button" title="Actualizar" (click)="mesasResource.reload()">↻</button>
+    </div>
+
+    <input class="buscar-input" type="search" inputmode="search" placeholder="Buscar mesa (ej. 4)…"
+      [value]="cobrarBusqueda()" (input)="setCobrarBusqueda($event)" style="margin-bottom:10px">
+
+    @if (loading() && mesas().length === 0) {
+      <div class="state-panel" role="status"><span class="loader" aria-hidden="true"></span><strong>Cargando mesas…</strong></div>
+    } @else if (mesasParaCobrarFiltradas().length === 0) {
+      <div class="state-panel"><strong>No hay mesas ocupadas</strong><p>Cuando una mesa tenga cuenta abierta aparecerá aquí.</p></div>
+    } @else {
+      <ul class="inv-list">
+        @for (m of mesasParaCobrarFiltradas(); track m.id) {
+          <li class="inv-item cobrar-mesa-item" [class.en-cola]="estadoMesa(m) === 'por_cobrar'" (click)="cobrarMesaRapido(m)">
+            <div class="inv-item-main">
+              @if (estadoMesa(m) === 'por_cobrar') { <span class="cola-pos">#{{ $index + 1 }}</span> }
+              <strong>{{ m.nombre }}</strong>
+              @if (estadoMesa(m) === 'por_cobrar') { <span class="inv-badge" style="background:#dbe7fb;color:#2b4d86">esperando {{ minutosEsperando(m) }} min</span> }
+              <span class="inv-exist">{{ (m.totalActual ?? 0) | currency:'MXN':'symbol-narrow':'1.2-2' }}</span>
+            </div>
+            <div class="inv-mov-detalle">
+              <span>{{ m.numItems }} productos</span>
+              @if (m.minutosAbierta != null) { <span>· ⏱ {{ m.minutosAbierta }} min abierta</span> }
+              <span style="margin-left:auto;color:#147a4b;font-weight:800">Cobrar →</span>
+            </div>
+          </li>
+        }
+      </ul>
+    }
+
+  } @else if (turnoActivo() && cajasSubView() === 'egresos') {
+    <!-- ── Egresos ─────────────────────────────────────────────────────── -->
+    <div class="tables-toolbar corte-toolbar">
+      <button class="back-button" type="button" (click)="cajasSubView.set('inicio')">
+        <span aria-hidden="true">←</span> Turno
+      </button>
+      <div class="tables-heading"><h2>Egresos</h2></div>
+      <span></span>
+    </div>
+
+    <div class="turno-form">
+      @if (efectivoDisponible() !== null) {
+        <div class="corte-row esperado-row" style="margin-bottom:10px">
+          <span>Efectivo disponible en caja</span>
+          <strong>{{ efectivoDisponible() | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+        </div>
+      }
+      <div class="turno-fields">
+        <label class="turno-label" for="egreso-desc">Descripción</label>
+        <input id="egreso-desc" class="turno-input" type="text"
+          placeholder="Ej. Tortillas, gas, limpieza..."
+          [value]="egresoDesc()" (input)="setEgresoDesc($event)"
+          [disabled]="registrandoEgreso()">
+
+        <label class="turno-label" for="egreso-monto">Monto</label>
+        <div class="monto-row turno-monto">
+          <span class="monto-currency">$</span>
+          <input id="egreso-monto" class="monto-input" type="number" min="0" step="1" placeholder="0.00"
+            [value]="egresoMonto() ?? ''" (input)="setEgresoMonto($event)"
+            [disabled]="registrandoEgreso()">
+        </div>
+      </div>
+
+      @if (egresoExcede()) {
+        <p class="action-error" role="alert">El egreso excede el efectivo disponible en caja.</p>
+      } @else if (egresoError()) {
+        <p class="action-error" role="alert">{{ egresoError() }}</p>
+      }
+
+      <button class="cobrar-btn turno-iniciar-btn" type="button"
+        (click)="registrarEgreso()"
+        [disabled]="registrandoEgreso() || !egresoMonto() || egresoExcede()">
+        @if (registrandoEgreso()) { Registrando… } @else { Registrar egreso }
+      </button>
+    </div>
+
+    @if (egresosLista().length > 0) {
+      <div class="egresos-lista">
+        <p class="corte-section-title">Egresos del turno</p>
+        @for (eg of egresosLista(); track eg.id) {
+          <div class="egreso-row">
+            <span class="egreso-desc">{{ eg.descripcion || 'Sin descripción' }}</span>
+            <strong class="egreso-monto">{{ eg.monto | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+          </div>
+        }
+        <div class="egreso-row total-row">
+          <span>Total egresos</span>
+          <strong>{{ totalEgresosLista() | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+        </div>
+      </div>
+    }
+
+  } @else if (cajasSubView() === 'devolucion') {
+    <!-- ── Devolución de ticket (sale dinero de caja) ─────────────────── -->
+    <div class="tables-toolbar corte-toolbar">
+      <button class="back-button" type="button" (click)="cajasSubView.set('inicio')">
+        <span aria-hidden="true">←</span> Turno
+      </button>
+      <div class="tables-heading"><h2>Devolución</h2></div>
+      <span></span>
+    </div>
+
+    <div class="turno-form">
+      <p class="inv-help">Regresa dinero al cliente por un ticket ya cobrado. Sale de la caja y el corte lo resta. Requiere PIN de supervisor.</p>
+      @if (efectivoDisponible() !== null) {
+        <div class="corte-row esperado-row" style="margin-bottom:6px">
+          <span>Efectivo disponible en caja</span>
+          <strong>{{ efectivoDisponible() | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+        </div>
+      }
+      @if (devOk()) { <div class="inv-ok">{{ devOk() }}</div> }
+
+      <div class="turno-fields">
+        @if (cobrosDiaResource.value().length > 0) {
+          <label class="turno-label">Elegir cobro del día (marca la venta como cancelada)</label>
+          <select class="turno-input" (change)="setDevCuenta($event)" [disabled]="devProcesando()">
+            <option value="">— Devolución manual (sin cancelar venta) —</option>
+            @for (c of cobrosDiaResource.value(); track c.idCuenta) {
+              <option [value]="c.idCuenta">{{ c.mesa }} · {{ c.monto | currency:'MXN':'symbol-narrow':'1.2-2' }} · {{ c.fecha | date:'HH:mm' }}</option>
+            }
+          </select>
+        }
+
+        <label class="turno-label" style="margin-top:8px">Ticket / referencia (opcional)</label>
+        <input class="turno-input" type="text" placeholder="Ej. #1234 / mesa 5"
+          [value]="devRef()" (input)="setDevRef($event)" [disabled]="devProcesando()">
+
+        <label class="turno-label" style="margin-top:8px">Monto a devolver</label>
+        <div class="monto-row turno-monto">
+          <span class="monto-currency">$</span>
+          <input class="monto-input" type="number" min="0" step="0.01" placeholder="0.00"
+            [value]="devMonto() ?? ''" (input)="setDevMonto($event)" [disabled]="devProcesando()">
+        </div>
+
+        <label class="turno-label" style="margin-top:8px">Motivo</label>
+        <input class="turno-input" type="text" placeholder="Ej. producto equivocado, se canceló…"
+          [value]="devMotivo()" (input)="setDevMotivo($event)" [disabled]="devProcesando()">
+
+        <label class="turno-label" style="margin-top:8px">Autoriza (nombre)</label>
+        <input class="turno-input" type="text" placeholder="Nombre del supervisor"
+          [value]="devPor()" (input)="setDevPor($event)" [disabled]="devProcesando()">
+
+        <label class="turno-label" style="margin-top:8px">PIN de supervisor</label>
+        <div class="clave-wrap">
+          <input class="turno-input" [type]="verClave('dev') ? 'text' : 'password'" autocomplete="off" placeholder="PIN"
+            [value]="devPin()" (input)="setDevPin($event)" (keyup.enter)="registrarDevolucion()" [disabled]="devProcesando()">
+          <button class="clave-ojo" type="button" (click)="toggleClave('dev')"
+            [attr.aria-label]="verClave('dev') ? 'Ocultar PIN' : 'Mostrar PIN'"
+            [attr.title]="verClave('dev') ? 'Ocultar' : 'Mostrar'">{{ verClave('dev') ? '🙈' : '👁️' }}</button>
+        </div>
+      </div>
+
+      @if (devError()) { <p class="action-error" role="alert">{{ devError() }}</p> }
+
+      <button class="cobrar-btn turno-iniciar-btn" type="button"
+        (click)="registrarDevolucion()"
+        [disabled]="devProcesando() || !devMonto() || !devPor().trim() || !devPin()">
+        @if (devProcesando()) { Registrando… } @else { ↩️ Registrar devolución }
+      </button>
+    </div>
+
+  } @else if (cajasSubView() === 'corte') {
+    <!-- ── Corte de Caja ───────────────────────────────────────────────── -->
+    <div class="tables-toolbar corte-toolbar">
+      <button class="back-button" type="button" (click)="cajasSubView.set('inicio')">
+        <span aria-hidden="true">←</span> Turno
+      </button>
+      <div class="tables-heading"><h2>Corte de Caja</h2></div>
+      <span></span>
+    </div>
+
+    @if (resumenCorteResource.isLoading()) {
+      <div class="state-panel" role="status">
+        <span class="loader" aria-hidden="true"></span>
+        <strong>Calculando ventas…</strong>
+      </div>
+    } @else if (resumenCorteResource.error()) {
+      <div class="state-panel error-panel" role="alert">
+        <strong>No se pudo cargar el resumen</strong>
+        <button type="button" (click)="resumenCorteResource.reload()">Reintentar</button>
+      </div>
+    } @else if (resumenCorteResource.value()) {
+      <div class="corte-card">
+        <p class="corte-section-title">Ventas del turno</p>
+        <div class="corte-ventas">
+          @if ((resumenCorteResource.value()!.totales.efectivo) > 0) {
+            <div class="corte-row">
+              <span>💵 Efectivo</span>
+              <strong>{{ resumenCorteResource.value()!.totales.efectivo | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+            </div>
+          }
+          @if ((resumenCorteResource.value()!.totales.tarjeta) > 0) {
+            <div class="corte-row">
+              <span>💳 Tarjeta</span>
+              <strong>{{ resumenCorteResource.value()!.totales.tarjeta | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+            </div>
+          }
+          @if ((resumenCorteResource.value()!.totales.cheque) > 0) {
+            <div class="corte-row">
+              <span>📄 Cheques</span>
+              <strong>{{ resumenCorteResource.value()!.totales.cheque | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+            </div>
+          }
+          @if ((resumenCorteResource.value()!.totales.vales) > 0) {
+            <div class="corte-row">
+              <span>🎟️ Vales</span>
+              <strong>{{ resumenCorteResource.value()!.totales.vales | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+            </div>
+          }
+          @if ((resumenCorteResource.value()!.totales.mixto) > 0) {
+            <div class="corte-row">
+              <span>🔀 Mixto</span>
+              <strong>{{ resumenCorteResource.value()!.totales.mixto | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+            </div>
+          }
+          <div class="corte-row total-ventas-row">
+            <span>Total ventas</span>
+            <strong>{{ resumenCorteResource.value()!.totales.totalVentas | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+          </div>
+        </div>
+
+        <div class="corte-calculo">
+          <div class="corte-row">
+            <span>Fondo inicial</span>
+            <span>+ {{ resumenCorteResource.value()!.turno.fondoInicial | currency:'MXN':'symbol-narrow':'1.2-2' }}</span>
+          </div>
+          <div class="corte-row">
+            <span>Ventas efectivo</span>
+            <span>+ {{ resumenCorteResource.value()!.totales.efectivo | currency:'MXN':'symbol-narrow':'1.2-2' }}</span>
+          </div>
+          @if (resumenCorteResource.value()!.totales.totalEgresos > 0) {
+            <div class="corte-row egreso-line">
+              <span>Egresos</span>
+              <span>− {{ resumenCorteResource.value()!.totales.totalEgresos | currency:'MXN':'symbol-narrow':'1.2-2' }}</span>
+            </div>
+          }
+          <div class="corte-row esperado-row">
+            <span>Efectivo esperado</span>
+            <strong>{{ resumenCorteResource.value()!.totales.efectivoEsperado | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+          </div>
+        </div>
+
+        <p class="corte-section-title">Conteo físico · arqueo por denominación</p>
+        <div class="arqueo">
+          @for (d of denominaciones; track d) {
+            <div class="arqueo-row">
+              <span class="arqueo-denom">{{ d >= 1 ? ('$' + d) : '50¢' }}</span>
+              <input class="arqueo-qty" type="number" min="0" inputmode="numeric" placeholder="0"
+                [value]="arqueo()[d] ?? ''" (input)="setArqueo(d, $event)" [disabled]="cerrandoTurno()">
+              <span class="arqueo-sub">{{ (d * (arqueo()[d] ?? 0)) | currency:'MXN':'symbol-narrow':'1.2-2' }}</span>
+            </div>
+          }
+        </div>
+        <div class="corte-row esperado-row">
+          <span>Total contado</span>
+          <strong>{{ (efectivoContado() ?? 0) | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+        </div>
+
+        @if (efectivoContado() !== null) {
+          <div class="corte-row diferencia-row" [class.negativa]="diferencia() < 0">
+            <span>{{ diferencia() >= 0 ? 'Sobrante' : 'Faltante' }}</span>
+            <strong>{{ (diferencia() < 0 ? diferencia() * -1 : diferencia()) | currency:'MXN':'symbol-narrow':'1.2-2' }}</strong>
+          </div>
+        }
+
+        @if (cerrarError()) { <p class="action-error" role="alert">{{ cerrarError() }}</p> }
+
+        <button class="cobrar-btn turno-iniciar-btn" type="button"
+          (click)="cerrarTurno()" [disabled]="cerrandoTurno()">
+          @if (cerrandoTurno()) { Cerrando turno… } @else { Cerrar Turno }
+        </button>
+      </div>
+    }
+
+  } @else if (cajasLoading() || turnoActivoCargando()) {
+    <div class="state-panel" role="status">
+      <span class="loader" aria-hidden="true"></span>
+      <strong>{{ cajasLoading() ? 'Cargando cajas…' : 'Verificando turno activo…' }}</strong>
+    </div>
+
+  } @else if (cajasResource.error()) {
+    <div class="state-panel error-panel" role="alert">
+      <strong>No se pudieron cargar las cajas</strong>
+      <button type="button" (click)="cajasResource.reload()">Reintentar</button>
+    </div>
+
+  } @else if (cajaSeleccionada()) {
+    <!-- ── Formulario iniciar turno ────────────────────────────────────── -->
+    <div class="turno-form">
+      <div class="turno-caja-tag">
+        <span class="turno-caja-icon">🏧</span>
+        <span>{{ cajaSeleccionada()!.description }}</span>
+      </div>
+
+      <div class="turno-fields">
+        <label class="turno-label" for="cajero-nombre">Nombre del cajero</label>
+        <input
+          id="cajero-nombre"
+          class="turno-input"
+          type="text"
+          placeholder="Ej. María García"
+          [value]="cajaNombre()"
+          (input)="setCajaNombre($event)"
+          [disabled]="iniciandoTurno()">
+
+        <label class="turno-label" for="fondo-inicial">Fondo inicial (efectivo en caja)</label>
+        <div class="monto-row turno-monto">
+          <span class="monto-currency">$</span>
+          <input
+            id="fondo-inicial"
+            class="monto-input"
+            type="number"
+            min="0"
+            step="1"
+            placeholder="0.00"
+            [value]="fondoInicial() ?? ''"
+            (input)="setFondoInicial($event)"
+            [disabled]="iniciandoTurno()">
+        </div>
+      </div>
+
+      @if (turnoError()) {
+        <p class="action-error" role="alert">{{ turnoError() }}</p>
+      }
+
+      <button
+        class="cobrar-btn turno-iniciar-btn"
+        type="button"
+        (click)="iniciarTurno()"
+        [disabled]="iniciandoTurno()">
+        @if (iniciandoTurno()) { Iniciando… } @else { Iniciar Turno }
+      </button>
+    </div>
+
+  } @else {
+    <div class="state-panel">
+      <strong>No hay cajas activas para esta empresa</strong>
+    </div>
+  }
+</section>

@@ -1,18 +1,40 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Usuario } from '../../models/usuario';
 
+const LS_USUARIO = 'pv_usuario';
+
 /**
  * Personal y credenciales: login por PIN, alta/baja de usuarios, checador
  * (entrada/salida) y validación/cambio de PIN de supervisor. Expone endpoints
- * (URLs) + las operaciones (HTTP) de login/checador/validación.
+ * (URLs) + las operaciones (HTTP) de login/checador/validación, y la sesión
+ * activa (`usuario`), persistida en localStorage.
  */
 @Injectable({ providedIn: 'root' })
 export class UsuariosService {
   private readonly http = inject(HttpClient);
   private readonly pub = `${environment.urlChatBot}/restaurant-publico`;
+
+  /** Usuario logueado actualmente (o null). Estado central de la sesión. */
+  readonly usuario = signal<Usuario | null>(this.restoreUsuario());
+
+  private restoreUsuario(): Usuario | null {
+    try { const s = localStorage.getItem(LS_USUARIO); return s ? JSON.parse(s) : null; } catch { return null; }
+  }
+
+  /** Guarda la sesión (usuario logueado) y la persiste. */
+  setUsuario(u: Usuario): void {
+    this.usuario.set(u);
+    localStorage.setItem(LS_USUARIO, JSON.stringify(u));
+  }
+
+  /** Cierra la sesión activa. */
+  logout(): void {
+    this.usuario.set(null);
+    localStorage.removeItem(LS_USUARIO);
+  }
 
   /** Login por PIN → devuelve el usuario. */
   login(companyId: number, pin: string): Promise<Usuario> {

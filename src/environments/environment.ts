@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '2.59 (24 Julio 2026) fix: el mesero ya no ve el botón Cobrar en Mesas (solo Agregar productos / Comanda / Enviar a caja) — cobrar es de Cajas',
+  version: '2.60 (24 Julio 2026) refactor: se extraen Cajas y Auth (login/selección de empresa) de app.ts a componentes propios — app.ts baja de 885 a ~326 líneas',
 }; 

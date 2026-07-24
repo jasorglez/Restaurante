@@ -1,0 +1,130 @@
+<!-- ── CONTRASEÑA PARA CAMBIAR EMPRESA ───────────────────────────────────── -->
+@if (pedirClave()) {
+  <div class="empresa-overlay">
+    <div class="empresa-modal clave-modal">
+      <div class="empresa-modal-header">
+        <span class="empresa-modal-icon" aria-hidden="true">🔒</span>
+        <h2>Contraseña requerida</h2>
+        <p>Ingresa la contraseña para cambiar de empresa</p>
+      </div>
+      <div class="clave-wrap">
+        <input
+          class="clave-input"
+          [type]="verClave('empresa') ? 'text' : 'password'"
+          autocomplete="off"
+          placeholder="Contraseña"
+          [value]="claveInput()"
+          (input)="claveInput.set($any($event.target).value)"
+          (keyup.enter)="confirmarClave()"
+          autofocus />
+        <button class="clave-ojo" type="button" (click)="toggleClave('empresa')"
+          [attr.aria-label]="verClave('empresa') ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+          [attr.title]="verClave('empresa') ? 'Ocultar' : 'Mostrar'">{{ verClave('empresa') ? '🙈' : '👁️' }}</button>
+      </div>
+      @if (claveError()) {
+        <p class="clave-error">{{ claveError() }}</p>
+      }
+      <div class="clave-acciones">
+        <button class="clave-cancelar" type="button" (click)="cancelarClave()">Cancelar</button>
+        <button class="clave-aceptar" type="button" (click)="confirmarClave()">Continuar</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ── SELECCIÓN DE EMPRESA ──────────────────────────────────────────────── -->
+@if (mostrarSelEmpresa()) {
+  <div class="empresa-overlay">
+    <div class="empresa-modal">
+      <div class="empresa-modal-header">
+        <span class="empresa-modal-icon" aria-hidden="true">🏢</span>
+        <h2>Selecciona tu restaurante</h2>
+        <p>Elige la empresa con la que deseas trabajar</p>
+      </div>
+      @if (cargandoEmpresas()) {
+        <div class="empresa-loading">
+          <span class="spinner" aria-hidden="true"></span>
+          Cargando empresas…
+        </div>
+      } @else if (empresas().length === 0) {
+        <p class="empresa-empty">No se encontraron empresas disponibles.</p>
+      } @else {
+        <div class="empresa-grid">
+          @for (e of empresas(); track e.id) {
+            <button class="empresa-card" type="button" (click)="seleccionarEmpresa(e)">
+              @if (e.picture) {
+                <img class="empresa-logo" [src]="e.picture" [alt]="e.name" />
+              } @else {
+                <span class="empresa-logo-placeholder" aria-hidden="true">🍽️</span>
+              }
+              <span class="empresa-name">{{ e.name }}</span>
+            </button>
+          }
+        </div>
+      }
+    </div>
+  </div>
+}
+
+<!-- ── LOGIN POR PIN ─────────────────────────────────────────────────────── -->
+@if (companyId() && !mostrarSelEmpresa() && !usuariosSvc.usuario()) {
+  <div class="login-screen">
+    <div class="login-card">
+      @if (companyLogo()) {
+        <img class="login-logo" [src]="companyLogo()!" [alt]="companyName()" />
+      } @else {
+        <span class="brand-mark" aria-hidden="true">R</span>
+      }
+      <p class="login-empresa">{{ companyName() }}</p>
+      <h2 class="login-titulo">Ingresa tu PIN</h2>
+
+      <div class="pin-dots-row">
+        @if (verClave('login')) {
+          <span class="pin-dots-text">{{ loginPin() || '····' }}</span>
+        } @else {
+          <div class="pin-dots" aria-hidden="true">
+            @for (i of [0,1,2,3,4,5]; track i) {
+              <span class="pin-dot" [class.on]="loginPin().length > i"></span>
+            }
+          </div>
+        }
+        <button class="pin-eye" type="button" (click)="toggleClave('login')"
+          [attr.aria-label]="verClave('login') ? 'Ocultar PIN' : 'Mostrar PIN'"
+          [attr.title]="verClave('login') ? 'Ocultar' : 'Mostrar'">{{ verClave('login') ? '🙈' : '👁️' }}</button>
+      </div>
+      @if (loginError()) { <p class="qty-error" role="alert">{{ loginError() }}</p> }
+
+      @if (loginModoTexto()) {
+        <div class="clave-wrap">
+          <input class="turno-input" [type]="verClave('login') ? 'text' : 'password'" autocomplete="off" placeholder="PIN de administrador"
+            [value]="loginPin()" (input)="setLoginPin($event)" (keyup.enter)="login()"
+            [disabled]="loginProcesando()" style="text-align:center" autofocus>
+          <button class="clave-ojo" type="button" (click)="toggleClave('login')"
+            [attr.aria-label]="verClave('login') ? 'Ocultar PIN' : 'Mostrar PIN'"
+            [attr.title]="verClave('login') ? 'Ocultar' : 'Mostrar'">{{ verClave('login') ? '🙈' : '👁️' }}</button>
+        </div>
+        <button class="confirmar-btn alta-submit" type="button" (click)="login()"
+          [disabled]="loginProcesando() || loginPin().length < 4">
+          @if (loginProcesando()) { Entrando… } @else { Entrar }
+        </button>
+      } @else {
+        <div class="pin-pad">
+          @for (n of ['1','2','3','4','5','6','7','8','9']; track n) {
+            <button type="button" class="pin-key" (click)="pushPin(n)" [disabled]="loginProcesando()">{{ n }}</button>
+          }
+          <button type="button" class="pin-key pin-del" (click)="borrarPin()" [disabled]="loginProcesando()">⌫</button>
+          <button type="button" class="pin-key" (click)="pushPin('0')" [disabled]="loginProcesando()">0</button>
+          <button type="button" class="pin-key pin-ok" (click)="login()" [disabled]="loginProcesando() || loginPin().length < 4">
+            @if (loginProcesando()) { … } @else { ✓ }
+          </button>
+        </div>
+      }
+
+      <button class="login-cambiar" type="button" (click)="toggleLoginTexto()">
+        {{ loginModoTexto() ? '🔢 Usar teclado numérico' : '🔤 PIN con letras (admin)' }}
+      </button>
+      <br>
+      <button class="login-cambiar" type="button" (click)="cambiarEmpresa()">⇄ Cambiar empresa</button>
+    </div>
+  </div>
+}

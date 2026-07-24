@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(export PATH=*)",
+      "Bash(log show *)",
+      "Bash(grep *)",
+      "Bash(find *)",
+      "Bash(git status *)",
+      "Bash(git log *)",
+      "Bash(git diff *)",
+      "Bash(git show *)"
+    ]
+  }
+}

@@ -42,6 +42,21 @@
   letter-spacing: 0.16em;
 }
 
+/* Placeholder circular con inicial "R" (App topbar sin logo, login sin logo). */
+.brand-mark {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  color: #fff;
+  background: #147a4b;
+  box-shadow: 0 8px 20px rgb(20 122 75 / 22%);
+  font-family: Georgia, serif;
+  font-size: 1.85rem;
+  font-weight: 700;
+}
+
 .back-button,
 .refresh-button,
 .state-panel button {
@@ -412,6 +427,65 @@
   max-height: 80vh;
   overflow-y: auto;
   text-align: left;
+}
+
+/* Lista de items (inventario, cobrar-mesa de Cajas, movimientos…). */
+.inv-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.inv-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid #e6ecea;
+  border-radius: 12px;
+  background: #fff;
+  &.bajo { border-color: #f0b429; background: #fffdf5; }
+}
+.inv-item-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  strong { flex: 1; }
+}
+.inv-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #fdecc8;
+  color: #8a5a00;
+}
+.inv-mov-detalle {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: #6b7c73;
+  .neg { color: #c0392b; font-weight: 600; }
+  .inv-fecha { margin-left: auto; }
+}
+
+/* Badge numérico rojo (avisos pendientes: mesas por cobrar, etc.) */
+.nav-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  margin-left: 2px;
+  border-radius: 999px;
+  background: #c0392b;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
 }
 
 @media (max-width: 760px) {

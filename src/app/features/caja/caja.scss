@@ -1,0 +1,436 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Estilos de la vista Cajas (turno, egresos, corte, devolución, cobrar mesa).
+ * El componente usa ViewEncapsulation.None, igual que Reportes, por el
+ * @media print de la nota de corte y porque comparte clases globales
+ * (turno-input, monto-*, ticket-*, inv-*) definidas en shared/styles/_layout.scss.
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+/* Valores largos (nombre de caja/cajero) se ajustan, no estiran la tarjeta */
+.turno-info > div { gap: 12px; }
+.turno-info > div strong { min-width: 0; overflow-wrap: anywhere; text-align: right; }
+
+/* ── Cajas / Turno ─────────────────────────────────────────────────────────── */
+
+.turno-form {
+  max-width: 480px;
+  margin: 32px auto;
+  padding: 32px clamp(20px, 4vw, 40px);
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: 0 4px 24px rgb(0 0 0 / 7%);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.turno-caja-tag {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: #e6f5ed;
+  color: #147a4b;
+  font-weight: 700;
+  font-size: 0.95rem;
+  border: 1px solid #c3e8d3;
+}
+
+.turno-caja-icon { font-size: 1.2rem; }
+
+/* .turno-label / .turno-input / .clave-wrap / .clave-ojo / .monto-* → capa shared (shared/styles/_layout.scss) */
+
+.turno-monto { margin-top: 2px; }
+
+.turno-iniciar-btn {
+  width: 100%;
+  font-size: 1rem;
+  margin-top: 4px;
+}
+
+.turno-activo {
+  max-width: 480px;
+  margin: 40px auto;
+  padding: 36px clamp(20px, 4vw, 40px);
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: 0 4px 24px rgb(0 0 0 / 7%);
+  text-align: center;
+}
+
+.turno-check {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #147a4b;
+  color: #fff;
+  font-size: 2rem;
+}
+
+.turno-titulo {
+  margin: 0 0 20px;
+  font-size: 1.35rem;
+  color: #147a4b;
+}
+
+.turno-info {
+  text-align: left;
+  border-top: 1px solid #dfe5df;
+  border-bottom: 1px solid #dfe5df;
+  padding: 12px 0;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  > div {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+
+    span { color: #556259; }
+    strong { color: #17211b; }
+  }
+}
+
+.turno-nuevo-btn {
+  width: 100%;
+  justify-content: center;
+}
+
+.turno-acciones {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+}
+
+.turno-accion-btn {
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 2px solid;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 120ms ease;
+
+  &.egresos {
+    background: #fff8e6;
+    border-color: #f0c94d;
+    color: #7a5a00;
+    &:hover { background: #f0c94d; color: #17211b; }
+  }
+
+  &.corte {
+    background: #e6f5ed;
+    border-color: #147a4b;
+    color: #147a4b;
+    &:hover { background: #147a4b; color: #fff; }
+  }
+
+  &.devolucion {
+    background: #fdece9;
+    border-color: #e0876f;
+    color: #a03822;
+    &:hover { background: #e0876f; color: #fff; }
+  }
+
+  &.cobrar-mesa-btn { border-color: #147a4b; color: #147a4b; }
+}
+
+/* ── Egresos lista ─────────────────────────────────────────────────────────── */
+
+.egresos-lista {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0 clamp(20px, 4vw, 40px) 32px;
+}
+
+.egreso-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f2f0;
+  font-size: 0.9rem;
+
+  &.total-row {
+    border-top: 2px solid #dfe5df;
+    border-bottom: none;
+    margin-top: 4px;
+    padding-top: 12px;
+    font-weight: 700;
+  }
+}
+
+.egreso-desc { color: #17211b; }
+.egreso-monto { color: #c0392b; }
+
+/* ── Corte de caja ─────────────────────────────────────────────────────────── */
+
+.corte-toolbar {
+  margin-bottom: 0;
+}
+
+.corte-card {
+  max-width: 480px;
+  margin: 20px auto;
+  padding: 24px clamp(20px, 4vw, 36px);
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: 0 4px 24px rgb(0 0 0 / 7%);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.corte-section-title {
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #556259;
+  margin: 8px 0 2px;
+}
+
+.corte-ventas,
+.corte-calculo { display: flex; flex-direction: column; gap: 4px; }
+
+.corte-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 6px 0;
+  font-size: 0.9rem;
+  border-bottom: 1px solid #f0f2f0;
+
+  span { color: #556259; }
+  strong { color: #17211b; }
+
+  &.total-ventas-row {
+    border-top: 2px solid #dfe5df;
+    border-bottom: none;
+    font-weight: 800;
+    font-size: 1rem;
+    margin-top: 4px;
+    padding-top: 10px;
+    strong { color: #147a4b; font-size: 1.1rem; }
+  }
+
+  &.egreso-line span:last-child { color: #c0392b; }
+  &.egreso-line span:first-child { color: #556259; }
+
+  &.esperado-row {
+    background: #e6f5ed;
+    border-radius: 10px;
+    padding: 10px 12px;
+    border: none;
+    strong { color: #147a4b; font-size: 1.05rem; }
+  }
+
+  &.diferencia-row {
+    background: #e6f5ed;
+    border-radius: 10px;
+    padding: 10px 12px;
+    border: none;
+    span, strong { color: #147a4b; }
+
+    &.negativa {
+      background: #fef0ef;
+      span, strong { color: #c0392b; }
+    }
+  }
+}
+
+/* ── Nota de corte ──────────────────────────────────────────────────────────── */
+
+.nota-corte-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 20px clamp(16px, 4vw, 40px) 40px;
+}
+
+.nota-corte {
+  width: min(400px, 100%);
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 4px 24px rgb(0 0 0 / 8%);
+  padding: 24px 22px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.88rem;
+  color: #1a1a1a;
+  text-align: center;
+}
+
+.nota-sub {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #556259;
+  margin: 8px 0 4px;
+  text-align: left;
+}
+
+.nota-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 4px 0;
+  font-size: 0.85rem;
+  text-align: left;
+  border-bottom: 1px dashed #e8eae7;
+
+  span { color: #556259; }
+  span:last-child { color: #17211b; }
+
+  &.nota-total {
+    border-top: 1.5px solid #ccc;
+    border-bottom: none;
+    font-weight: 800;
+    padding-top: 8px;
+    margin-top: 4px;
+    strong { color: #147a4b; font-size: 0.95rem; }
+    span { color: #17211b; }
+  }
+
+  &.egreso-nota span:last-child { color: #c0392b; }
+
+  &.nota-sobrante strong { color: #147a4b; }
+  &.nota-faltante strong { color: #c0392b; }
+}
+
+.nota-btns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+/* ── Arqueo por denominación ─────────────────────────────────────────────── */
+.arqueo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 6px 0 10px;
+}
+.arqueo-row {
+  display: grid;
+  grid-template-columns: 64px 1fr 90px;
+  align-items: center;
+  gap: 10px;
+}
+.arqueo-denom { font-weight: 800; color: #33463a; }
+.arqueo-qty {
+  padding: 8px 10px;
+  border: 1px solid #d9e2dd;
+  border-radius: 8px;
+  text-align: right;
+  font-size: 1rem;
+}
+.arqueo-sub { text-align: right; color: #6b7c73; font-variant-numeric: tabular-nums; }
+
+/* ── Cobrar mesa (acceso rápido del cajero) ──────────────────────────────── */
+.cobrar-mesa-item { cursor: pointer; }
+.cobrar-mesa-item:hover { border-color: #147a4b; background: #f4faf6; }
+.cobrar-mesa-item.en-cola { border-color: #9db8e6; background: #f4f8fe; }
+.cola-pos {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #315da8;
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.78rem;
+}
+
+/* ── Cola de cobro (aviso al cajero) ─────────────────────────────────────── */
+.cola-cobro {
+  margin: 0 0 18px;
+  padding: 16px 18px;
+  border: 1.5px solid #f0c795;
+  border-radius: 16px;
+  background: linear-gradient(155deg, #fff 30%, #fff7ea);
+  cursor: pointer;
+  box-shadow: 0 8px 22px -12px rgb(184 120 20 / 40%);
+}
+.cola-cobro:hover { border-color: #e88424; }
+.cola-cobro-head { font-size: 1.05rem; color: #8a4b0e; margin-bottom: 8px; }
+.cola-cobro-head strong { font-size: 1.25rem; }
+.cola-cobro-list {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  counter-reset: cola;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cola-cobro-list li {
+  counter-increment: cola;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 70%);
+}
+.cola-cobro-list li::before {
+  content: counter(cola);
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  border-radius: 50%;
+  background: #e88424;
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.82rem;
+}
+.cola-mesa { font-weight: 800; color: #17241c; }
+.cola-total { color: #147a4b; font-weight: 700; }
+.cola-espera { margin-left: auto; color: #8a5a00; font-size: 0.82rem; font-weight: 700; }
+.cola-cobro-cta { color: #b06c19; font-weight: 800; font-size: 0.9rem; }
+
+/* ── Print (nota de corte) ────────────────────────────────────────────────── */
+@media print {
+  body * { visibility: hidden; }
+  .nota-corte,
+  .nota-corte * { visibility: visible; }
+  .nota-corte {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 80mm;
+    padding: 8mm;
+    background: #fff;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .nota-btns, .no-print { display: none !important; }
+}
+
+/* ── Responsivo: celular vertical ─────────────────────────────────────────── */
+@media (max-width: 480px), (orientation: portrait) and (max-width: 600px) {
+  .turno-form, .turno-activo, .corte-card {
+    max-width: 100%;
+    margin: 14px auto;
+    padding: 20px 16px;
+    border-radius: 18px;
+  }
+  .turno-acciones { grid-template-columns: 1fr; }   /* botones apilados y grandes */
+  .turno-titulo { font-size: 1.2rem; }
+  .egresos-lista { max-width: 100%; padding: 0 2px 24px; }
+  .monto-row { flex-wrap: nowrap; }
+  .arqueo-row { grid-template-columns: 54px 1fr 82px; gap: 8px; }
+
+  .cola-cobro { padding: 14px; }
+  .cola-cobro-list li { flex-wrap: wrap; gap: 4px 8px; }
+  .cola-espera { margin-left: 0; }
+}

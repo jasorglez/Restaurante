@@ -1,0 +1,240 @@
+/* ── Selección de empresa ─────────────────────────────────────────────────── */
+
+.empresa-overlay {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, #e8f5ee 0%, #f0f7f3 60%, #e0f0e8 100%);
+  display: grid;
+  place-items: center;
+  z-index: 500;
+  padding: 24px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.empresa-modal {
+  width: min(640px, 100%);
+  max-height: calc(100dvh - 48px);
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 28px;
+  box-shadow: 0 20px 60px rgb(0 0 0 / 15%);
+  padding: 40px clamp(24px, 5vw, 52px);
+}
+
+.empresa-modal-header {
+  text-align: center;
+  margin-bottom: 32px;
+  flex: 0 0 auto;
+
+  h2 {
+    margin: 10px 0 6px;
+    font-size: clamp(1.3rem, 4vw, 1.75rem);
+    font-weight: 900;
+    color: #17211b;
+  }
+
+  p {
+    margin: 0;
+    color: #6a756e;
+    font-size: 0.92rem;
+  }
+}
+
+.empresa-modal-icon {
+  font-size: 2.8rem;
+  display: block;
+  line-height: 1;
+}
+
+.clave-modal {
+  width: min(420px, 100%);
+}
+
+.clave-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 14px 16px;
+  border: 2px solid #d5e2da;
+  border-radius: 14px;
+  font-size: 1.1rem;
+  letter-spacing: 0.15em;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.15s;
+
+  &:focus {
+    border-color: #2f9e6a;
+  }
+}
+
+.clave-error {
+  margin: 10px 0 0;
+  color: #d43b3b;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.clave-acciones {
+  display: flex;
+  gap: 12px;
+  margin-top: 22px;
+
+  button {
+    flex: 1;
+    padding: 13px 16px;
+    border-radius: 14px;
+    font-size: 1rem;
+    font-weight: 800;
+    cursor: pointer;
+    border: none;
+  }
+}
+
+.clave-cancelar {
+  background: #eef2f0;
+  color: #4a544d;
+}
+
+.clave-aceptar {
+  background: #2f9e6a;
+  color: #fff;
+}
+
+.empresa-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #556259;
+  font-size: 0.95rem;
+  padding: 32px 0;
+}
+
+.empresa-empty {
+  text-align: center;
+  color: #888;
+  padding: 24px 0;
+}
+
+.empresa-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 4px;
+  margin: -4px;
+}
+
+.empresa-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 22px 14px 18px;
+  border: 2px solid #dfe5df;
+  border-radius: 18px;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+  text-align: center;
+
+  &:hover {
+    border-color: #147a4b;
+    box-shadow: 0 6px 20px rgb(20 122 75 / 14%);
+    transform: translateY(-2px);
+  }
+}
+
+.empresa-logo {
+  width: 72px;
+  height: 72px;
+  border-radius: 16px;
+  object-fit: contain;
+  background: #f5f7f4;
+}
+
+.empresa-logo-placeholder {
+  width: 72px;
+  height: 72px;
+  border-radius: 16px;
+  background: #e8f5ee;
+  display: grid;
+  place-items: center;
+  font-size: 2rem;
+}
+
+.empresa-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #17211b;
+  line-height: 1.25;
+}
+
+/* ── Login por PIN ─────────────────────────────────────────────────────────── */
+.login-screen {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 12% 8%, rgb(225 243 233 / 85%), transparent 30rem),
+    #f5f7f4;
+}
+.login-card {
+  width: min(360px, 100%);
+  background: #fff;
+  border-radius: 26px;
+  padding: 28px 24px 22px;
+  box-shadow: 0 18px 48px rgb(24 40 30 / 12%);
+  text-align: center;
+}
+.login-logo { width: 64px; height: 64px; border-radius: 16px; object-fit: contain; }
+.login-empresa { margin: 10px 0 2px; font-weight: 800; color: #17241c; }
+.login-titulo { margin: 4px 0 16px; font-size: 1.15rem; color: #147a4b; }
+.pin-dots-row { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 14px; }
+.pin-dots { display: flex; justify-content: center; gap: 10px; margin-bottom: 0; }
+.pin-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid #cfe0d6; background: transparent;
+  transition: 120ms ease;
+}
+.pin-dot.on { background: #147a4b; border-color: #147a4b; }
+.pin-dots-text {
+  min-width: 90px;
+  font-size: 1.3rem; font-weight: 800; letter-spacing: 3px;
+  color: #17241c; font-family: monospace;
+}
+.pin-eye {
+  border: none; background: transparent; cursor: pointer;
+  font-size: 1.1rem; line-height: 1; opacity: 0.65;
+  transition: opacity 120ms ease;
+}
+.pin-eye:hover { opacity: 1; }
+.pin-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 8px 0 14px;
+}
+.pin-key {
+  padding: 16px 0;
+  border: 1.5px solid #dfe5df;
+  border-radius: 14px;
+  background: #f7faf8;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #17211b;
+  cursor: pointer;
+}
+.pin-key:hover:not(:disabled) { border-color: #147a4b; }
+.pin-key.pin-ok { background: #147a4b; color: #fff; border-color: #147a4b; }
+.pin-key.pin-del { background: #fff; color: #8a5a00; }
+.login-cambiar {
+  border: none; background: none; color: #315da8;
+  font-weight: 700; cursor: pointer; margin-top: 4px;
+}
