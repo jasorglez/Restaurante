@@ -569,9 +569,11 @@
             💲 Enviar a caja
           </button>
         }
-        <button class="cobrar-btn" type="button" (click)="iniciarCobro()">
-          Cobrar
-        </button>
+        @if (puedeCobrar()) {
+          <button class="cobrar-btn" type="button" (click)="iniciarCobro()">
+            Cobrar
+          </button>
+        }
       </div>
     }
   </section>

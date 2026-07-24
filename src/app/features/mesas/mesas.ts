@@ -94,6 +94,9 @@ export class Mesas {
   protected readonly productosError   = this.productosSvc.productosError;
   protected readonly productosResource = this.productosSvc.productosResource;
 
+  /** El mesero solo toma la orden (agregar/comanda/enviar a caja); cobrar es de Cajas. */
+  protected readonly puedeCobrar = computed(() => this.auditoriaSvc.usuario()?.rol !== 'mesero');
+
   protected readonly itemsResource   = this.cuentaSvc.itemsResource;
   protected readonly items           = this.cuentaSvc.items;
   protected readonly itemsPendientes = this.cuentaSvc.itemsPendientes;
