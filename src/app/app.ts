@@ -283,6 +283,18 @@ export class App {
     // Conecta el socket de avisos en tiempo real en cuanto se conoce la empresa
     // (una sola vez; conectar() es idempotente). El polling sigue de respaldo.
     effect(() => { if (this.companyId()) this.realtimeSvc.conectar(); });
+    // Refresca la lista de "Cobrar mesa" de Cajas al instante — <app-mesas> tiene
+    // sus propios efectos para esto, pero esa pantalla vive aquí en App y no se
+    // monta mientras el cajero está en Cajas, así que sin esto el aviso llegaba
+    // (se veía en el log) pero nadie recargaba mesasResource.
+    effect(() => {
+      const e = this.realtimeSvc.ultimaPorCobrar();
+      if (e && e.idCompany === this.companyId()) this.mesasResource.reload();
+    });
+    effect(() => {
+      const e = this.realtimeSvc.ultimaCobrada();
+      if (e && e.idCompany === this.companyId()) this.mesasResource.reload();
+    });
 
     // Si no hay empresa guardada, carga lista y muestra selección
     if (!this.companyId()) {
