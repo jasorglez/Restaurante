@@ -318,7 +318,8 @@
       [companyId]="companyId()!"
       [companyName]="companyName()"
       [companyLogo]="companyLogo()"
-      (back)="backToMenu()" />
+      [origenCaja]="origenCajaMesas()"
+      (back)="volverDeMesas()" />
 
   <!-- ── CAJAS / TURNO ────────────────────────────────────────────────────── -->
   } @else if (view() === 'cajas') {

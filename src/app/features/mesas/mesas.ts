@@ -63,7 +63,10 @@ export class Mesas {
   readonly companyId   = input.required<number>();
   readonly companyName = input.required<string>();
   readonly companyLogo = input<string | null>(null);
-  /** Pide al padre volver al menú. */
+  /** true cuando se entró desde Cajas → Cobrar mesa (acceso rápido); al cerrar el ticket
+   *  se regresa a la lista de cobro en vez de al salón completo de mesas. */
+  readonly origenCaja = input(false);
+  /** Pide al padre volver (al menú, o a Cajas si `origenCaja`). */
   readonly back = output<void>();
 
   // ── Sub-navegación interna (antes eran vistas 'mesas'/'familias'/'productos'/'cuenta') ──
@@ -1280,6 +1283,13 @@ export class Mesas {
     if (this.montoPagadoEl)  this.montoPagadoEl.value  = '';
     if (this.montoTarjetaEl) this.montoTarjetaEl.value = '';
   }
+  /** Llena "¿Con cuánto paga?" con el total exacto — evita teclear cuando el cliente paga justo. */
+  protected pagoExacto(): void {
+    const total = this.totalAPagar();
+    this.montoPagado.set(total);
+    const el = this.montoPagadoEl ?? (document.getElementById('monto-pagado-input') as HTMLInputElement | null);
+    if (el) { el.value = total.toFixed(2); this.montoPagadoEl = el; }
+  }
   protected setMontoPagado(e: Event): void {
     const input = e.target as HTMLInputElement;
     this.montoPagadoEl = input;
@@ -1530,6 +1540,7 @@ export class Mesas {
       return;
     }
     this.cobroComensal.set(null);
+    if (this.origenCaja()) { this.back.emit(); return; }
     this.backToMesas();
   }
 

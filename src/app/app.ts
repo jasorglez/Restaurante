@@ -472,9 +472,23 @@ export class App {
     this.mesasResource.reload();
   }
   // Cajas → cobrar mesa rápido: monta <app-mesas> directo en la cuenta de esa mesa.
+  protected readonly origenCajaMesas = signal(false);
   protected cobrarMesaRapido(m: Mesa): void {
+    this.origenCajaMesas.set(true);
     this.cuentaSvc.selectedMesa.set(m);
     this.view.set('mesas');
+  }
+  /** (back) de <app-mesas>: si se entró desde Cajas, regresa a la lista de cobro; si no, al menú. */
+  protected volverDeMesas(): void {
+    if (this.origenCajaMesas()) {
+      this.origenCajaMesas.set(false);
+      this.cuentaSvc.selectedMesa.set(null);
+      this.view.set('cajas');
+      this.cajasSubView.set('cobrar');
+      this.mesasResource.reload();
+      return;
+    }
+    this.backToMenu();
   }
 
   // Estado efectivo (con fallback si el backend aún no lo envía).
@@ -564,7 +578,7 @@ export class App {
   }
 
   private abrirModulo(module: RestaurantModule): void {
-    if (module === 'MESAS') this.view.set('mesas');
+    if (module === 'MESAS') { this.origenCajaMesas.set(false); this.view.set('mesas'); }
     if (module === 'CAJAS') {
       this.cajaNombre.set('');
       this.fondoInicial.set(null);
@@ -845,6 +859,7 @@ export class App {
   // volver al salón poniendo la mesa en null (su effect resetea la sub-vista),
   // incluso si ya estaba montado en familias/productos/cuenta.
   protected backToMesas(): void {
+    this.origenCajaMesas.set(false);
     this.cuentaSvc.selectedMesa.set(null);
     this.view.set('mesas');
   }

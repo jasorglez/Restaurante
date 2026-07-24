@@ -652,6 +652,10 @@
               <span class="monto-currency">$</span>
               <input id="monto-pagado-input" class="monto-input" type="text" inputmode="decimal" placeholder="0.00"
                 (input)="setMontoPagado($event)" [disabled]="cobrando()">
+              @if (tipoPago() !== 'MIXTO') {
+                <button type="button" title="Paga justo — sin cambio" (click)="pagoExacto()" [disabled]="cobrando()"
+                  style="flex-shrink:0;margin-right:6px;padding:0 12px;border:none;background:#147a4b;color:#fff;font-weight:700;font-size:0.85rem;border-radius:10px;cursor:pointer">Exacto</button>
+              }
             </div>
 
             @if (tipoPago() === 'MIXTO') {
