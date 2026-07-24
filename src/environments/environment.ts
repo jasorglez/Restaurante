@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '2.57 (24 Julio 2026) fix: la lista "Cobrar mesa" de Cajas ahora sí se refresca en tiempo real (el aviso SignalR llegaba pero nadie lo escuchaba ahí)',
+  version: '2.58 (24 Julio 2026) fix: ticket sin "Atendió" al cobrar en la misma sesión que se abrió la mesa (el nombre del mesero no se guardaba local tras abrir)',
 }; 

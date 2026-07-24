@@ -646,12 +646,17 @@ export class Mesas {
   private async openFreeMesa(mesa: Mesa): Promise<void> {
     this.openingMesa.set(true);
     try {
-      const cuenta = await this.cuentaSvc.abrir(this.companyId(), mesa.id, this.auditoriaSvc.usuario()?.nombre ?? null);
+      const mesero = this.auditoriaSvc.usuario()?.nombre ?? null;
+      const cuenta = await this.cuentaSvc.abrir(this.companyId(), mesa.id, mesero);
       this.selectedMesa.set({
         ...mesa,
         tieneCuentaAbierta: true,
         idCuentaActual: cuenta.id,
         totalActual: cuenta.total,
+        // El backend lo guarda pero `CuentaAbierta` no lo devuelve — sin esto el
+        // ticket se queda sin "Atendió" si se cobra en la misma sesión que se abrió
+        // la mesa (sin pasar por un reload de la lista que sí trae meseroApertura).
+        meseroApertura: mesero,
       });
       this.subVista.set('familias');
       this.auditar('ABRIR_MESA', { entidad: 'MESA', idEntidad: mesa.id, idMesa: mesa.id, nombreMesa: mesa.nombre });
