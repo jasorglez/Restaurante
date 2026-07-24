@@ -1,8 +1,9 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { Usuario } from '../../models/usuario';
+import { RestaurantModule } from '../../models/navigation';
+import { Rol, Usuario } from '../../models/usuario';
 
 const LS_USUARIO = 'pv_usuario';
 
@@ -34,6 +35,17 @@ export class UsuariosService {
   logout(): void {
     this.usuario.set(null);
     localStorage.removeItem(LS_USUARIO);
+  }
+
+  readonly esAdmin = computed(() => this.usuario()?.rol === 'admin');
+
+  /** Permisos por rol. mesero: mesas/cocina · cajero: + cajas/reportes/inventario · admin: todo. */
+  puedeVer(module: RestaurantModule): boolean {
+    const rol: Rol = this.usuario()?.rol ?? 'mesero';
+    if (module === 'MESAS' || module === 'COCINA') return true;
+    if (module === 'CONFIG') return rol === 'admin';
+    // CAJAS, REPORTES, INVENTARIO
+    return rol === 'cajero' || rol === 'admin';
   }
 
   /** Login por PIN → devuelve el usuario. */

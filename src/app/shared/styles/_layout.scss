@@ -428,6 +428,24 @@
   overflow-y: auto;
   text-align: left;
 }
+/* Aviso de sin conexión / cambios pendientes de sincronizar / SignalR (header) */
+.offline-chip {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #fdf3e2;
+  border: 1px solid #f3dfb0;
+  color: #8a5a00;
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+.offline-chip-count {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #8a5a00;
+  color: #fff;
+}
+
 .ayuda-lista {
   margin: 8px 0;
   padding-left: 18px;

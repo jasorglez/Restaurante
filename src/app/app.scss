@@ -530,23 +530,7 @@ footer {
 /* ── Login por PIN ───────────────────────────────────────────────────────── */
 .dashboard-shell.oculto { display: none; }
 
-/* Aviso de sin conexión / cambios pendientes de sincronizar (header) */
-.offline-chip {
-  display: flex; align-items: center; gap: 8px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: #fdf3e2;
-  border: 1px solid #f3dfb0;
-  color: #8a5a00;
-  font-weight: 700;
-  font-size: 0.8rem;
-}
-.offline-chip-count {
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: #8a5a00;
-  color: #fff;
-}
+/* .offline-chip / .offline-chip-count → capa shared (shared/styles/_layout.scss) */
 
 /* Chip de usuario en el header */
 .user-chip {

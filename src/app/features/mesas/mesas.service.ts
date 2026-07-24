@@ -65,6 +65,9 @@ export class MesasService {
       .sort((a, b) => (a.porCobrarAt ? Date.parse(a.porCobrarAt) : 0) - (b.porCobrarAt ? Date.parse(b.porCobrarAt) : 0)),
   );
 
+  /** Cuántas mesas están esperando cobro (badge de aviso en Cajas y en el menú). */
+  readonly mesasPorCobrar = computed(() => this.colaCobro().length);
+
   /** Alta de mesa. */
   crear(companyId: number, nombre: string, capacidad: number | null): Promise<unknown> {
     return firstValueFrom(this.http.post(this.baseUrl(), { idCompany: companyId, nombre, capacidad }));

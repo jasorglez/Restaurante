@@ -9,9 +9,7 @@ if (pdfFonts && (pdfFonts as any).pdfMake) {
 
 import { environment } from '../environments/environment';
 import { Cocina } from './features/cocina/cocina';
-import { CocinaService } from './features/cocina/cocina.service';
 import { InventarioService } from './features/inventario/inventario.service';
-import { CajaService } from './features/caja/caja.service';
 import { UsuariosService } from './features/usuarios/usuarios.service';
 import { MesasService } from './features/mesas/mesas.service';
 import { ProductosService } from './features/productos/productos.service';
@@ -19,6 +17,7 @@ import { CuentaService } from './features/cuenta/cuenta.service';
 import { AuditoriaService, AuditExtras } from './core/auditoria.service';
 import { ConnectivityService } from './core/connectivity.service';
 import { RealtimeService } from './core/realtime.service';
+import { NavigationService } from './core/navigation.service';
 import { Reportes } from './features/reportes/reportes';
 import { Inventario } from './features/inventario/inventario';
 import { Config } from './features/config/config';
@@ -26,12 +25,8 @@ import { Mesas } from './features/mesas/mesas';
 import { Caja } from './features/caja/caja';
 import { Auth } from './features/auth/auth';
 import { PwaInstall } from './features/pwa-install/pwa-install';
-import { Rol, Usuario } from './models/usuario';
-import { Mesa } from './models/mesa';
-
-type RestaurantModule = 'MESAS' | 'CAJAS' | 'REPORTES' | 'INVENTARIO' | 'COCINA' | 'CONFIG';
-type View = 'menu' | 'mesas' | 'cajas' | 'reportes' | 'inventario' | 'cocina' | 'config';
-type InventarioSubView = 'existencias' | 'alta' | 'movimientos' | 'detalle' | 'equivalencias';
+import { RealtimeDebug } from './features/realtime-debug/realtime-debug';
+import { Usuario } from './models/usuario';
 
 interface CompanyInfo { name: string; picture: string | null; picture2: string | null; }
 
@@ -39,22 +34,20 @@ const LS_EMPRESA = 'pv_empresa_id';
 
 @Component({
   selector: 'app-root',
-  imports: [Cocina, Reportes, Inventario, Config, Mesas, Caja, Auth, PwaInstall],
+  imports: [Cocina, Reportes, Inventario, Config, Mesas, Caja, Auth, PwaInstall, RealtimeDebug],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
 export class App {
-  private readonly cocina = inject(CocinaService);
   private readonly inventarioSvc = inject(InventarioService);
-  private readonly cajaSvc = inject(CajaService);
-  private readonly usuariosSvc = inject(UsuariosService);
-  private readonly mesasSvc = inject(MesasService);
+  protected readonly usuariosSvc = inject(UsuariosService);
+  protected readonly mesasSvc = inject(MesasService);
   private readonly productosSvc = inject(ProductosService);
   private readonly cuentaSvc = inject(CuentaService);
   private readonly auditoriaSvc = inject(AuditoriaService);
   protected readonly connectivitySvc = inject(ConnectivityService);
-  protected readonly realtimeSvc = inject(RealtimeService);
-  protected readonly mostrarDebugRealtime = signal(false);
+  private readonly realtimeSvc = inject(RealtimeService);
+  protected readonly navSvc = inject(NavigationService);
 
   // ── Selección de empresa (pantalla → <app-auth>) ──────────────────────────
   protected readonly companyId = signal<number | null>(this.resolveCompanyId());
@@ -69,20 +62,6 @@ export class App {
     return stored ? parseInt(stored, 10) : null;
   }
 
-  // ── Vista principal ────────────────────────────────────────────────────────
-  protected readonly view = signal<View>('menu');
-  // Módulo activo (para resaltar los accesos rápidos de arriba).
-  protected readonly moduloActivo = computed<RestaurantModule | 'MENU'>(() => {
-    switch (this.view()) {
-      case 'mesas': return 'MESAS';
-      case 'cajas': return 'CAJAS';
-      case 'cocina': return 'COCINA';
-      case 'reportes': return 'REPORTES';
-      case 'inventario': return 'INVENTARIO';
-      case 'config': return 'CONFIG';
-      default: return 'MENU';
-    }
-  });
   constructor() {
     // Mantiene sincronizada la empresa activa en el servicio de inventario
     // (que comparte estado con el modal de producto y las alertas de stock).
@@ -92,10 +71,9 @@ export class App {
     // (así cualquier dominio puede registrar en la bitácora sin depender de App).
     effect(() => this.auditoriaSvc.usuario.set(this.usuario()));
     effect(() => this.auditoriaSvc.companyId.set(this.companyId()));
-    effect(() => this.cajaSvc.companyId.set(this.companyId()));
     effect(() => this.mesasSvc.companyId.set(this.companyId()));
     // El store de mesas se carga en el salón y en Caja (para la cola de cobro).
-    effect(() => this.mesasSvc.enVista.set(this.view() === 'mesas' || this.view() === 'cajas'));
+    effect(() => this.mesasSvc.enVista.set(this.navSvc.view() === 'mesas' || this.navSvc.view() === 'cajas'));
     // Conecta el socket de avisos en tiempo real en cuanto se conoce la empresa
     // (una sola vez; conectar() es idempotente). El polling sigue de respaldo.
     effect(() => { if (this.companyId()) this.realtimeSvc.conectar(); });
@@ -105,16 +83,17 @@ export class App {
     // (se veía en el log) pero nadie recargaba mesasResource.
     effect(() => {
       const e = this.realtimeSvc.ultimaPorCobrar();
-      if (e && e.idCompany === this.companyId()) this.mesasResource.reload();
+      if (e && e.idCompany === this.companyId()) this.mesasSvc.mesasResource.reload();
     });
     effect(() => {
       const e = this.realtimeSvc.ultimaCobrada();
-      if (e && e.idCompany === this.companyId()) this.mesasResource.reload();
+      if (e && e.idCompany === this.companyId()) this.mesasSvc.mesasResource.reload();
     });
 
     // Auto-refresco de mesas (estados + cronómetro + cola de cobro) cada 20 s.
     setInterval(() => {
-      if (this.view() === 'mesas' || this.view() === 'cajas') this.mesasTick.update(t => t + 1);
+      const v = this.navSvc.view();
+      if (v === 'mesas' || v === 'cajas') this.mesasSvc.refrescar();
     }, 20000);
   }
 
@@ -134,7 +113,7 @@ export class App {
 
   // ── Conectividad (offline Nivel 1/2) ────────────────────────────────────────
   // Si alguno de estos recursos está fallando, se está mostrando la última copia
-  // buena guardada (ver shared/util/resource-fallback.ts) en vez de datos frescos.
+  // buena guardada (ver shared/util/resource-fallback.ts) en vez de datos frescas.
   protected readonly usandoCache = computed(() =>
     !!this.mesasSvc.mesasResource.error() ||
     !!this.productosSvc.familiasResource.error() ||
@@ -144,44 +123,9 @@ export class App {
   );
   protected readonly pendientesSync = this.cuentaSvc.pendientesCount;
 
-  // ── Mesas → estado en MesasService (store); alias para plantilla/métodos ─────
-  protected readonly mesasTick     = this.mesasSvc.tick;
-  protected readonly mesasResource = this.mesasSvc.mesasResource;
-  protected readonly mesas         = this.mesasSvc.mesas;
-
-  protected readonly mesasPorCobrar = computed(
-    () => this.mesas().filter(m => this.estadoMesa(m) === 'por_cobrar').length,
-  );
-
-  // Cajas → cobrar mesa rápido: monta <app-mesas> directo en la cuenta de esa mesa.
-  protected readonly origenCajaMesas = signal(false);
-  protected cobrarMesaRapido(m: Mesa): void {
-    this.origenCajaMesas.set(true);
-    this.cuentaSvc.selectedMesa.set(m);
-    this.view.set('mesas');
-  }
-  /** (back) de <app-mesas>: si se entró desde Cajas, regresa a la lista de cobro; si no, al menú. */
-  protected volverDeMesas(): void {
-    if (this.origenCajaMesas()) {
-      this.origenCajaMesas.set(false);
-      this.cuentaSvc.selectedMesa.set(null);
-      this.cajaSvc.abrirEnCobro.set(true);
-      this.view.set('cajas');
-      return;
-    }
-    this.backToMenu();
-  }
-
-  // Estado efectivo (con fallback si el backend aún no lo envía).
-  protected estadoMesa(m: Mesa): string {
-    return this.mesasSvc.estadoMesa(m);   // store
-  }
-
-
-  // ── Navegación ────────────────────────────────────────────────────────────
-  // ── Usuarios / sesión / roles ─────────────────────────────────────────────
-  // La sesión (login por PIN) vive en UsuariosService — pantalla en <app-auth>.
+  // ── Usuarios / sesión / roles → viven en UsuariosService (usuario/esAdmin/puedeVer) ──
   protected readonly usuario = this.usuariosSvc.usuario;
+  protected readonly esAdmin = this.usuariosSvc.esAdmin;
 
   // ── Checador (entrada / salida) ─────────────────────────────────────────────
   protected readonly checando = signal(false);
@@ -201,7 +145,7 @@ export class App {
   protected cerrarSesion(): void {
     this.auditar('LOGOUT', {});
     this.usuariosSvc.logout();
-    this.view.set('menu');
+    this.navSvc.backToMenu();
   }
 
   // Registra un movimiento en la bitácora con el usuario actual (no bloquea si falla).
@@ -209,46 +153,12 @@ export class App {
     this.auditoriaSvc.auditar(accion, extras);   // logger en AuditoriaService
   }
 
-  // Permisos por rol. mesero: mesas/cocina · cajero: + cajas/reportes/inventario · admin: todo
-  protected puedeVer(module: RestaurantModule): boolean {
-    const rol: Rol = this.usuario()?.rol ?? 'mesero';
-    if (module === 'MESAS' || module === 'COCINA') return true;
-    if (module === 'CONFIG') return rol === 'admin';
-    // CAJAS, REPORTES, INVENTARIO
-    return rol === 'cajero' || rol === 'admin';
-  }
-  protected readonly esAdmin = computed(() => this.usuario()?.rol === 'admin');
-
-  protected selectModule(module: RestaurantModule): void {
-    if (!this.puedeVer(module)) return;   // sin permiso, no entra
-    this.abrirModulo(module);
-  }
-
-  private abrirModulo(module: RestaurantModule): void {
-    if (module === 'MESAS') { this.origenCajaMesas.set(false); this.view.set('mesas'); }
-    if (module === 'CAJAS') {
-      this.cajaSvc.turnoActivo.set(null);
-      this.view.set('cajas');
-    }
-    if (module === 'REPORTES') {
-      this.view.set('reportes');   // el componente <app-reportes> maneja subvista y fecha
-    }
-    if (module === 'INVENTARIO') {
-      this.view.set('inventario');   // el componente <app-inventario> maneja la subvista
-    }
-    if (module === 'COCINA') {
-      this.view.set('cocina');   // el componente <app-cocina> carga y se refresca solo
-    }
-    if (module === 'CONFIG') {
-      this.view.set('config');   // el componente <app-config> maneja su estado
-    }
-  }
-
   // ── Configuración · Usuarios (solo admin) ───────────────────────────────────
   protected readonly usuariosResource = httpResource<Usuario[]>(
     () => {
-      const enConfig = this.view() === 'config';
-      const enAudit  = this.view() === 'reportes';   // carga usuarios para el filtro de auditoría
+      const v = this.navSvc.view();
+      const enConfig = v === 'config';
+      const enAudit  = v === 'reportes';   // carga usuarios para el filtro de auditoría
       return (enConfig || enAudit) && this.esAdmin()
         ? this.usuariosSvc.listUrl(this.companyId()!)
         : undefined;
@@ -256,25 +166,4 @@ export class App {
     { defaultValue: [] },
   );
   protected readonly usuarios = this.usuariosResource.value;
-
-  // ── Cocina (KDS) → extraído a features/cocina (componente <app-cocina>) ──────
-
-  // exportarExistencias → movido al componente <app-inventario>
-
-
-  // ── Navegación atrás ──────────────────────────────────────────────────────
-  // Botón "🍽️ Mesas" de la barra superior: fuerza al componente <app-mesas> a
-  // volver al salón poniendo la mesa en null (su effect resetea la sub-vista),
-  // incluso si ya estaba montado en familias/productos/cuenta.
-  protected backToMesas(): void {
-    this.origenCajaMesas.set(false);
-    this.cuentaSvc.selectedMesa.set(null);
-    this.view.set('mesas');
-  }
-
-  protected backToMenu(): void {
-    this.view.set('menu');
-    this.cuentaSvc.selectedMesa.set(null);
-    this.cajaSvc.turnoActivo.set(null);
-  }
 }

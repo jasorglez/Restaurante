@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '2.61 (24 Julio 2026) refactor: se extrae PwaInstall de app.ts y se limpia CSS muerto de app.scss (Reportes/Inventario/hero viejo ya duplicados o sin uso) — app.ts en 280 líneas, app.scss de 1819 a 591',
+  version: '2.62 (24 Julio 2026) refactor: navegación (view/selectModule/etc.) a NavigationService, permisos a UsuariosService, mesasPorCobrar a MesasService, diagnóstico SignalR a componente propio — app.ts en 169 líneas (885 originalmente)',
 }; 
