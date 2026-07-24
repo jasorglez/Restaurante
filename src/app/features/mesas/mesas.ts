@@ -390,10 +390,15 @@ export class Mesas {
   });
   protected readonly totalAPagar = computed(() => {
     const c = this.cobroComensal();
+    // redondeado a centavos: sumar subtotales en punto flotante puede dar p.ej.
+    // 133.30000000000001, lo que bloqueaba "Confirmar cobro" aunque el cajero
+    // tecleara el monto exacto (133.30 < 133.30000000000001).
     if (c != null) {
-      return this.items().filter(i => (i.comensal ?? 1) === c && !i.pagado).reduce((s, i) => s + i.subtotal, 0);
+      const suma = this.items().filter(i => (i.comensal ?? 1) === c && !i.pagado).reduce((s, i) => s + i.subtotal, 0);
+      return Math.round(suma * 100) / 100;
     }
-    return Math.max(0, this.totalCuenta() - (this.descuentoAplicado()?.monto ?? 0));
+    const suma = Math.max(0, this.totalCuenta() - (this.descuentoAplicado()?.monto ?? 0));
+    return Math.round(suma * 100) / 100;
   });
   protected readonly showCobroSeparado = signal(false);
   protected readonly cuentaCerradaComensal = signal(false);

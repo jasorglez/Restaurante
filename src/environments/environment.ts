@@ -93,5 +93,5 @@ export const environment = {
   geminiApiKey: 'YOUR_GROQ_API_KEY_HERE',
   gnewsApiKey: '94ccc596b4dfebc3f72683b6e81d81bc',
 
-  version: '2.54 (24 Julio 2026) Cobro: botón "Exacto" para pago sin cambio + al cerrar ticket desde Cajas regresa a Cobrar mesa (no al salón)',
+  version: '2.55 (24 Julio 2026) fix: total a pagar redondeado a centavos (bloqueaba "Confirmar cobro" con el monto exacto por error de punto flotante)',
 }; 
