@@ -428,6 +428,16 @@
   overflow-y: auto;
   text-align: left;
 }
+.ayuda-lista {
+  margin: 8px 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+.ayuda-lista li { list-style: disc; }
 
 /* Lista de items (inventario, cobrar-mesa de Cajas, movimientos…). */
 .inv-list {

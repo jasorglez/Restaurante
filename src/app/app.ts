@@ -25,6 +25,7 @@ import { Config } from './features/config/config';
 import { Mesas } from './features/mesas/mesas';
 import { Caja } from './features/caja/caja';
 import { Auth } from './features/auth/auth';
+import { PwaInstall } from './features/pwa-install/pwa-install';
 import { Rol, Usuario } from './models/usuario';
 import { Mesa } from './models/mesa';
 
@@ -38,7 +39,7 @@ const LS_EMPRESA = 'pv_empresa_id';
 
 @Component({
   selector: 'app-root',
-  imports: [Cocina, Reportes, Inventario, Config, Mesas, Caja, Auth],
+  imports: [Cocina, Reportes, Inventario, Config, Mesas, Caja, Auth, PwaInstall],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
@@ -115,54 +116,7 @@ export class App {
     setInterval(() => {
       if (this.view() === 'mesas' || this.view() === 'cajas') this.mesasTick.update(t => t + 1);
     }, 20000);
-
-    const yaInstalada = window.matchMedia?.('(display-mode: standalone)').matches
-      || (navigator as any).standalone === true;
-    this.appStandalone.set(!!yaInstalada);
-    if (!yaInstalada) {
-      if ((window as any).__deferredInstallPrompt) this.puedeInstalar.set(true);
-      window.addEventListener('pwa-installable', () => this.puedeInstalar.set(true));
-      window.addEventListener('pwa-installed',   () => { this.puedeInstalar.set(false); this.appStandalone.set(true); });
-    }
   }
-
-  protected readonly appStandalone = signal(false);
-
-  // ── Instalación PWA ─────────────────────────────────────────────────────────
-  protected readonly puedeInstalar = signal(false);
-  protected async instalarApp(): Promise<void> {
-    const p = (window as any).__deferredInstallPrompt;
-    if (!p) {
-      // El navegador no ofreció el evento (ej. Samsung Internet o ya instalada):
-      // guiar al usuario al menú del navegador.
-      this.mostrarAyudaInstalar.set(true);
-      return;
-    }
-    p.prompt();
-    try { await p.userChoice; } catch { /* cancelado */ }
-    (window as any).__deferredInstallPrompt = null;
-    this.puedeInstalar.set(false);
-  }
-  protected readonly mostrarAyudaInstalar = signal(false);
-
-  // ── Cajas → extraído a features/caja (componente <app-caja>) ─────────────────
-
-  // ── Reportes → extraído a features/reportes (componente <app-reportes>) ──────
-
-  // ── Inventario → vista extraída a features/inventario (<app-inventario>) ─────
-  // El estado compartido con el modal de producto vive en InventarioService;
-  // aquí quedan solo alias para el modal de editar producto y la receta.
-  protected readonly equivalencias = this.inventarioSvc.equivalencias;
-  protected readonly cfgControla   = this.inventarioSvc.cfgControla;
-  protected readonly cfgVendeCopa  = this.inventarioSvc.cfgVendeCopa;
-  protected readonly cfgIdEquiv    = this.inventarioSvc.cfgIdEquiv;
-  protected readonly cfgPrecioCopa = this.inventarioSvc.cfgPrecioCopa;
-  protected readonly cfgStockMin   = this.inventarioSvc.cfgStockMin;
-  protected setCfgControla(e: Event): void { this.inventarioSvc.setCfgControla(e); }
-  protected setCfgVendeCopa(e: Event): void { this.inventarioSvc.setCfgVendeCopa(e); }
-  protected setCfgIdEquiv(e: Event): void { this.inventarioSvc.setCfgIdEquiv(e); }
-  protected setCfgPrecioCopa(e: Event): void { this.inventarioSvc.setCfgPrecioCopa(e); }
-  protected setCfgStockMin(e: Event): void { this.inventarioSvc.setCfgStockMin(e); }
 
   // ── Empresa ───────────────────────────────────────────────────────────────
   protected readonly companyResource = httpResource<CompanyInfo>(

@@ -1,0 +1,25 @@
+@if (!appStandalone()) {
+  <button class="instalar-btn" type="button" (click)="instalarApp()">
+    ⬇️ Instalar app
+  </button>
+}
+
+<!-- ── Modal: ayuda para instalar la PWA ───────────────────────────────────── -->
+@if (mostrarAyudaInstalar()) {
+  <div class="qty-overlay" role="dialog" aria-modal="true" aria-label="Instalar aplicación">
+    <div class="qty-panel drill-panel">
+      <div class="alta-head">
+        <strong>📲 Instalar la app</strong>
+        <button type="button" class="inv-cancel" (click)="mostrarAyudaInstalar.set(false)">✕</button>
+      </div>
+      <p class="inv-help">Tu navegador no mostró el instalador automático. Instálala manualmente así:</p>
+      <ul class="ayuda-lista">
+        <li><strong>Chrome (Android/Samsung):</strong> toca el menú <strong>⋮</strong> (arriba a la derecha) → <strong>“Instalar app”</strong> o <strong>“Agregar a pantalla principal”</strong>.</li>
+        <li><strong>Samsung Internet:</strong> menú <strong>☰</strong> → <strong>“Agregar página a”</strong> → <strong>“Pantalla de inicio”</strong>.</li>
+        <li><strong>iPad / Safari:</strong> botón <strong>Compartir</strong> ⬆️ → <strong>“Agregar a inicio”</strong>.</li>
+      </ul>
+      <p class="inv-help">Aparecerá el ícono 🍽️ y abrirá en pantalla completa.</p>
+      <button class="qty-cancel" type="button" (click)="mostrarAyudaInstalar.set(false)">Entendido</button>
+    </div>
+  </div>
+}
